@@ -1,0 +1,359 @@
+import {OVERSWING_TUTORIAL_DECK,OVERSWING_TUTORIAL_STEPS,overswingTutorialExpectedAction} from './overswingTutorial.js';
+import {isRoyal,royalRank,royalValue,royalSuit,KING_INITIAL_BANK_BONUS,KING_DECAY_PER_MOVE} from './overswingRoyals.js';
+
+export const rank = c => isRoyal(c)?royalValue(c):c % 10 + 1;
+export const suit = c => isRoyal(c)?royalSuit(c):Math.floor(c / 10);
+export const SUITS = ['♥','♦','♠','♣'];
+export const bondSuits = ['♠','♥','♦','♣'];
+export const tideSuits = ['♠','♥','♦','♣'];
+export const label = (c, symbols=SUITS) => c == null ? '—' : `${isRoyal(c)?royalRank(c):rank(c)===1?'A':rank(c)}${symbols[suit(c)]}`;
+export function seeded(seed=Date.now()){let a=seed>>>0;return ()=>{a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
+export function shuffle(a, rng=seeded()){const b=a.slice();for(let i=b.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;}
+const all40=()=>Array.from({length:40},(_,i)=>i);
+const mark=(s,msg)=>({...s,last:msg,history:[msg,...(s.history||[])].slice(0,12)});
+export function newKindling({seed,deckOverride}={}){const deck=deckOverride?deckOverride.slice():shuffle(all40(),seeded(seed));return {game:'kindling',deck,pos:3,market:deck.slice(0,3),fires:[null,null,null],sparks:3,score:0,turn:0,discard:[],history:[],status:'playing',last:'Choose a market card, then a Fire.'};}
+export const kindlingFits=(f,r)=>!f || (r-f.top>=1 && r-f.top<=3);
+export function kindlingSmother(fires){let best=0;for(let i=1;i<3;i++){const a=fires[i],b=fires[best];if(a.cards.length>b.cards.length || a.cards.length===b.cards.length && (a.top>b.top))best=i;}return best;}
+export function kindlingActions(s){if(s.status==='over')return [];const arr=[];s.market.forEach((c,k)=>{if(k>0&&s.sparks===0)return;const fits=s.fires.map((f,i)=>kindlingFits(f,rank(c))?i:-1).filter(i=>i>=0);if(!fits.length){arr.push({type:'take',market:k,fire:kindlingSmother(s.fires),kindle:false,smother:true});}else for(const fire of fits){arr.push({type:'take',market:k,fire,kindle:false});if((s.fires[fire]?.cards.length||0)>=2)arr.push({type:'take',market:k,fire,kindle:true});}});return arr;}
+export function stepKindling(s,a){if(!kindlingActions(s).some(x=>x.market===a.market&&x.fire===a.fire&&x.kindle===!!a.kindle))return s;const n={...s,fires:s.fires.map(f=>f?{...f,cards:[...f.cards]}:null),market:[...s.market],discard:[...s.discard],history:[...s.history]};const c=n.market.splice(a.market,1)[0],f=n.fires[a.fire];if(a.market>0)n.sparks--;
+ const fits=n.fires.some(x=>kindlingFits(x,rank(c)));let msg='';
+ if(!fits){n.discard.push(...f.cards);n.fires[a.fire]={cards:[c],top:rank(c),bottomSuit:suit(c)};msg=`${label(c)} smothered Fire ${a.fire+1}; lost ${f.cards.length} cards.`;}
+ else{const nf=f?{cards:[...f.cards,c],top:rank(c),bottomSuit:f.bottomSuit}:{cards:[c],top:rank(c),bottomSuit:suit(c)};n.fires[a.fire]=nf;msg=`${label(c)} placed on Fire ${a.fire+1}.`;
+ if(a.kindle){const points=nf.cards.length**2*(suit(c)===nf.bottomSuit?2:1);n.score+=points;n.sparks++;n.discard.push(...nf.cards);n.fires[a.fire]=null;msg=`Kindled Fire ${a.fire+1} for +${points}; gained a Spark.`;}}
+ n.turn++;if(n.pos<40)n.market.push(n.deck[n.pos++]);if(!n.market.length)n.status='over';return mark(n,msg);
+}
+export const kindlingFinal=s=>s.score+s.sparks+s.fires.reduce((v,f)=>v+(f?.cards.length||0),0);
+const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8]];
+export function newBondstone({seed,deckOverride}={}){return {game:'bondstone',deck:deckOverride?deckOverride.slice():shuffle(all40(),seeded(seed)),t:0,wall:Array(9).fill(null),rise:1,mortar:3,score:0,rubble:[],history:[],status:'playing',last:'Choose an empty wall cell, or Mortar this Stone.'};}
+export function bondJudge(cards){const values=cards.map(rank),ss=cards.map(suit),sum=values.reduce((a,b)=>a+b,0);const same=ss.every(v=>v===ss[0]);const v=values.slice().sort((a,b)=>a-b);const run=v[1]===v[0]+1 && v[2]===v[1]+1;return {kind:same&&run?'pure':same?'suit':run?'run':'fault',value:same&&run?sum*2:(same||run)?sum:0};}
+export function bondActions(s){if(s.status==='over')return [];return [...s.wall.flatMap((v,i)=>v===null?[{type:'set',cell:i}]:[]),...(s.mortar?[{type:'mortar'}]:[])];}
+export function stepBondstone(s,a){if(!bondActions(s).some(x=>x.type===a.type&&(a.type!=='set'||x.cell===a.cell)))return s;const n={...s,wall:[...s.wall],rubble:[...s.rubble],history:[...s.history]};const c=s.deck[s.t];let msg='';
+ if(a.type==='mortar'){n.mortar--;n.rubble.push(c);msg=`Mortared ${label(c,bondSuits)}. ${n.mortar} Mortar left.`;}
+ else{n.wall[a.cell]=c;const lines=LINES.map((line,i)=>({line,index:i})).filter(({line})=>line.includes(a.cell)&&line.every(j=>n.wall[j]!==null)).map(({line,index})=>({line,index,...bondJudge(line.map(j=>n.wall[j]))}));const value=lines.reduce((sum,l)=>sum+l.value,0);const pts=value*s.rise;n.score+=pts;if(lines.some(l=>l.kind==='fault'))n.rise=1;else n.rise=Math.min(6,n.rise+lines.length);const cleared=[...new Set(lines.flatMap(l=>l.line))].sort((a,b)=>a-b);cleared.forEach(j=>{n.rubble.push(n.wall[j]);n.wall[j]=null;});msg=lines.length?`${lines.map(l=>l.kind.toUpperCase()).join(' + ')}: +${pts} points. Rise ×${n.rise}.`:`Set ${label(c,bondSuits)} at cell ${a.cell+1}.`;n.lastJudged=lines.map(l=>({line:l.index,kind:l.kind,value:l.value}));}
+ n.t++;if(n.t===40)n.status='over';return mark(n,msg);
+}
+export const signed=c=>(suit(c)<2?1:-1)*rank(c);
+// Every strict zero-crossing adds SWING tiers without a multiplier cap.
+// The distance determines the gain (+1/+2/+3), and exact zero still triggers Zero Break.
+export function applySwing(S,W,value,limit=10){const next=S+value;if(Math.abs(next)>limit)return {snap:true};const swung=S!==0&&next!==0&&Math.sign(next)!==Math.sign(S);const gain=swung?Math.max(1,Math.floor(Math.abs(S)/3)):0;return {snap:false,S:next,W:W+gain,gain,swung};}
+// Overswing v12: exact zero is a trap, not a crossing.
+// Zero Break resets all multipliers (not the Pot); only a strict sign change grants crossing bonuses.
+function dealSwing(rng,override,royals=[],handSize=8){
+  const ordinary=override?override.slice():shuffle(all40(),rng);
+  if(!Array.isArray(royals)||royals.length>3||new Set(royals).size!==royals.length||
+     royals.some(id=>!isRoyal(id)))throw new TypeError('Invalid royal hand');
+  // Ordinary FLIPs and player-controlled Royal summons use separate pools.
+  // All 40 ordinary cards remain playable; equipped Royals are additional cards.
+  // Journey preorders Royals once per game and reuses that order every gate.
+  const deck=ordinary;
+  return {deck,pos:handSize,hand:deck.slice(0,handSize),
+    royalQueue:royals.slice(),summonedRoyals:[],consecutiveSummons:0,
+    ordinaryRefills:0,
+    handCap:handSize,bankCount:0,scoutNext:null,
+    crownBonus:0,resonancePoints:0,
+    pot:[],discard:[],S:0,W:0,T:0,swingNo:1,flips:0,plays:0,
+    flipStreak:0,flipFactor:1,jackpotFactor:1};
+}
+export function newOverswing({seed,mode='short',deckOverride,royals=[],initialHandSize=8}={}){
+  const base=seed??Date.now();
+  const tutorial=mode==='tutorial';
+  if(!Number.isInteger(initialHandSize)||initialHandSize<2||initialHandSize>8)throw new RangeError('Invalid initial hand size');
+  return {game:'overswing',version:14,seed:base,mode,dealIndex:0,dealTotals:[],
+    deal:dealSwing(seeded(base),tutorial?OVERSWING_TUTORIAL_DECK:deckOverride,tutorial?[]:royals,tutorial?8:initialHandSize),
+    tutorialStep:tutorial?0:null,tutorialIntroDone:!tutorial,history:[],status:'playing',
+    last:tutorial?'Learn FLIP, STEER, Pot, and Score before you begin.':
+      'You have 8 cards. Red moves right (+), black moves left (−). FLIP or play a card.'};
+}
+export function overswingMultiplier(d){
+  return (d.W+1)*d.flipFactor*d.jackpotFactor;
+}
+// Journey applies these short-lived modifiers at resolution time. Ordinary modes
+// retain the exact v13 defaults; never mutate rules or the hidden deck.
+const OVERSWING_BASE_RULES=Object.freeze({
+  steerNoncrossPenalty:1,flipCrossJackpotGain:1,bankCapacityLoss:1,steerAlwaysToPot:false,
+  steerCrossSwingBonus:0,flipNoncrossPenalty:1,snapLimit:10,
+  maxFlips:null,bankTax:0,polarityReverse:false,shieldNextFlip:false,
+  maxConsecutiveSummons:1,
+  // Opt-in teaching gates; defaults preserve the original Overswing engine.
+  enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:true,enableResonance:true
+});
+function overswingEffectiveRules(input={}){
+  const rules={...OVERSWING_BASE_RULES,...input};
+  for(const [name,allowed] of Object.entries({
+    steerNoncrossPenalty:[0,1],flipCrossJackpotGain:[1,2],steerAlwaysToPot:[false,true],
+    bankCapacityLoss:[0,1],steerCrossSwingBonus:[0,1],
+    flipNoncrossPenalty:[0,1],snapLimit:[8,9,10],
+    bankTax:[0,5,10,15],polarityReverse:[false,true],shieldNextFlip:[false,true],
+    enableSwingFactor:[false,true],enableFlipFactor:[false,true],
+    enableJackpotFactor:[false,true],enableResonance:[false,true]
+  }))if(!allowed.includes(rules[name]))throw new RangeError('Invalid Overswing rule: '+name);
+  if(rules.maxFlips!==null&&(!Number.isInteger(rules.maxFlips)||rules.maxFlips<1||rules.maxFlips>40))
+    throw new RangeError('Invalid Overswing rule: maxFlips');
+  if(!Number.isInteger(rules.maxConsecutiveSummons)||rules.maxConsecutiveSummons<1||
+     rules.maxConsecutiveSummons>3)throw new RangeError('Invalid Overswing rule: maxConsecutiveSummons');
+  return rules;
+}
+export function overswingActions(s,rules={}){
+  if(s.status!=='playing'||(s.mode==='tutorial'&&!s.tutorialIntroDone))return [];
+  const effective=overswingEffectiveRules(rules);
+  const d=s.deal,a=[];
+  if(d.pos<d.deck.length&&(effective.maxFlips===null||d.flips<effective.maxFlips))a.push({type:'flip'});
+  if((d.ordinaryRefills||0)>0&&(d.royalQueue?.length||0)>0&&d.hand.length<d.handCap&&
+      (d.consecutiveSummons||0)<effective.maxConsecutiveSummons)a.push({type:'summon'});
+  if(d.pos<d.deck.length&&d.hand.length>1&&d.hand.every(isRoyal))
+    d.hand.forEach((_,index)=>a.push({type:'carry',index}));
+  d.hand.forEach((id,index)=>{
+    if(royalRank(id)==='Q'){
+      a.push({type:'steer',index,direction:1},{type:'steer',index,direction:-1});
+    }else a.push({type:'steer',index});
+  });
+  if(d.pot.length&&(d.plays>=2||(d.pos>=d.deck.length&&!d.hand.some(id=>!isRoyal(id))))){
+    const newCap=Math.max(2,d.handCap-effective.bankCapacityLoss);
+    const remaining=d.hand.filter(id=>royalRank(id)!=='K').length;
+    if(remaining>newCap)d.hand.forEach((id,dropIndex)=>{
+      if(royalRank(id)!=='K')a.push({type:'bank',dropIndex});
+    });
+    else a.push({type:'bank'});
+  }
+  if(s.mode==='tutorial'){
+    const expected=overswingTutorialExpectedAction(d,s.tutorialStep);
+    return expected?a.filter(action=>action.type===expected.type
+      &&(action.type!=='steer'||action.index===expected.index)
+      &&(action.type!=='bank'||action.dropIndex===expected.dropIndex)):[];
+  }
+  return a;
+}
+export function overswingPayout(s,rules={}){
+  const d=s.deal,base=(d.pot.reduce((a,c)=>a+rank(c),0)+(d.resonancePoints||0))*overswingMultiplier(d);
+  const crown=d.hand.some(id=>royalRank(id)==='K')?(d.crownBonus||0):0;
+  const gross=Math.floor(base*(100+crown)/100);
+  return Math.floor(gross*(100-overswingEffectiveRules(rules).bankTax)/100);
+}
+function resetMultipliers(d){
+  d.W=0;d.flipStreak=0;
+  d.flipFactor=1;d.jackpotFactor=1;
+}
+function clearSwing(d){
+  d.S=0;d.pot=[];d.plays=0;d.resonancePoints=0;
+  resetMultipliers(d);
+  d.swingNo++;
+}
+function refillEmptyHand(d){
+  const drawn=[];
+  // Preserve a single Royal across ordinary refills. Multiple held Royals
+  // require choosing one to carry, rather than silently discarding another.
+  if(d.pos<d.deck.length&&!d.hand.some(id=>!isRoyal(id))&&d.hand.length<=1){
+    while(d.hand.length<d.handCap&&d.pos<d.deck.length){
+      const card=d.deck[d.pos++];
+      d.hand.push(card);drawn.push(card);
+    }
+  }
+  if(drawn.length)d.ordinaryRefills=(d.ordinaryRefills||0)+1;
+  return drawn;
+}
+export function stepOverswing(s,a,rules={}){
+  if(s.mode==='tutorial'&&!s.tutorialIntroDone&&s.status==='playing'&&a?.type==='tutorial-start'){
+    return mark({...s,tutorialIntroDone:true},'Basics complete. Start with the highlighted FLIP.');
+  }
+  const effective=overswingEffectiveRules(rules);
+  if(!a||!overswingActions(s,effective).some(x=>x.type===a.type
+      &&(x.type!=='steer'||x.index===a.index&&x.direction===a.direction)
+      &&(x.type!=='bank'||x.dropIndex===a.dropIndex)
+      &&(x.type!=='carry'||x.index===a.index)))return s;
+  const d={...s.deal,hand:[...s.deal.hand],pot:[...s.deal.pot],discard:[...s.deal.discard],
+    royalQueue:[...(s.deal.royalQueue||[])],
+    summonedRoyals:[...(s.deal.summonedRoyals||[])]};
+  let n={...s,deal:d,dealTotals:[...s.dealTotals],history:[...s.history]};
+  let msg='',ended=false;
+  const previousS=d.S,previousW=d.W,previousPot=d.pot.reduce((sum,c)=>sum+rank(c),0)+(d.resonancePoints||0);
+  const previousMultiplier=overswingMultiplier(d);
+  const previousFlipFactor=d.flipFactor,previousJackpotFactor=d.jackpotFactor;
+  if(a.type==='summon'){
+    const card=d.royalQueue.shift();
+    d.hand.push(card);d.summonedRoyals.push(card);
+    d.consecutiveSummons=(d.consecutiveSummons||0)+1;
+    d.flipStreak=0;
+    if(royalRank(card)==='K')d.crownBonus=KING_INITIAL_BANK_BONUS;
+    n.lastAction={type:'summon',card,remaining:d.royalQueue.length,
+      chain:d.consecutiveSummons,destination:'hand'};
+    msg='SUMMON: '+label(card)+' joins your hand.';
+  }else if(a.type==='carry'){
+    const kept=d.hand[a.index];
+    d.discard.push(...d.hand.filter((_,i)=>i!==a.index));
+    d.hand=[kept];
+    n.lastAction={type:'carry',card:kept};
+    msg='CARRY: '+label(kept)+' retained.';
+  }else if(a.type==='bank'){
+    d.consecutiveSummons=0;
+    const gross=overswingPayout(s,{...effective,bankTax:0});
+    const gain=overswingPayout(s,effective);
+    const crownBonus=d.hand.some(id=>royalRank(id)==='K')?(d.crownBonus||0):0;
+    d.T+=gain;d.discard.push(...d.pot);d.resonancePoints=0;
+    const requestedDrop=a.dropIndex==null?null:d.hand[a.dropIndex];
+    const crowned=d.hand.filter(id=>royalRank(id)==='K');
+    d.hand=d.hand.filter(id=>royalRank(id)!=='K');
+    d.discard.push(...crowned);
+    d.crownBonus=0;
+    const oldCap=d.handCap;
+    d.handCap=Math.max(2,d.handCap-effective.bankCapacityLoss);d.bankCount++;
+    let dropped=null;
+    if(d.hand.length>d.handCap){
+      dropped=d.hand.splice(d.hand.indexOf(requestedDrop),1)[0];
+      d.discard.push(dropped);
+    }
+    n.lastAction={type:'bank',points:gain,gross,taxPaid:gross-gain,bankTax:effective.bankTax,pot:previousPot,multiplier:previousMultiplier,
+      crownBonus,crowned:crowned.length>0,oldCap,newCap:d.handCap,dropped,
+      modifiersApplied:effective.bankCapacityLoss===0?['vault_seal']:[]};
+    msg='BANK: +'+gain+' points'+(crownBonus?' (Crown +'+crownBonus+'%)':'')+'. Hand capacity '+oldCap+' → '+d.handCap+
+      (dropped===null?'':'; discarded '+label(dropped))+'.';
+    ended=true;
+  }else{
+    d.consecutiveSummons=0;
+    const opening=d.plays===0;
+    const c=a.type==='flip'?d.deck[d.pos++]:d.hand.splice(a.index,1)[0];
+    if(a.type==='flip'){d.flips++;d.scoutNext=null;}
+    d.plays++;
+    if(d.hand.some(id=>royalRank(id)==='K')){
+      d.crownBonus=Math.max(0,(d.crownBonus||0)-KING_DECAY_PER_MOVE);
+      if(d.crownBonus===0){
+        const expired=d.hand.filter(id=>royalRank(id)==='K');
+        d.hand=d.hand.filter(id=>royalRank(id)!=='K');
+        d.discard.push(...expired);
+      }
+    }else d.crownBonus=0;
+    const reversed=a.type==='steer'&&royalRank(c)!=='Q'&&effective.polarityReverse;
+    const movement=royalRank(c)==='Q'?a.direction*12:signed(c)*(reversed?-1:1);
+    const shielded=a.type==='flip'&&effective.shieldNextFlip;
+    const outcome=applySwing(d.S,d.W,movement,effective.snapLimit);
+    if(outcome.snap){
+      n.lastAction={type:a.type,card:c,from:previousS,to:previousS+movement,
+        snap:true,shielded,polarityReversed:reversed,destination:'discard',
+        lost:shielded?0:previousPot,prevMultiplier:previousMultiplier,
+        lostPayout:shielded?0:previousPot*previousMultiplier};
+      if(a.type==='flip')n.lastFlip=n.lastAction;
+      d.discard.push(...(shielded?[]:d.pot),c);
+      msg=shielded?'EMBER SHIELD! SNAP contained. Pot saved, multipliers reset.':
+        'SNAP! '+label(c)+' exceeded the limit. Pot lost.';
+      ended=true;
+    }else{
+      d.S=outcome.S;
+      d.W=effective.enableSwingFactor?
+        outcome.W+(a.type==='steer'&&outcome.swung?effective.steerCrossSwingBonus:0):0;
+      const zeroBreak=previousS!==0&&d.S===0;
+      let destination;
+      if(a.type==='flip'){
+        // A safe FLIP always enters the Pot. A noncrossing FLIP
+        // spends one SWING tier, just like STEER; exact zero resets all.
+        d.pot.push(c);destination='pot';
+        if(!outcome.swung&&!zeroBreak)d.W=Math.max(0,d.W-effective.flipNoncrossPenalty);
+        if(!zeroBreak){
+          // Crossing grows JACKPOT only. A noncrossing FLIP grows FLIP.
+          if(outcome.swung){
+            d.flipStreak=0;
+            if(effective.enableJackpotFactor)d.jackpotFactor+=effective.flipCrossJackpotGain;
+          }else{
+            if(effective.enableFlipFactor){
+              d.flipStreak++;
+              d.flipFactor=Math.max(d.flipFactor,d.flipStreak+1);
+            }
+          }
+        }
+      }else{
+        d.flipStreak=0;
+        // Steering without a crossing spends one SWING tier; ZERO BREAK resets all tiers below.
+        if(!outcome.swung&&!zeroBreak)d.W=Math.max(0,d.W-effective.steerNoncrossPenalty);
+        // Exact zero still deposits a STEER card in the Pot, without any bonus.
+        if(opening||outcome.swung||zeroBreak||effective.steerAlwaysToPot){
+          if(effective.enableResonance&&d.pot.length&&
+             suit(d.pot.at(-1))===suit(c)&&d.resonancePoints<6)
+            d.resonancePoints+=2;
+          d.pot.push(c);destination='pot';
+        }else{d.discard.push(c);destination='discard';}
+      }
+      if(zeroBreak)resetMultipliers(d);
+      if(royalRank(c)==='J'&&d.pos<d.deck.length)d.scoutNext=d.deck[d.pos];
+      const addedToPot=destination==='pot'?rank(c):0;
+      const resonanceGained=(d.resonancePoints||0)-(s.deal.resonancePoints||0);
+      n.lastAction={type:a.type,card:c,from:previousS,to:d.S,
+        snap:false,swung:outcome.swung,zeroBreak,
+        polarityReversed:reversed,shieldFaded:shielded,
+        resetFromMultiplier:zeroBreak?previousMultiplier:null,
+        gain:zeroBreak?0:outcome.gain+(a.type==='steer'&&outcome.swung?effective.steerCrossSwingBonus:0),
+        swingPenalty:!outcome.swung&&!zeroBreak&&d.W<previousW,
+        destination,
+        openingSteer:opening&&a.type==='steer',addedToPot,resonanceGained,scouted:royalRank(c)==='J'?d.scoutNext:null,
+        flipStreak:d.flipStreak,flipFactor:d.flipFactor,
+        jackpotFactor:d.jackpotFactor,multiplier:overswingMultiplier(d),
+        swingTierGained:d.W>previousW,flipTierGained:d.flipFactor>previousFlipFactor,
+        jackpotTierGained:d.jackpotFactor>previousJackpotFactor,
+        modifiersApplied:[
+          ...(a.type==='steer'&&!outcome.swung&&!zeroBreak&&effective.steerNoncrossPenalty===0?['steady_hand']:[]),
+          ...(a.type==='steer'&&outcome.swung&&effective.steerCrossSwingBonus>0?['swing_coil']:[]),
+          ...(a.type==='flip'&&outcome.swung&&effective.flipCrossJackpotGain>1?['jackpot_spark']:[])
+        ]};
+      if(a.type==='flip')n.lastFlip=n.lastAction;
+      msg=zeroBreak
+        ?'ZERO BREAK! '+label(c)+' landed exactly on zero. Pot kept, all multipliers reset to ×1.'
+        :(a.type==='flip'?'FLIP ':'STEER ')+label(c)+' → '+d.S+
+          ', '+(destination==='pot'?'added to Pot':'discarded')+
+          '. Total multiplier ×'+overswingMultiplier(d)+'.';
+    }
+  }
+  if(ended){
+    if(n.lastAction?.shielded){
+      // A protected SNAP still counts as a SNAP (including boss penalties).
+      // The offending card is discarded but the Pot remains intact.
+      d.S=0;d.plays=0;resetMultipliers(d);d.swingNo++;
+    }else clearSwing(d);
+  }
+  const refill=refillEmptyHand(d);
+  // Refill consumes the top of the ordinary deck. A Scout preview must always
+  // point at the next actual FLIP card, never a card moved into the hand.
+  if(d.scoutNext!=null&&refill.length)
+    d.scoutNext=d.pos<d.deck.length?d.deck[d.pos]:null;
+  if(n.lastAction?.type==='steer'&&royalRank(n.lastAction.card)==='J'&&!n.lastAction.snap){
+    d.scoutNext=d.pos<d.deck.length?d.deck[d.pos]:null;
+    n.lastAction={...n.lastAction,scouted:d.scoutNext};
+  }
+  if(refill.length){
+    msg+=' Hand refilled with '+refill.length+' cards (capacity '+d.handCap+').';
+    n.lastRefill=refill;
+    if(n.lastAction)n.lastAction={...n.lastAction,refilled:refill};
+  }else n.lastRefill=[];
+  // A deal is finished only after every card has been used (including hand cards).
+  if(d.pos>=d.deck.length&&!d.hand.some(id=>!isRoyal(id))&&!d.pot.length){
+    // Never force unsafe Royal STEERs at the end of the ordinary deck.
+    d.discard.push(...d.hand,...d.royalQueue);d.hand=[];d.royalQueue=[];
+    n.dealTotals.push(d.T);
+    if(n.mode==='match'&&n.dealIndex<2){
+      n.dealIndex++;
+      n.deal=dealSwing(seeded(n.seed*3+n.dealIndex));
+      n.lastFlip=null;n.lastAction=null;n.lastRefill=[];
+      msg+=' Next deck started.';
+    }else n.status='over';
+  }
+  if(n.mode==='tutorial'){
+    n.tutorialStep=s.tutorialStep+1;
+    if(n.tutorialStep===OVERSWING_TUTORIAL_STEPS.length){
+      n.status='tutorial-complete';
+      msg+=' Tutorial complete! You can now play a normal game.';
+    }
+  }
+  return mark(n,msg);
+}
+export const overswingFinal=s=>s.dealTotals.reduce((a,b)=>a+b,0)+(s.status==='over'?0:s.deal.T);
+export const tideLabel=x=>`${['J','Q','K'][x%3]}${tideSuits[Math.floor(x/3)]}`;
+export function newUndertow({seed,tideOverride,crewOverride}={}){const rng=seeded(seed);const tide=tideOverride?tideOverride.slice():shuffle(Array.from({length:12},(_,i)=>i),rng);const crew=crewOverride?crewOverride.slice():shuffle(all40(),rng);const s={game:'undertow',tide,crew,ci:4,turn:0,hand:crew.slice(0,4),seen:crew.slice(0,4),line:[],catch:0,strain:0,deep:0,discard:[],stage:'act',history:[],status:'playing',last:'Choose Break, Anchor and up to 3 Row cards.'};return undertowPrepare(s);}
+export function undertowPrepare(s){if(s.turn>=12)return {...s,status:'over',stage:'over'};const drawCount=s.turn===11?2:3;const cards=s.crew.slice(s.ci,s.ci+drawCount);return {...s,ci:s.ci+drawCount,hand:[...s.hand,...cards],seen:[...s.seen,...cards],stage:'act',forceEmptyKeep:false,last:`Tide ${tideLabel(s.tide[s.turn])}; choose your crew.`};}
+export const undertowScore=s=>s.catch+3*s.strain+3*s.deep;
+export function undertowCheckOdds(s,strain){const currentSuit=Math.floor(s.tide[s.turn]/3),threshold=strain-5,unknown=s.crew.filter(c=>!s.seen.includes(c));const hits=unknown.filter(c=>suit(c)===currentSuit&&rank(c)<=threshold).length;return {hits,total:unknown.length,prob:strain>10?1:unknown.length?hits/unknown.length:0};}
+export function undertowActions(s){if(s.status==='over')return [];if(s.stage==='keep')return [{type:'keep'}];return [{type:'act'}];}
+export function stepUndertow(s,a){if(s.stage==='act'&&a.type==='act'){const {breakCard=null,anchorCard=null,row=[]}=a;if(!Array.isArray(row)||row.length>3||!Array.isArray(s.hand))return s;const used=[breakCard,anchorCard,...row].filter(c=>c!==null);if(new Set(used).size!==used.length||used.some(c=>!s.hand.includes(c)))return s;const ts=Math.floor(s.tide[s.turn]/3),tr=11+s.tide[s.turn]%3;if(breakCard!==null&&suit(breakCard)!==ts)return s;
+ const n={...s,line:[...s.line],hand:s.hand.filter(c=>!used.includes(c)),discard:[...s.discard,...row,...(breakCard===null?[]:[breakCard])],history:[...s.history]};if(anchorCard!==null)n.line.push(anchorCard);const m=row.reduce((sum,c)=>sum+rank(c),0)+n.line.length-(breakCard===null?tr:0)-(n.turn+1);
+ if(m>0)n.catch+=m;else if(m<0)n.strain-=m;
+ let cracked=false,odds=null;if(m<0&&n.strain>=6){odds=undertowCheckOdds(s,n.strain);const cc=n.crew[n.ci];cracked=n.strain>10||(suit(cc)===ts && rank(cc)<=n.strain-5);if(cracked){n.catch=Math.floor(n.catch/2);n.strain=0;n.deep=0;n.forceEmptyKeep=n.turn<=2;}else if(odds.hits>0)n.deep+=-m;}
+ n.stage='keep';n.lastResult={margin:m,cracked,odds,checkCard:odds?n.crew[n.ci]:null};return mark(n,`Margin ${m>=0?'+':''}${m}. ${cracked?'CRACK! Catch halved.':m>0?'Catch gained.':odds?`Check ${odds.hits}/${odds.total} threats; survived.`:'Strain taken.'} Choose cards to keep (max 4).`);
+ }
+ if(s.stage==='keep'&&a.type==='keep'){const keep=a.cards||[];if(!Array.isArray(keep)||keep.length>4||s.forceEmptyKeep&&keep.length||new Set(keep).size!==keep.length||keep.some(c=>!s.hand.includes(c)))return s;let n={...s,hand:keep.slice(),discard:[...s.discard,...s.hand.filter(c=>!keep.includes(c))],turn:s.turn+1,history:[...s.history]};if(n.turn===12){n.stage='over';n.status='over';return mark(n,`Voyage finished! Final score ${undertowScore(n)}.`);}n=undertowPrepare(n);return mark(n,`Kept ${keep.length} cards. ${n.last}`);}
+ return s;
+}

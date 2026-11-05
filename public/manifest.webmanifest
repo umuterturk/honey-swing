@@ -1,0 +1,20 @@
+{
+  "name": "Swing Casual",
+  "short_name": "Swing",
+  "description": "A single-player mobile card puzzle. Bank your pot before it snaps.",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#73cafa",
+  "theme_color": "#a9e6ef",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
