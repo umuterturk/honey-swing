@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {onboardingLevel} from '../src/casual/onboardingLevels.js';
-import {LEVEL_START,claimLevelAdvance,levelStartPlan,startTap,successPlan,successTap} from '../src/casual/presentationSequence.js';
+import {LEVEL_START,claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,successTap,takeFirstOutcome} from '../src/casual/presentationSequence.js';
 
 test('level start settles by 0.300s and docks only L3, L5, L6, and L11',()=>{
   const plan=levelStartPlan(3);
@@ -61,6 +61,21 @@ test('a win shows the committed score and CTA at t=0, and a loss does not',()=>{
   assert.deepEqual(successTap('cta'),{settle:true,advance:true});
   assert.equal(claimLevelAdvance(false).advance,true);
   assert.equal(claimLevelAdvance(true).advance,false);
+});
+
+test('first outcomes use the audit copy once, with no Jackpot and no L8 pill',()=>{
+  assert.equal(introCopy('bank',17),'BANK 17');
+  assert.equal(introCopy('cross'),'CROSS');
+  assert.equal(introCopy('flip'),'FLIP');
+  assert.equal(introCopy('flipFactor',3),'×3');
+  assert.equal(introCopy('zero'),'Pot safe.');
+  assert.equal(introCopy('snap'),'Pot lost. Bank safe.');
+  assert.equal(introCopy('jackpot',2),null);
+  const seen=new Set();
+  assert.equal(takeFirstOutcome(seen,'flip').kind,'flip');
+  assert.equal(takeFirstOutcome(seen,'flip'),null);
+  assert.equal(takeFirstOutcome(seen,'jackpot'),null);
+  assert.equal(takeFirstOutcome(seen,'cross').max,1.100);
 });
 
 test('the first tap finishes arrival and still reaches a legal control',()=>{

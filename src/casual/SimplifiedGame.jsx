@@ -4,7 +4,7 @@ import {GardenScene} from './CasualArt.jsx';
 import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour} from './minimalMotion.js';
 import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
-import {claimLevelAdvance,levelStartPlan,startTap,successPlan,successTap} from './presentationSequence.js';
+import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,successTap,takeFirstOutcome} from './presentationSequence.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
 import {clearWinMemo,idleHintAction} from './idleHint.js';
 import {bankAssistiveMessage,nextBankAnnouncement} from './bankStatus.js';
@@ -43,6 +43,7 @@ export default function SimplifiedGame(){
   const [help,setHelp]=useState(false);
   const [docking,setDocking]=useState(()=>Boolean(onboardingLevel(round.levelId).dock));
   const freshStart=round.turn===0&&!(round.game.deal.plays);
+  const [ack,setAck]=useState(null);
   const [successPour,setSuccessPour]=useState(false);
   const [successSettled,setSuccessSettled]=useState(false);
   const advancedRef=useRef(false);
@@ -140,6 +141,17 @@ export default function SimplifiedGame(){
     bankAnnounceRef.current=result.previous;
     if(result.text)setBankLive(result.text);
   },[bankMessage]);
+  useEffect(()=>{
+    if(!canBank)return;
+    const first=takeFirstOutcome(seenFactorsRef.current,'bank');
+    if(!first)return;
+    setAck({kind:'bank',text:introCopy('bank',overswingPayout(game,level.rules))});
+  },[canBank,round.turn,round.levelId]);
+  useEffect(()=>{
+    if(!ack)return;
+    const timer=setTimeout(()=>setAck(current=>current===ack?null:current),1100);
+    return ()=>clearTimeout(timer);
+  },[ack]);
 
   function startLevel(id){
     clearWinMemo();
@@ -154,6 +166,7 @@ export default function SimplifiedGame(){
     setAnimating(false);setFeedback(null);setPulse(false);setBeat('');setHelp(false);
     setDocking(Boolean(onboardingLevel(id).dock));
     setSuccessPour(false);setSuccessSettled(false);advancedRef.current=false;
+    setAck(null);
     setDevMenuOpen(false);
     seenFactorsRef.current=new Set();
   }
@@ -202,6 +215,13 @@ export default function SimplifiedGame(){
           setSuccessPour(action.type==='bank');
           setSuccessSettled(false);
         }
+        const outcome=change.snap?'snap':change.zeroBreak?'zero':
+          change.rewards.some(reward=>reward.kind==='swing')?'cross':
+          change.rewards.some(reward=>reward.kind==='flip')?'flipFactor':
+          action.type==='flip'?'flip':null;
+        const first=takeFirstOutcome(seenFactorsRef.current,outcome);
+        if(first)setAck({kind:first.kind,text:introCopy(first.kind,change.rewards[0]?.value)});
+        else if(outcome)setAck(null);
       },
       onSettle({next}){
         const settled=settledPresentation(next);
@@ -212,7 +232,7 @@ export default function SimplifiedGame(){
       },
       startMotion({next,change},complete){
         if(onboardingVictory(next)){
-          setAnimating(false);setFeedback(null);setPulse(false);setHelp(false);
+          setAnimating(false);setFeedback(null);setPulse(false);setHelp(false);setAck(null);
           complete();
           return ()=>{setSuccessPour(false);setSuccessSettled(true);};
         }
@@ -241,7 +261,8 @@ export default function SimplifiedGame(){
           .filter(({kind})=>!seenFactorsRef.current.has(kind)).map(({kind})=>kind);
         change.rewards.forEach(({kind})=>seenFactorsRef.current.add(kind));
         cancelRef.current=animateCardAction({
-          root,source,action,view:{...change,firstTap:round.levelId===1&&round.turn===0},
+          root,source,action,view:{...change,firstTap:round.levelId===1&&round.turn===0,
+            meterLimit:level.rules.snapLimit},
           firstFactorAwards,
           onMeter:position=>{
             setView(v=>({...v,position}));
@@ -354,7 +375,7 @@ export default function SimplifiedGame(){
       <div className="sgv-middle">
         <HorizontalMeter position={view.position} limit={level.rules.snapLimit}
           multipliers={view.factors} visibleFactors={level.visibleFactors}
-          showDanger={level.showChances} beat={beat} dock={docking?level.dock:null}/>
+          showDanger={level.showChances} beat={ack&&ack.kind!=='bank'?ack.text:beat} dock={docking?level.dock:null}/>
         <span className="sgv-flight-center" aria-hidden="true"/>
         <div className="sgv-bottle-pair" aria-label="Pending Pot and secured glass">
           <PendingPot value={potDisplay} target={level.target}
@@ -379,6 +400,7 @@ export default function SimplifiedGame(){
             onClick={()=>play({type:'bank'},rootRef.current?.querySelector('.sgv-pending-pot'))}
             aria-label={canBank?'Bank '+potDisplay+' pending drops':bankMessage}>
             <span className="sgv-action-text">BANK{canBank?' '+potDisplay:''}</span>
+            {ack?.kind==='bank'&&<span className="sgv-ack">{ack.text}</span>}
           </button>
           <p className="sgv-bank-live" aria-live="polite" aria-atomic="true">{bankLive}</p>
           {level.showFlip&&remaining>0&&<button type="button"

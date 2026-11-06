@@ -58,3 +58,28 @@ export function successTap(target){
 export function claimLevelAdvance(already){
   return {advance:!already,claimed:true};
 }
+
+// Audit §3. Pickup docks have no copy. The acknowledgement is the first real outcome.
+export const INTRO={
+  max:1.100,
+  fadeIn:[0,0.080],
+  holdUntil:0.900,
+  fadeOut:[0.900,1.100]
+};
+const INTRO_COPY={
+  bank:value=>'BANK '+value,
+  cross:()=>'CROSS',
+  flip:()=>'FLIP',
+  flipFactor:value=>'×'+value,
+  zero:()=>'Pot safe.',
+  snap:()=>'Pot lost. Bank safe.'
+};
+export function introCopy(kind,value){
+  const write=INTRO_COPY[kind];
+  return write?write(value):null;
+}
+export function takeFirstOutcome(seen,kind){
+  if(!kind||!INTRO_COPY[kind]||seen.has(kind))return null;
+  seen.add(kind);
+  return {kind,max:INTRO.max};
+}
