@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {
-  ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress
+  ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,SEEN_FEATURE_INTROS_KEY,
+  clearOnboardingProgress
 } from '../src/casual/onboardingProgress.js';
 import {newOnboardingRound,onboardingActions} from '../src/casual/onboardingLevels.js';
 
@@ -23,11 +24,12 @@ test('development reset clears current and legacy onboarding progress only',()=>
     'swing-casual-onboarding-session-v1':'old-session',
     'swing-casual-onboarding-session-v2':'older-garden',
     'swing-casual-onboarding-unlocked-v1':'10',
+    [SEEN_FEATURE_INTROS_KEY]:'["bank"]',
     'music-volume':'55',
     'other-game-progress':'keep'
   });
   assert.equal(clearOnboardingProgress(storage),true);
-  for(const key of [ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,
+  for(const key of [ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,SEEN_FEATURE_INTROS_KEY,
     'swing-casual-onboarding-session-v1','swing-casual-onboarding-session-v2',
     'swing-casual-onboarding-unlocked-v1']){
     assert.equal(storage.has(key),false);
