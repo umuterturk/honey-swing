@@ -422,3 +422,72 @@ test('a mounted settle at the entry frame does not leave the board invisible',as
   assert.equal(!!view.host.querySelector('.sgv-skip-surface'),false);
   await view.unmount();
 });
+
+function assertStylesheetTransform(node){
+  const probe=document.createElement('div');
+  probe.className=node.className;
+  node.parentElement.appendChild(probe);
+  const expected=win.getComputedStyle(probe).transform;
+  const actual=win.getComputedStyle(node).transform;
+  probe.remove();
+  assert.equal(node.style.transform||'','',node.className+' keeps the stylesheet transform');
+  assert.equal(actual,expected,node.className+' computed transform');
+  return expected;
+}
+
+async function withStylesheet(run){
+  const css=await read('../src/casual/minimal.css');
+  const style=document.createElement('style');
+  style.textContent=css;
+  document.head.appendChild(style);
+  try{await run();}
+  finally{style.remove();}
+}
+
+test('the goal keeps its centering transform after dismiss',async()=>{
+  await withStylesheet(async()=>{
+    const painted=['.sgv-chest-area','.sgv-goal-progress','.sgv-meter-section',
+      '.sgv-hand','.sgv-actions','.sgv-pending-pot'];
+    async function check(host){
+      const goal=host.querySelector('.sgv-goal-progress');
+      const expected=assertStylesheetTransform(goal);
+      assert.match(String(expected),/-50%/);
+      for(const selector of painted){
+        if(selector==='.sgv-goal-progress')continue;
+        assertStylesheetTransform(host.querySelector(selector));
+      }
+    }
+    resetStorage();
+    seeBank();
+    useMotion(true);
+    const reduced=await mount();
+    await act(async()=>{tap(reduced.host.querySelector('.sgv-level-start-dismiss'));});
+    await check(reduced.host);
+    await reduced.unmount();
+
+    resetStorage();
+    seeBank();
+    useMotion(false);
+    const skipped=await mount();
+    const skipTimeline=arrivalTimeline(skipped.host.querySelector('.sgv-hand'));
+    assert.ok(skipTimeline);
+    skipTimeline.pause();
+    skipTimeline.time(0.2);
+    assert.notEqual(skipped.host.querySelector('.sgv-goal-progress').style.transform||'','');
+    await act(async()=>{tap(skipped.host.querySelector('.sgv-level-start-dismiss'));});
+    await check(skipped.host);
+    await skipped.unmount();
+
+    resetStorage();
+    seeBank();
+    const finished=await mount();
+    const done=arrivalTimeline(finished.host.querySelector('.sgv-chest-area'));
+    assert.ok(done);
+    done.pause();
+    await act(async()=>{done.progress(1);});
+    assert.ok(finished.host.querySelector('.sgv-level-start'));
+    await act(async()=>{tap(finished.host.querySelector('.sgv-level-start-dismiss'));});
+    await check(finished.host);
+    await finished.unmount();
+  });
+});

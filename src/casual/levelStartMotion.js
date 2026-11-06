@@ -6,25 +6,26 @@ function nodesOf(board){
   return (Array.isArray(board)?board:[board]).filter(Boolean);
 }
 
-function paint(node,{opacity=1,scale=1,y=0}={}){
+// Settled elements drop their inline transform so a stylesheet baseline can
+// return. The goal's translate(-50%, -50%) is that baseline; writing "none"
+// or translate(0, 0) leaves it off-center. The jar, meter, hand, actions,
+// and Pot have no resting transform, so clearing is their baseline too.
+const TRANSFORM_PROPS='transform,x,y,scale,xPercent,yPercent,rotation';
+function restoreBaseline(node){
   if(!node)return;
   try{gsap.killTweensOf(node);}catch{/* a dead tween still needs the visible end */}
+  try{gsap.set(node,{clearProps:TRANSFORM_PROPS});}catch{/* remove the inline transform below */}
   if(node.style){
-    node.style.opacity=String(opacity);
-    node.style.transform=scale===1&&y===0?'none':
-      'translate(0px, '+y+'px) scale('+scale+', '+scale+')';
+    node.style.removeProperty('transform');
+    node.style.opacity='1';
   }
-  try{gsap.set(node,{opacity,scale,x:0,y,overwrite:true});}catch{/* inline styles already show the end */}
-  try{gsap.killTweensOf(node);}catch{/* the set above must not stay live */}
 }
 
 // Settle kills the timeline wherever it is. The playfield must land on the
-// visible end, not the dimmed entry frame.
+// visible end, not the dimmed entry frame, and not on a transform that
+// replaces a stylesheet baseline.
 function showPlayfield(jar,goal,boards){
-  for(const node of [jar,goal,...boards]){
-    paint(node,{opacity:1,scale:1,y:0});
-    if(node?.style)node.style.opacity='1';
-  }
+  for(const node of [jar,goal,...boards])restoreBaseline(node);
 }
 
 function removeBanner(banner){
@@ -41,8 +42,7 @@ export function playLevelStart({
   };
   if(reduced){
     showPlayfield(jar,goal,boards);
-    paint(banner,{opacity:1,scale:1,y:0});
-    if(banner?.style)banner.style.transform='none';
+    restoreBaseline(banner);
     let held=banner;
     const timer=setTimeout(()=>{
       removeBanner(held);
