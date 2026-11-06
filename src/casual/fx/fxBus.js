@@ -40,8 +40,19 @@ export function createFxBus({
   const queue=[];
   const tweens=[];
   const classes=new Set();
+  const listeners=new Set();
   let root=null;
   let context=null;
+  function notify(){
+    for(const listener of [...listeners]){
+      try{listener();}catch{/* a view must not block settle or input */}
+    }
+  }
+  function subscribe(listener){
+    if(typeof listener!=='function')return ()=>{};
+    listeners.add(listener);
+    return ()=>listeners.delete(listener);
+  }
 
   function isReduced(){
     return typeof reducedMotion==='function'?!!reducedMotion():!!reducedMotion;
@@ -118,6 +129,7 @@ export function createFxBus({
     });
     if(event.sound)safeCall(audio?.play,event.sound);
     if(event.haptic)safeCall(haptics?.pulse,event.haptic);
+    notify();
     return {emitted:true,particles:alive,tween,target};
   }
   function emitDev(event){
@@ -134,9 +146,10 @@ export function createFxBus({
     try{pool.drain();}catch{/* pool already empty */}
     queue.length=0;
     try{clearClasses();}catch{/* root already gone */}
+    notify();
   }
   return {
-    attach,emit,emitDev,register,settle,pool,
+    attach,emit,emitDev,register,settle,subscribe,pool,
     liveParticles:()=>pool.liveCount(),
     tweenCount:()=>tweens.length,
     queued:()=>queue.length
