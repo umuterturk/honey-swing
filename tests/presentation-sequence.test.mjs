@@ -3,21 +3,34 @@ import assert from 'node:assert/strict';
 import {onboardingLevel} from '../src/casual/onboardingLevels.js';
 import {LEVEL_START,claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,successTap,takeFirstOutcome} from '../src/casual/presentationSequence.js';
 
-test('level start settles by 0.300s and docks only L3, L5, L6, and L11',()=>{
+test('a fresh level arrival settles by 0.880s, caps at 2.5s, and still docks L3, L5, L6, and L11',()=>{
   const plan=levelStartPlan(3);
   assert.equal(plan.motion,true);
-  assert.equal(plan.settled,0.300);
-  assert.equal(plan.badge.end,0.120);
-  assert.equal(plan.badge.fromScale,0.98);
-  assert.equal(plan.targetOutline.start,0.060);
-  assert.equal(plan.targetOutline.end,0.300);
-  assert.equal(plan.targetOutline.half,0.120);
-  assert.equal(plan.handGlint.start,0.160);
-  assert.equal(plan.handGlint.end,0.300);
-  assert.equal(plan.handGlint.half,0.070);
-  assert.equal(plan.dock.end,0.800);
+  assert.equal(plan.replay,true);
+  assert.equal(plan.settled,0.880);
+  assert.equal(plan.cap,2.5);
+  assert.ok(plan.settled<=plan.cap);
+  assert.equal(plan.dim,0.35);
+  assert.equal(plan.banner.end,0.220);
+  assert.equal(plan.banner.fromScale,0.85);
+  assert.equal(plan.banner.peakScale,1.06);
+  assert.equal(plan.banner.toScale,1);
+  assert.equal(plan.banner.fromY,-24);
+  assert.equal(plan.banner.outStart,0.700);
+  assert.equal(plan.banner.outEnd,0.880);
+  assert.equal(plan.jar.start,0.120);
+  assert.equal(plan.jar.end,0.480);
+  assert.equal(plan.jar.scale,1.35);
+  assert.equal(plan.board.start,0.400);
+  assert.equal(plan.board.end,0.700);
+  assert.equal(plan.board.fromOpacity,0.35);
+  assert.equal(plan.board.fromY,16);
+  assert.equal(plan.board.toY,0);
+  assert.equal(plan.reducedBanner,0.400);
   assert.equal(plan.idleAt,3);
+  assert.equal(plan.idleHint,'after-dismiss');
   assert.deepEqual(plan.idlePulse,[[3,3.3],[3.3,3.6],[3.6,3.9],[3.9,4.2]]);
+  assert.equal(plan.dock.end,0.800);
   assert.deepEqual(Object.keys(LEVEL_START.dockLevels).map(Number),[3,5,6,11]);
   for(const id of [3,5,6,11]){
     assert.equal(levelStartPlan(id).piece,onboardingLevel(id).dock);
@@ -27,13 +40,26 @@ test('level start settles by 0.300s and docks only L3, L5, L6, and L11',()=>{
   assert.equal(levelStartPlan(8).dock,null);
   assert.equal(onboardingLevel(8).dock,null);
   assert.equal(levelStartPlan(1).piece,null);
+  assert.equal(plan.badge,undefined);
+  assert.equal(plan.targetOutline,undefined);
+  assert.equal(plan.handGlint,undefined);
 });
 
-test('a restored or reduced-motion level does not replay the arrival',()=>{
-  assert.equal(levelStartPlan(5,{fresh:false}).motion,false);
-  assert.equal(levelStartPlan(5,{reduced:true}).motion,false);
-  assert.equal(levelStartPlan(5,{reduced:true}).idleOutline,true);
-  assert.equal(levelStartPlan(5,{reduced:true}).dock,null);
+test('a restored level does not replay and reduced motion is the static final state',()=>{
+  const restored=levelStartPlan(5,{fresh:false});
+  assert.equal(restored.motion,false);
+  assert.equal(restored.replay,false);
+  assert.equal(restored.settled,0);
+  const reduced=levelStartPlan(5,{reduced:true});
+  assert.equal(reduced.motion,false);
+  assert.equal(reduced.replay,false);
+  assert.equal(reduced.static,true);
+  assert.equal(reduced.settled,0);
+  assert.equal(reduced.idleOutline,true);
+  assert.equal(reduced.dock,null);
+  assert.equal(reduced.piece,null);
+  assert.equal(reduced.reducedBanner,0.400);
+  assert.equal(reduced.cap,2.5);
 });
 
 test('a win shows the committed score and CTA at t=0, and a loss does not',()=>{
