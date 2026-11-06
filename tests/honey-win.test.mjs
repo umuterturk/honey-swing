@@ -46,7 +46,7 @@ after(()=>{
   win.happyDOM.abort();
 });
 
-test('honey intensity keeps Appendix A and praise is Sweet, Tasty, Divine',()=>{
+test('honey intensity keeps Appendix A and praise is Nectar, Amber, Hiveful',()=>{
   assert.equal(Object.keys(STAR_THRESHOLDS).length,20);
   assert.equal(STAR_THRESHOLDS[11].target,9);
   assert.equal(STAR_THRESHOLDS[11].star2,21);
@@ -75,13 +75,13 @@ test('honey intensity keeps Appendix A and praise is Sweet, Tasty, Divine',()=>{
   assert.equal(honeyTier(20,6),1);
   assert.equal(honeyTier(20,7),3);
   assert.notEqual(honeyTier(9,17),2);
-  assert.deepEqual(praiseFor(1),{tier:1,text:'Sweet!',sound:'praise.h1'});
-  assert.deepEqual(praiseFor(2),{tier:2,text:'Tasty!',sound:'praise.h2'});
-  assert.deepEqual(praiseFor(3),{tier:3,text:'Divine!',sound:'praise.h3'});
+  assert.deepEqual(praiseFor(1),{tier:1,text:'Nectar!',sound:'praise.nectar'});
+  assert.deepEqual(praiseFor(2),{tier:2,text:'Amber!',sound:'praise.amber'});
+  assert.deepEqual(praiseFor(3),{tier:3,text:'Hiveful!',sound:'praise.hiveful'});
   assert.equal(praiseFor(0),null);
   assert.deepEqual([flightDroplets(1),flightDroplets(2),flightDroplets(3)],[8,12,16]);
   assert.deepEqual([flightDropletSize(1),flightDropletSize(2),flightDropletSize(3)],[16,18,20]);
-  assert.deepEqual([burstParticles(1),burstParticles(2),burstParticles(3)],[12,18,24]);
+  assert.deepEqual([burstParticles(1),burstParticles(2),burstParticles(3)],[16,20,24]);
   assert.ok(burstParticles(3)<=24);
   assert.equal(overflowMarks(3,5,5).length,0);
   assert.equal(overflowMarks(3,6,5).length,6);
@@ -121,27 +121,32 @@ test('count-up is a fixed 0.600s power2.out and ends on the engine integer',()=>
   }
 });
 
-test('layout clears the HUD and keeps the jar, count, and reset apart',()=>{
+test('layout puts praise at safe-top+24 and the count at least 64px',()=>{
   const small=honeyLayout(320,568,{top:0,right:0,bottom:0,left:0});
-  assert.ok(small.praise.y>=small.hud.bottom);
+  assert.equal(small.praise.y,24);
   assert.ok(Math.abs(small.jar.w-198.4)<1e-9);
-  assert.ok(small.number.font>=56);
-  assert.equal(small.number.h,72);
-  assert.equal(small.subline.font,18);
-  assert.equal(small.cta.h,56);
-  assert.equal(small.reset.w,44);
-  assert.equal(small.reset.h,44);
+  assert.ok(Math.abs(small.jar.h-248)<1e-9);
+  assert.equal(small.jar.y,94);
+  assert.equal(small.number.y,352);
+  assert.equal(small.number.font,64);
+  assert.equal(small.number.h,80);
+  assert.equal(small.subline.y,440);
+  assert.equal(small.reset.x,260);
+  assert.equal(small.reset.y,16);
   const large=honeyLayout(430,932,{top:0,right:0,bottom:0,left:0});
-  assert.ok(large.praise.y>=large.hud.bottom);
+  assert.equal(large.praise.y,24);
   assert.equal(large.jar.w,220);
-  assert.equal(large.number.font,72);
+  assert.equal(large.jar.h,275);
+  assert.equal(large.number.font,80);
+  assert.equal(large.number.y,379);
   assert.equal(large.praise.font,44);
+  assert.equal(large.reset.x,370);
   const tight=honeyLayout(320,568,{top:44,right:0,bottom:34,left:0});
   assert.equal(tight.safeH,490);
   assert.equal(tight.short,true);
-  assert.ok(tight.praise.y>=tight.hud.bottom);
-  assert.ok(tight.number.font>=56);
-  assert.equal(tight.number.h,72);
+  assert.equal(tight.praise.y,68);
+  assert.equal(tight.number.font,64);
+  assert.equal(tight.number.h,80);
   for(const box of [small,large,tight]){
     const zones=[box.praise,box.jar,box.number,box.subline,box.cta,box.reset];
     for(let i=0;i<zones.length;i++){
@@ -160,7 +165,7 @@ test('praise and count contrast clear 4.5:1 on the composited backing',()=>{
     assert.ok(contrastRatio(hex,backing)>=4.5,hex+' '+contrastRatio(hex,backing));
   }
   assert.ok(contrastRatio(HONEY_TOKENS.glassRim,backing.scrim)>=3);
-  assert.equal(HONEY_TOKENS.scrimOpacity,0.88);
+  assert.equal(HONEY_TOKENS.scrimOpacity,0.92);
   assert.equal(HONEY_TOKENS.backingOpacity,0);
 });
 
@@ -194,7 +199,7 @@ test('flight and lip burst follow the honey paths and droplet sizes',()=>{
   assert.equal(flying.every(particle=>particle.event==='honey-flight'),true);
   assert.equal(honeyParticles({t:0.5,tier:3,scale:1,source,mouth}).length,0);
   const lip=honeyParticles({t:0.9,tier:1,scale:1,source,mouth});
-  assert.equal(lip.length,12);
+  assert.equal(lip.length,16);
   assert.equal(lip[0].diameter,8);
   const places=lip.map(particle=>particle.x.toFixed(3)+','+particle.y.toFixed(3));
   const velocities=lip.map(particle=>particle.vx.toFixed(4)+','+particle.vy.toFixed(4));
@@ -213,11 +218,11 @@ test('the win plan times match the honey overrides and a loss stays quiet',()=>{
   const winPlan=successPlan({victory:true,levelId:4,secured:11,bank:true});
   assert.equal(winPlan.star,null);
   assert.equal(winPlan.tier,1);
-  assert.equal(winPlan.praise.text,'Sweet!');
+  assert.equal(winPlan.praise.text,'Nectar!');
   assert.equal(winPlan.flight.count,8);
   assert.equal(winPlan.flight.size,16);
-  assert.equal(winPlan.burst.particles,12);
-  assert.equal(winPlan.burst.start,0.85);
+  assert.equal(winPlan.burst.particles,16);
+  assert.equal(winPlan.burst.start,0.8);
   assert.equal(winPlan.count.duration,0.6);
   assert.equal(winPlan.count.ease,'power2.out');
   assert.equal(winPlan.subline.start,1);
@@ -254,9 +259,17 @@ function stage({score=32,target=9,over=true}={}){
   scrim.className='sgv-honey-scrim';
   const praise=document.createElement('p');
   praise.className='sgv-win-praise';
-  praise.textContent='Divine!';
+  praise.textContent='Hiveful!';
+  const hero=document.createElement('div');
+  hero.className='sgv-chest-art sgv-honey-hero-art';
   const liquid=document.createElement('div');
-  liquid.className='sgv-honey-liquid';
+  liquid.className='sgv-fluid-fill';
+  const surface=document.createElement('span');
+  surface.className='sgv-fluid-surface';
+  const gleam=document.createElement('span');
+  gleam.className='sgv-honey-gleam-sweep';
+  liquid.append(surface);
+  hero.append(liquid,gleam);
   const overflow=over?document.createElement('div'):null;
   if(overflow)overflow.className='sgv-honey-overflow';
   const tally=document.createElement('p');
@@ -268,10 +281,10 @@ function stage({score=32,target=9,over=true}={}){
   cta.type='button';
   cta.className='sgv-end-cta';
   cta.textContent='NEXT';
-  overlay.append(scrim,praise,liquid,tally,subline,cta);
+  overlay.append(scrim,praise,hero,tally,subline,cta);
   if(overflow)overlay.append(overflow);
   document.body.append(overlay);
-  return {overlay,scrim,praise,liquid,overflow,tally,subline,cta,remove(){overlay.remove();}};
+  return {overlay,scrim,praise,hero,liquid,surface,gleam,overflow,tally,subline,cta,remove(){overlay.remove();}};
 }
 
 function play(stageNodes,{secured=32,target=9,tier=3,reduced=false,bus,schedule,doc}={}){
@@ -287,11 +300,13 @@ function play(stageNodes,{secured=32,target=9,tier=3,reduced=false,bus,schedule,
 function assertFinal(nodes,secured){
   assert.equal(nodes.tally.textContent,String(secured));
   assert.equal(nodes.praise.style.opacity,'1');
-  assert.equal(nodes.praise.textContent,'Divine!');
+  assert.equal(nodes.praise.textContent,'Hiveful!');
   assert.doesNotMatch(nodes.praise.style.transform||'',/scale\(0/);
   assert.equal(nodes.liquid.style.height,'78%');
+  if(nodes.hero)assert.equal(nodes.hero.style.transform,'none');
+  if(nodes.gleam)assert.equal(nodes.gleam.style.opacity,'0');
   assert.equal(nodes.subline.style.opacity,'0.9');
-  assert.equal(nodes.scrim.style.opacity,'0.88');
+  assert.equal(nodes.scrim.style.opacity,'0.92');
   assert.equal(nodes.cta.disabled,false);
   if(nodes.overflow){
     assert.equal(nodes.overflow.style.opacity,'1');
@@ -327,7 +342,7 @@ test('droplet and burst origins are layer-local CSS pixels',()=>{
   assert.ok(flight);
   assert.equal(flight.x,sourceOrigin.x);
   assert.equal(flight.y,sourceOrigin.y);
-  handle.timeline.time(0.85);
+  handle.timeline.time(0.8);
   const burst=bus.pool.live().find(particle=>particle.key==='burst-0');
   assert.ok(burst);
   assert.equal(burst.x,mouthOrigin.x);
@@ -356,7 +371,7 @@ test('a skipped or killed celebration paints the final jar, praise, and score',(
   nodes.remove();
 });
 
-test('the count and the jar rise together and the lip burst waits until 0.850s',()=>{
+test('the count and the jar rise together and confetti fires at 0.800s',()=>{
   const nodes=stage();
   const sounds=[];
   const bus=createFxBus({
@@ -375,10 +390,11 @@ test('the count and the jar rise together and the lip burst waits until 0.850s',
   assert.equal(nodes.tally.textContent,'28');
   assert.equal(nodes.liquid.style.height,'78%');
   assert.equal(bus.liveParticles(),0);
+  handle.timeline.time(0.79);
+  assert.equal(bus.liveParticles(),0);
   handle.timeline.time(0.8);
   assert.equal(nodes.tally.textContent,'32');
-  handle.timeline.time(0.84);
-  assert.equal(bus.liveParticles(),0);
+  assert.equal(bus.liveParticles(),24);
   handle.timeline.time(0.9);
   assert.equal(bus.liveParticles(),24);
   assert.ok(bus.liveParticles()<=PARTICLE_CAP);
@@ -395,14 +411,14 @@ test('the count and the jar rise together and the lip burst waits until 0.850s',
     peak=Math.max(peak,Number(gsap.getProperty(nodes.praise,'scale'))||0);
   }
   assert.ok(peak<=1.14+1e-6);
-  assert.ok(sounds.includes('praise.h3'));
-  assert.ok(sounds.includes('win.burst'));
+  assert.ok(sounds.includes('praise.hiveful'));
+  assert.ok(sounds.includes('fx.confetti'));
   nodes.remove();
 });
 
 test('reduced motion is the static final card with 0 particles',()=>{
   const nodes=stage({score:18,target:11,over:true});
-  nodes.praise.textContent='Tasty!';
+  nodes.praise.textContent='Amber!';
   let scheduled=0;
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=play(nodes,{
@@ -455,7 +471,7 @@ test('degrade, overlap, hidden tab, and the hard cap keep the final card',()=>{
   handle.timeline.time(0.91);
   const honey=bus.pool.live().filter(particle=>particle.owner==='honey-win');
   assert.equal(honey.length,0);
-  assert.equal(nodes.praise.textContent,'Divine!');
+  assert.equal(nodes.praise.textContent,'Hiveful!');
   assert.equal(nodes.cta.disabled,false);
   const doc={
     visibilityState:'visible',
@@ -463,7 +479,7 @@ test('degrade, overlap, hidden tab, and the hard cap keep the final card',()=>{
     removeEventListener(){this.fn=null;}
   };
   const hidden=stage();
-  hidden.praise.textContent='Divine!';
+  hidden.praise.textContent='Hiveful!';
   const hiddenBus=createFxBus({reducedMotion:()=>false});
   const hiddenHandle=play(hidden,{bus:hiddenBus,doc});
   hiddenHandle.timeline.pause();
@@ -497,9 +513,10 @@ test('degrade, overlap, hidden tab, and the hard cap keep the final card',()=>{
 test('win and fail markup have no star nodes and the win jar is not a button',()=>{
   const won=renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:true,score:32,target:9,label:'NEXT',
-    praise:{tier:3,text:'Divine!'},onReset(){}
+    praise:{tier:3,text:'Hiveful!'},onReset(){}
   }));
-  assert.match(won,/Divine!/);
+  assert.match(won,/Hiveful!/);
+  assert.doesNotMatch(won,/Sweet!|Tasty!|Divine!/);
   assert.match(won,/32 honey secured\. Target 9\./);
   assert.match(won,/32 \/ 9/);
   assert.match(won,/sgv-chest-body/);
@@ -517,12 +534,12 @@ test('win and fail markup have no star nodes and the win jar is not a button',()
   assert.doesNotMatch(won,/<button[^>]*sgv-honey-jar|sgv-honey-jar[^>]*<button/);
   const exact=renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:true,score:5,target:5,label:'NEXT',
-    praise:{tier:3,text:'Divine!'}
+    praise:{tier:3,text:'Hiveful!'}
   }));
   assert.doesNotMatch(exact,/sgv-honey-mark/);
   const over=renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:true,score:8,target:5,label:'NEXT',
-    praise:{tier:3,text:'Divine!'}
+    praise:{tier:3,text:'Hiveful!'}
   }));
   assert.equal((over.match(/sgv-honey-mark/g)||[]).length,6);
   const lost=renderToStaticMarkup(createElement(LevelEndScreen,{
@@ -573,7 +590,7 @@ test('honey styles are scoped under the end card and FX stays between the card a
   assert.equal(sweet.color,'#fff0cf');
   assert.equal(tasty.color,'#f0c14a');
   assert.equal(divine.color,'#ffe08a');
-  assert.equal(tally.fontSize,'56px');
+  assert.equal(tally.fontSize,'64px');
   assert.equal(tally.fontWeight,'900');
   assert.equal(tally.color,'#f0c14a');
   assert.match(String(tally.fontVariantNumeric),/tabular-nums/);
@@ -612,12 +629,14 @@ test('the win scrim, glass jar, and reset icon are styled before any tween',asyn
   host.setAttribute('data-honey-win','true');
   host.innerHTML='<header class="sgv-hud"></header>'+renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:true,score:8,target:5,label:'NEXT',
-    praise:{tier:3,text:'Divine!'},onReset(){}
+    praise:{tier:3,text:'Hiveful!'},onReset(){}
   }));
   document.body.appendChild(host);
   const scrim=win.getComputedStyle(host.querySelector('.sgv-honey-scrim'));
   const overlay=win.getComputedStyle(host.querySelector('.sgv-honey-win'));
-  assert.ok(scrim.opacity==='.88'||scrim.opacity==='0.88');
+  assert.ok(scrim.opacity==='.92'||scrim.opacity==='0.92');
+  assert.match(String(scrim.backdropFilter),/blur\(12px\)/);
+  assert.match(String(overlay.backdropFilter),/blur\(12px\)/);
   assert.match(String(overlay.backgroundColor),/26,\s*15,\s*18|1a0f12/i);
   assert.match(String(overlay.backdropFilter),/blur/);
   assert.ok(host.querySelector('.sgv-chest-body'));
@@ -634,11 +653,83 @@ test('the win scrim, glass jar, and reset icon are styled before any tween',asyn
   assert.equal(resetStyle.fontSize,'22px');
   assert.equal(reset.getAttribute('aria-label'),'Reset progress');
   assert.equal(reset.textContent,'↻');
-  assert.equal(win.getComputedStyle(host.querySelector('.sgv-win-tally')).fontSize,'56px');
+  assert.equal(win.getComputedStyle(host.querySelector('.sgv-win-tally')).fontSize,'64px');
+  const surface=win.getComputedStyle(host.querySelector('.sgv-fluid-surface'));
+  assert.equal(surface.height,'13px');
+  assert.notEqual(surface.backgroundImage,'none');
   const slot=win.getComputedStyle(host.querySelector('.sgv-honey-count-slot'));
   assert.ok(slot.backgroundColor===''||slot.backgroundColor==='transparent'||slot.backgroundColor==='rgba(0, 0, 0, 0)');
   const praise=win.getComputedStyle(host.querySelector('.sgv-honey-praise-slot'));
   assert.ok(praise.backgroundColor===''||praise.backgroundColor==='transparent'||praise.backgroundColor==='rgba(0, 0, 0, 0)');
+  assert.match(praise.top,/safe-top\) \+ 24px|24px/);
+  assert.match(resetStyle.top,/safe-top\) \+ 16px|16px/);
+  assert.match(resetStyle.right,/safe-right\) \+ 16px|16px/);
   host.remove();
   style.remove();
+});
+
+test('H3 confetti stays inside the pool because the flight droplets have already landed',()=>{
+  const source={x:40,y:100};
+  const mouth={x:160,y:220};
+  const colors=new Set(['#fff0cf','#f0c14a','#ffe08a','#e8a317']);
+  const shapes=new Set(['circle','rect','drop']);
+  let overlap=false;
+  let peak=0;
+  for(let step=0;step<=26;step++){
+    const list=honeyParticles({t:step/10,tier:3,scale:1,source,mouth});
+    peak=Math.max(peak,list.length);
+    assert.ok(list.length<=40);
+    const flight=list.some(particle=>particle.event==='honey-flight');
+    const confetti=list.some(particle=>particle.event==='win-burst');
+    if(flight&&confetti)overlap=true;
+  }
+  assert.equal(overlap,false);
+  assert.equal(peak,24);
+  const pieces=honeyParticles({t:0.9,tier:3,scale:1,source,mouth});
+  assert.equal(pieces.length,24);
+  assert.equal(pieces.every(particle=>shapes.has(particle.shape)),true);
+  assert.equal(pieces.every(particle=>colors.has(particle.color)),true);
+  assert.equal(pieces.some(particle=>particle.shape==='circle'),true);
+  assert.equal(pieces.some(particle=>particle.shape==='rect'),true);
+  assert.equal(pieces.some(particle=>particle.shape==='drop'),true);
+  assert.equal(honeyParticles({t:1.3,tier:3,scale:1,source,mouth}).length,0);
+});
+
+test('the fill bobs, the gleam sweeps, and the jar pops, then skip leaves scale 1',()=>{
+  const nodes=stage();
+  const bus=createFxBus({reducedMotion:()=>false});
+  const handle=play(nodes,{bus,tier:3,secured:32,target:9});
+  handle.timeline.pause();
+  handle.timeline.time(0.5);
+  const bob=Number(String(nodes.surface.style.transform).replace(/[^\d.-]/g,''));
+  assert.ok(Math.abs(bob-3)<0.05,nodes.surface.style.transform);
+  assert.ok(Math.abs(Number(nodes.gleam.style.opacity)-0.55)<1e-9);
+  assert.match(nodes.gleam.style.transform,/translateX\(/);
+  let peak=1;
+  for(let step=80;step<=98;step++){
+    handle.timeline.time(step/100);
+    peak=Math.max(peak,Number(gsap.getProperty(nodes.hero,'scale'))||1);
+  }
+  assert.ok(peak>1&&peak<=1.06+1e-6);
+  handle.timeline.time(0.9);
+  assert.equal(bus.liveParticles(),24);
+  handle.cancel();
+  assert.equal(nodes.hero.style.transform,'none');
+  assert.equal(nodes.surface.style.transform,'none');
+  assert.equal(nodes.gleam.style.opacity,'0');
+  assert.equal(bus.liveParticles(),0);
+  nodes.remove();
+});
+
+test('reduced motion keeps a static jar with no bob, gleam, pop, or confetti',()=>{
+  const nodes=stage();
+  const bus=createFxBus({reducedMotion:()=>false});
+  const handle=play(nodes,{reduced:true,bus,tier:3,secured:32,target:9});
+  assert.equal(handle.motion,false);
+  assert.equal(bus.liveParticles(),0);
+  assert.equal(nodes.hero.style.transform,'none');
+  assert.equal(nodes.surface.style.transform,'none');
+  assert.equal(nodes.gleam.style.opacity,'0');
+  assert.equal(gsap.getTweensOf(nodes.hero).length,0);
+  nodes.remove();
 });

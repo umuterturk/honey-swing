@@ -34,7 +34,7 @@ export function playWinCelebration({
   const intensity=tier|0;
   const paintFinal=()=>{
     card?.classList?.add('sgv-honey-final');
-    if(scrim?.style)scrim.style.opacity='0.88';
+    if(scrim?.style)scrim.style.opacity='0.92';
     if(praise?.style){
       praise.style.opacity='1';
       praise.style.transform='none';
@@ -48,6 +48,19 @@ export function playWinCelebration({
       liquid.style.height=(full>0?full:78)+'%';
       liquid.style.opacity='1';
       liquid.style.transform='none';
+    }
+    const surface=liquid?.querySelector?.('.sgv-fluid-surface');
+    if(surface?.style)surface.style.transform='none';
+    const hero=card?.querySelector?.('.sgv-honey-hero-art');
+    const gleam=hero?.querySelector?.('.sgv-honey-gleam-sweep');
+    if(hero?.style){
+      try{gsap.set(hero,{scale:1});}catch{/* inline transform is the end state */}
+      hero.style.transformOrigin='center 70%';
+      hero.style.transform='none';
+    }
+    if(gleam?.style){
+      gleam.style.opacity='0';
+      gleam.style.transform='none';
     }
     if(overflow?.style){
       overflow.style.opacity='1';
@@ -131,7 +144,7 @@ export function playWinCelebration({
     liquid.style.transform='none';
   }
   if(subline?.style)subline.style.opacity='0';
-  if(scrim?.style)scrim.style.opacity='0.88';
+  if(scrim?.style)scrim.style.opacity='0.92';
   if(overflow?.style){
     overflow.style.opacity='0';
     overflow.style.transform='translateY(-8px)';
@@ -174,12 +187,31 @@ export function playWinCelebration({
   };
   function cancel(){finish(false);}
 
+  const hero=card?.querySelector?.('.sgv-honey-hero-art')||null;
+  const surface=liquid?.querySelector?.('.sgv-fluid-surface')||null;
+  const gleam=hero?.querySelector?.('.sgv-honey-gleam-sweep')||null;
+  function paintPretty(time){
+    const active=time>=0.2&&time<0.8;
+    const along=active?(time-0.2)/0.6:0;
+    if(surface?.style)
+      surface.style.transform=active?'translateY('+(Math.sin(along*Math.PI)*3)+'px)':'none';
+    if(gleam?.style){
+      if(!active){
+        gleam.style.opacity='0';
+        gleam.style.transform='none';
+      }else{
+        const rise=along<=0.5?along/0.5:(1-along)/0.5;
+        gleam.style.opacity=String(rise*0.55);
+        gleam.style.transform='translateX('+(-120+240*along)+'%)';
+      }
+    }
+  }
   const clock={t:0};
   timeline.to(clock,{
     t:2.5,duration:2.5,ease:'none',overwrite:'auto',
-    onUpdate(){sync(clock.t);}
+    onUpdate(){sync(clock.t);paintPretty(clock.t);}
   },0);
-  if(scrim?.style)scrim.style.opacity='0.88';
+  if(scrim?.style)scrim.style.opacity='0.92';
   if(praise){
     gsap.set(praise,{transformOrigin:'50% 50%'});
     timeline.fromTo(praise,{opacity:0},{
@@ -194,7 +226,7 @@ export function playWinCelebration({
     },0);
     timeline.to(praise,{scale:1,duration:0.08,ease:honeyEaseOut,overwrite:false},0.14);
     timeline.call(()=>bus?.emit({
-      id:'praise',sound:praiseFor(intensity)?.sound||'praise.h1',
+      id:'praise',sound:praiseFor(intensity)?.sound||'praise.nectar',
       haptic:intensity>=2?'light':undefined,particles:0
     }),null,0);
   }
@@ -215,11 +247,22 @@ export function playWinCelebration({
     const when=at;
     timeline.call(()=>bus?.emit({id:'score-tick',sound:'score.tick',particles:0}),null,when);
   }
+  if(hero){
+    gsap.set(hero,{transformOrigin:'center 70%',scale:1});
+    timeline.fromTo(hero,{scale:1},{
+      scale:1.06,duration:0.09,ease:honeyEaseBack,overwrite:false,
+      onUpdate(){
+        const scale=Number(gsap.getProperty(hero,'scale'));
+        if(scale>1.06)gsap.set(hero,{scale:1.06});
+      }
+    },0.8);
+    timeline.to(hero,{scale:1,duration:0.09,ease:honeyEaseOut,overwrite:false},0.89);
+  }
   timeline.call(()=>bus?.emit({
-    id:'win-burst',sound:'win.burst',
+    id:'fx-confetti',sound:'fx.confetti',
     haptic:intensity>=3?'medium':intensity===2?'light':undefined,
     particles:0
-  }),null,0.85);
+  }),null,0.8);
   if(subline){
     timeline.to(subline,{
       opacity:0.9,duration:0.18,ease:honeyEaseOut,overwrite:'auto',

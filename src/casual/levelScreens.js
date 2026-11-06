@@ -67,6 +67,7 @@ function heroJar(marks){
         createElement('span',{className:'sgv-fluid-bubble sgv-fluid-bubble-c'})
       )
     ),
+    createElement('span',{className:'sgv-honey-gleam-sweep','aria-hidden':'true'}),
     createElement('span',{className:'sgv-glass-highlight sgv-glass-highlight-left'}),
     createElement('span',{className:'sgv-glass-highlight sgv-glass-highlight-right'}),
     createElement('span',{className:'sgv-glass-spark sgv-honey-gleam sgv-glass-spark-a'}),

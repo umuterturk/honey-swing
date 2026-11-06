@@ -2,11 +2,11 @@ import {burstParticles,burstRadius as burstTravel,flightDropletSize,flightDrople
 
 // Presentation geometry for the honey-jar win. Nothing here writes a score.
 // PM overrides: count D is 0.600s (0.200→0.800, power2.out), flight droplets are
-// 16/18/20 px, lip burst is 0.850s, subline 1.000→1.180, settle 1.300, CTA 1.700.
+// 16/18/20 px, confetti replaces the lip burst at 0.800, settle 1.300, CTA 1.700.
 export const HONEY_MOTION=Object.freeze({
   cap:2.5,
   settled:1.3,
-  scrim:Object.freeze({start:0,end:0.12,opacity:0.88}),
+  scrim:Object.freeze({start:0,end:0,opacity:0.92}),
   praise:Object.freeze({
     start:0,peakEnd:0.14,end:0.22,opacityEnd:0.1,
     fromScale:0.55,peakScale:1.14,toScale:1
@@ -16,7 +16,7 @@ export const HONEY_MOTION=Object.freeze({
     fadeIn:0.04,hold:0.2,fadeOut:0.08,lift:48
   }),
   count:Object.freeze({start:0.2,duration:0.6,end:0.8,ease:'power2.out'}),
-  burst:Object.freeze({start:0.85,life:0.38}),
+  burst:Object.freeze({start:0.8,life:0.55}),
   subline:Object.freeze({start:1,end:1.18,opacity:0.9}),
   cta:Object.freeze({start:1.3,end:1.7,from:0.35,to:1,leg:0.2})
 });
@@ -24,7 +24,7 @@ export const HONEY_MOTION=Object.freeze({
 // Overlay aliases. Component CSS mirrors these custom properties.
 export const HONEY_TOKENS=Object.freeze({
   scrim:'#1a0f12',
-  scrimOpacity:0.88,
+  scrimOpacity:0.92,
   backing:'transparent',
   backingOpacity:0,
   praise:Object.freeze({
@@ -40,13 +40,14 @@ export const HONEY_TOKENS=Object.freeze({
   subline:'#fff0cf',
   flight:'#f0c14a',
   flightEdge:'#c47a0a',
-  burst:Object.freeze(['#fff0cf','#f0c14a']),
+  burst:Object.freeze(['#fff0cf','#f0c14a','#ffe08a','#e8a317']),
   glassRim:'#acd7f7',
   easeOut:'cubic-bezier(.2,.8,.2,1)',
   easeBack:'cubic-bezier(.34,1.56,.64,1)'
 });
 
 const BURST_DIAMETER=Object.freeze([8,10,12]);
+const CONFETTI_SHAPE=Object.freeze(['circle','rect','drop']);
 const OVERFLOW=Object.freeze({
   1:Object.freeze([
     Object.freeze({kind:'bead',x:'65%',w:8,h:10}),
@@ -163,12 +164,15 @@ export function honeyLayout(width,height,insets={}){
   const short=safeH<520;
   const hud={x:left,y:top+HUD_PAD,w:safeW,h:HUD_H,bottom:top+HUD_PAD+HUD_H};
   const praiseH=58;
-  const praiseY=Math.max(top+24,hud.bottom+8);
+  const praiseY=top+24;
   const praiseX=left+16;
-  const praiseW=safeW-32;
+  const reset={x:width-right-16-44,y:top+16,w:44,h:44};
+  let praiseW=safeW-32;
+  if(praiseY<reset.y+reset.h&&praiseX+praiseW>reset.x)
+    praiseW=Math.max(120,reset.x-8-praiseX);
   const jarW=Math.min(220,0.62*safeW);
   const naturalH=jarW*1.25;
-  const numberH=72;
+  const numberH=80;
   const subH=24;
   const jarGap=10;
   const subGap=8;
@@ -177,9 +181,11 @@ export function honeyLayout(width,height,insets={}){
   const ctaY=height-bottom-16-ctaH;
   const limit=ctaY-16;
   let jarH=naturalH;
-  if(short)jarH=Math.min(jarH,Math.max(96,safeH-320));
+  if(short)jarH=Math.min(jarH,Math.max(96,safeH-328));
   const maxBody=limit-stageTop-jarGap-numberH-subGap-subH;
   if(maxBody>96)jarH=Math.min(jarH,maxBody);
+  const contentX=left+16;
+  const contentW=safeW-32;
   const jarX=left+(safeW-jarW)/2;
   const numberY=stageTop+jarH+jarGap;
   const subY=numberY+numberH+subGap;
@@ -191,12 +197,12 @@ export function honeyLayout(width,height,insets={}){
     },
     jar:{x:jarX,y:stageTop,w:jarW,h:jarH},
     number:{
-      x:praiseX,y:numberY,w:praiseW,h:numberH,
-      font:Math.min(72,Math.max(56,0.18*safeW))
+      x:contentX,y:numberY,w:contentW,h:numberH,
+      font:Math.min(80,Math.max(64,0.2*safeW))
     },
-    subline:{x:praiseX,y:subY,w:praiseW,h:subH,font:18},
-    cta:{x:praiseX,y:ctaY,w:praiseW,h:ctaH},
-    reset:{x:width-right-16-44,y:top+16,w:44,h:44}
+    subline:{x:contentX,y:subY,w:contentW,h:subH,font:18},
+    cta:{x:contentX,y:ctaY,w:contentW,h:ctaH},
+    reset
   };
 }
 
@@ -360,9 +366,13 @@ export function honeyParticles({t,tier=1,scale=1,source,mouth,flightCount=0,flig
       color:HONEY_TOKENS.flight,edge:HONEY_TOKENS.flightEdge
     });
   }
+  // Flight is finished by 0.480 (last emit 0.160 + life 0.320). Confetti starts
+  // at 0.800, so the two never share the pool. H3 peaks at 24, under the cap
+  // of 40, and confetti is not dropped to make room. Pieces stop at settle
+  // (1.300) so a 0.550s life cannot leave pieces past the settled card.
   const age=t-HONEY_MOTION.burst.start;
   const bursts=Math.floor(burstTotal*factor);
-  if(age>=0&&age<HONEY_MOTION.burst.life){
+  if(t<HONEY_MOTION.settled&&age>=0&&age<HONEY_MOTION.burst.life){
     const progress=age/HONEY_MOTION.burst.life;
     for(let index=0;index<bursts;index++){
       const pose=burstOffset(index,burstTotal,progress,travel);
@@ -373,6 +383,7 @@ export function honeyParticles({t,tier=1,scale=1,source,mouth,flightCount=0,flig
         x:mouth.x+pose.x,y:mouth.y+pose.y,opacity:pose.opacity,
         vx:velocity.vx,vy:velocity.vy,
         diameter,radius:diameter/2,
+        shape:CONFETTI_SHAPE[index%CONFETTI_SHAPE.length],
         color:HONEY_TOKENS.burst[index%HONEY_TOKENS.burst.length]
       });
     }

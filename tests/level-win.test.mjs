@@ -219,13 +219,13 @@ test('star thresholds match Appendix A for all 20 levels',()=>{
 });
 
 test('praise and bursts follow the star tier and never change the engine score',()=>{
-  assert.deepEqual(praiseFor(1),{tier:1,text:'Sweet!',sound:'praise.h1'});
-  assert.deepEqual(praiseFor(2),{tier:2,text:'Tasty!',sound:'praise.h2'});
-  assert.deepEqual(praiseFor(3),{tier:3,text:'Divine!',sound:'praise.h3'});
+  assert.deepEqual(praiseFor(1),{tier:1,text:'Nectar!',sound:'praise.nectar'});
+  assert.deepEqual(praiseFor(2),{tier:2,text:'Amber!',sound:'praise.amber'});
+  assert.deepEqual(praiseFor(3),{tier:3,text:'Hiveful!',sound:'praise.hiveful'});
   assert.equal(praiseFor(0),null);
   assert.equal(burstParticles(0),0);
-  assert.equal(burstParticles(1),12);
-  assert.equal(burstParticles(2),18);
+  assert.equal(burstParticles(1),16);
+  assert.equal(burstParticles(2),20);
   assert.equal(burstParticles(3),24);
   assert.ok(burstParticles(3)<=24);
   let round=newOnboardingRound(1);
@@ -235,23 +235,23 @@ test('praise and bursts follow the star tier and never change the engine score',
   const secured=round.game.deal.T;
   assert.ok(secured>=onboardingLevel(1).target);
   assert.equal(honeyTier(1,secured),3);
-  assert.equal(praiseFor(honeyTier(1,secured)).text,'Divine!');
+  assert.equal(praiseFor(honeyTier(1,secured)).text,'Hiveful!');
   assert.equal(round.game.deal.T,secured);
   const sweet=successPlan({victory:true,levelId:4,secured:11});
   assert.equal(sweet.tier,1);
   assert.equal(sweet.flight.size,16);
-  assert.equal(sweet.praise.text,'Sweet!');
-  assert.equal(sweet.burst.particles,12);
+  assert.equal(sweet.praise.text,'Nectar!');
+  assert.equal(sweet.burst.particles,16);
   assert.equal(sweet.count.to,11);
   const tasty=successPlan({victory:true,levelId:4,secured:18});
   assert.equal(tasty.tier,2);
   assert.equal(tasty.flight.size,18);
-  assert.equal(tasty.praise.text,'Tasty!');
-  assert.equal(tasty.burst.particles,18);
+  assert.equal(tasty.praise.text,'Amber!');
+  assert.equal(tasty.burst.particles,20);
   const divine=successPlan({victory:true,levelId:11,secured:32});
   assert.equal(divine.tier,3);
   assert.equal(divine.flight.size,20);
-  assert.equal(divine.praise.text,'Divine!');
+  assert.equal(divine.praise.text,'Hiveful!');
   assert.equal(divine.count.to,32);
   assert.equal(divine.burst.particles,24);
   assert.equal(divine.ctaAt,0);
@@ -269,7 +269,7 @@ test('praise and bursts follow the star tier and never change the engine score',
   assert.equal(reduced.particles,0);
   assert.equal(reduced.tier,3);
   assert.equal(reduced.flight.count,0);
-  assert.equal(reduced.praise.text,'Divine!');
+  assert.equal(reduced.praise.text,'Hiveful!');
   assert.equal(reduced.count.to,8);
 });
 
@@ -293,7 +293,7 @@ test('the count-up duration follows the digit cap and ends on the engine integer
 test('skip and settle land on the exact secured score, a full jar, and 0 particles',()=>{
   const secured=32;
   const stage=makeStage();
-  stage.praise.textContent='Divine!';
+  stage.praise.textContent='Hiveful!';
   const sounds=[];
   const bus=createFxBus({
     reducedMotion:()=>false,
@@ -319,8 +319,8 @@ test('skip and settle land on the exact secured score, a full jar, and 0 particl
   assert.equal(stage.tally.textContent,String(secured));
   handle.timeline.time(0.9);
   assert.equal(bus.liveParticles(),24);
-  assert.ok(sounds.includes('praise.h3'));
-  assert.ok(sounds.includes('win.burst'));
+  assert.ok(sounds.includes('praise.hiveful'));
+  assert.ok(sounds.includes('fx.confetti'));
   const speeds=bus.pool.live().map(particle=>Math.hypot(particle.vx,particle.vy));
   assert.ok(speeds.every(speed=>speed>0));
   assert.ok(new Set(speeds.map(speed=>speed.toFixed(3))).size>1);
@@ -338,7 +338,7 @@ test('skip and settle land on the exact secured score, a full jar, and 0 particl
 
 test('a killed tween at the hidden frame still shows the final card',()=>{
   const stage=makeStage();
-  stage.praise.textContent='Divine!';
+  stage.praise.textContent='Hiveful!';
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=playWinCelebration({
     victory:true,secured:8,target:5,tier:3,praise:stage.praise,liquid:stage.liquid,
@@ -359,7 +359,7 @@ test('a killed tween at the hidden frame still shows the final card',()=>{
 
 test('reduced motion shows the final card and emits 0 particles',()=>{
   const stage=makeStage();
-  stage.praise.textContent='Tasty!';
+  stage.praise.textContent='Amber!';
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=playWinCelebration({
     victory:true,secured:18,target:11,tier:2,praise:stage.praise,liquid:stage.liquid,
@@ -400,9 +400,10 @@ test('a fail plays no praise, stars, count-up, or particles',()=>{
   assert.doesNotMatch(lose,/sgv-win-praise|sgv-win-star|sgv-win-tally|Sweet!|Tasty!|Divine!/);
   const card=renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:true,score:32,target:9,label:'NEXT',
-    praise:{tier:3,text:'Divine!'}
+    praise:{tier:3,text:'Hiveful!'}
   }));
-  assert.match(card,/Divine!/);
+  assert.match(card,/Hiveful!/);
+  assert.doesNotMatch(card,/Sweet!|Tasty!|Divine!/);
   assert.match(card,/32 \/ 9/);
   assert.match(card,/>NEXT</);
   assert.equal((card.match(/sgv-win-star|data-star|★/g)||[]).length,0);
@@ -473,7 +474,7 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     const bus=host.querySelector('.sgv-fx-layer').__fxBus;
     assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.ok(liquid);
-    assert.equal(praise.textContent,'Divine!');
+    assert.equal(praise.textContent,'Hiveful!');
     assert.equal(subline.textContent,secured+' / 5');
     assert.equal(cta.disabled,false);
     assert.equal(cta.textContent,'NEXT');
@@ -502,7 +503,7 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     assert.ok(host.querySelector('.sgv-end-overlay'),'backdrop settles and stays on the card');
     assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
     assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
-    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Divine!');
+    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Hiveful!');
     assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.equal(host.querySelector('.sgv-fluid-fill').style.height,'78%');
     const shownPraise=host.querySelector('.sgv-win-praise');
@@ -577,7 +578,7 @@ test('reduced motion mounts the static final card with 0 particles',async()=>{
     const view=await mount();
     const host=view.host;
     const bus=host.querySelector('.sgv-fx-layer').__fxBus;
-    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Divine!');
+    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Hiveful!');
     assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
     assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');

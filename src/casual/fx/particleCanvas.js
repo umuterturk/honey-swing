@@ -96,17 +96,30 @@ export function createParticleCanvas({
     const x=(particle.x||0)*ratio;
     const y=(particle.y||0)*ratio;
     const alpha=particle.opacity==null?1:particle.opacity;
-    if(particle.edge){
-      ctx.globalAlpha=alpha;
-      ctx.fillStyle=particle.edge;
-      ctx.beginPath();
-      ctx.arc(x+2*ratio,y+2*ratio,radius,0,Math.PI*2);
-      ctx.fill();
-    }
     ctx.globalAlpha=alpha;
     ctx.fillStyle=particle.color||'#f0c14a';
     ctx.beginPath();
-    ctx.arc(x,y,radius,0,Math.PI*2);
+    if(particle.shape==='rect'){
+      const width=radius*2.2;
+      const height=radius*1.4;
+      const corner=Math.min(radius*0.45,4*ratio);
+      if(typeof ctx.roundRect==='function')
+        ctx.roundRect(x-width/2,y-height/2,width,height,corner);
+      else ctx.rect(x-width/2,y-height/2,width,height);
+    }else if(particle.shape==='drop'){
+      ctx.moveTo(x,y-radius*1.35);
+      ctx.bezierCurveTo(x+radius,y-radius*0.2,x+radius*0.85,y+radius,x,y+radius*1.15);
+      ctx.bezierCurveTo(x-radius*0.85,y+radius,x-radius,y-radius*0.2,x,y-radius*1.35);
+    }else{
+      if(particle.edge){
+        ctx.fillStyle=particle.edge;
+        ctx.arc(x+2*ratio,y+2*ratio,radius,0,Math.PI*2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.fillStyle=particle.color||'#f0c14a';
+      }
+      ctx.arc(x,y,radius,0,Math.PI*2);
+    }
     ctx.fill();
   }
   function draw(now){

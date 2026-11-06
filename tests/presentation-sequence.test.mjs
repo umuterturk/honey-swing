@@ -75,7 +75,7 @@ test('a win shows the committed score and CTA at t=0, and a loss does not',()=>{
   assert.equal(win.count.start,0.2);
   assert.equal(win.count.end,0.8);
   assert.equal(win.count.ease,'power2.out');
-  assert.equal(win.burst.start,0.85);
+  assert.equal(win.burst.start,0.8);
   assert.equal(win.subline.end,1.18);
   assert.equal(win.settled,1.3);
   assert.equal(win.cap,2.5);
