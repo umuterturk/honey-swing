@@ -608,3 +608,62 @@ test('reduced motion mounts the static final card with 0 particles',async()=>{
     await view.unmount();
   });
 });
+
+test('win FX stacks above the end card, under NEW!, and the CTA still receives the tap',async()=>{
+  await withStylesheet(async()=>{
+    const phone=document.createElement('div');
+    phone.className='sgv-phone';
+    phone.innerHTML=[
+      '<div class="sgv-fx-layer"><canvas class="sgv-fx-canvas"></canvas></div>',
+      '<div class="sgv-end-overlay"><button class="sgv-end-cta" type="button">NEXT</button></div>',
+      '<div class="sgv-feature-intro"></div>'
+    ].join('');
+    document.body.appendChild(phone);
+    const fx=win.getComputedStyle(phone.querySelector('.sgv-fx-layer'));
+    const end=win.getComputedStyle(phone.querySelector('.sgv-end-overlay'));
+    const intro=win.getComputedStyle(phone.querySelector('.sgv-feature-intro'));
+    const canvas=win.getComputedStyle(phone.querySelector('.sgv-fx-canvas'));
+    assert.ok(Number(fx.zIndex)>Number(end.zIndex),
+      'fx z-index '+fx.zIndex+' is not above the end overlay '+end.zIndex);
+    assert.ok(Number(fx.zIndex)<Number(intro.zIndex),
+      'fx z-index '+fx.zIndex+' covers the NEW! overlay '+intro.zIndex);
+    assert.equal(fx.pointerEvents,'none');
+    assert.equal(canvas.pointerEvents,'none');
+    phone.remove();
+
+    resetStorage();
+    const round=bankedLevel1();
+    saveRound(round);
+    const view=await mount();
+    const host=view.host;
+    host.style.width='390px';
+    host.style.height='844px';
+    const timeline=timelineOf(host.querySelector('.sgv-win-praise'));
+    assert.ok(timeline);
+    timeline.pause();
+    timeline.time(0.90);
+    const bus=host.querySelector('.sgv-fx-layer').__fxBus;
+    const fxLayer=host.querySelector('.sgv-fx-layer');
+    const overlay=host.querySelector('.sgv-end-overlay');
+    assert.ok(bus.liveParticles()>0,'the burst is live during the hit test');
+    const liveFx=win.getComputedStyle(fxLayer);
+    const liveEnd=win.getComputedStyle(overlay);
+    assert.ok(Number(liveFx.zIndex)>Number(liveEnd.zIndex));
+    assert.equal(liveFx.pointerEvents,'none');
+    assert.equal(win.getComputedStyle(fxLayer.querySelector('canvas')).pointerEvents,'none');
+    const cta=host.querySelector('.sgv-end-cta');
+    const blockers=[...host.querySelector('.sgv-phone').children].filter(node=>{
+      if(node===overlay||overlay.contains(node)||node.contains(cta))return false;
+      const style=win.getComputedStyle(node);
+      const covers=style.position==='absolute'&&style.inset==='0';
+      const z=Number(style.zIndex);
+      return covers&&style.pointerEvents!=='none'&&Number.isFinite(z)&&z>=Number(liveEnd.zIndex);
+    });
+    assert.deepEqual(blockers.map(node=>node.className),[],
+      'a full-screen layer above the card must not take the CTA tap');
+    await act(async()=>{tap(cta);});
+    assert.equal(host.querySelector('.sgv-end-overlay'),null);
+    assert.match(host.textContent,/Level 2/);
+    await view.unmount();
+  });
+});
