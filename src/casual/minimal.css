@@ -145,6 +145,20 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-end-symbol{font-size:65px;color:#ffca4c;text-shadow:0 5px #cc9134}
 .sgv-end-card h1{color:#dd578f;margin:5px 0 13px;font-size:29px}
 .sgv-end-card p{font-size:18px;color:#8b6954;font-weight:800}
+.sgv-win-praise{margin:0 0 6px;font-size:28px;font-weight:900;line-height:1.1;transform-origin:50% 50%}
+.sgv-win-praise-1{display:inline-block;padding:2px 12px;border-radius:999px;background:#fff0cf;color:#704b69}
+.sgv-win-praise-2{color:#f0c14a}
+.sgv-win-praise-3{color:#e8a23a}
+.sgv-win-stars{display:flex;justify-content:center;gap:8px;min-height:44px;margin:0 0 4px}
+.sgv-win-star{font-size:40px;line-height:1;color:#ffca4c;text-shadow:0 3px #cc9134;opacity:0;transform-origin:50% 50%}
+.sgv-win-static .sgv-win-star,.sgv-success-settled .sgv-win-star{opacity:1;transform:none}
+.sgv-win-tally{margin:0;font-size:32px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums;color:#8b633b}
+.sgv-win-cta-pulse{animation:sgv-win-cta-pulse .28s ease-out 1}
+@keyframes sgv-win-cta-pulse{
+  0%{outline:3px solid transparent;outline-offset:0}
+  40%{outline:3px solid #f0c14a;outline-offset:2px}
+  100%{outline:3px solid transparent;outline-offset:0}
+}
 .sgv-end-card button{min-width:80%;margin-top:10px;border:4px solid white;border-radius:22px;padding:15px;color:#fff;background:linear-gradient(#a6e594,#58c178);box-shadow:0 5px 0 #348f67;font-weight:1000;font-size:19px;cursor:pointer}
 
 @media(max-width:365px){
@@ -1238,10 +1252,12 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 @media(prefers-reduced-motion:reduce){
   .sgv-dock,.sgv-onboarding .sgv-flip[data-dock="true"],.sgv-glossary li,
   .sgv-level-banner,
-  .sgv-success-star,.sgv-success-pour .sgv-pending-pot,.sgv-orchard-hook{
+  .sgv-success-star,.sgv-success-pour .sgv-pending-pot,.sgv-orchard-hook,
+  .sgv-win-star,.sgv-win-cta-pulse{
     animation:none;opacity:1;transform:none;
   }
   .sgv-success-star{transform:translate(-50%,-50%) scale(1)}
+  .sgv-win-star{transform:none}
 }
 
 /* The modal covers the header; provide the same reset on its completion screen. */

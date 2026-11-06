@@ -7,9 +7,12 @@ export function FxLayer({bus}){
   useEffect(()=>{
     const node=rootRef.current;
     bus?.attach(node);
+    // Node tests load this file without Vite, so import.meta.env may be absent.
+    if(import.meta.env?.MODE!=='production'&&node)node.__fxBus=bus||null;
     return ()=>{
       bus?.settle();
       bus?.attach(null);
+      if(node&&node.__fxBus===bus)delete node.__fxBus;
     };
   },[bus]);
   return createElement('div',{
