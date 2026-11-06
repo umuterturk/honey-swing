@@ -112,6 +112,13 @@ export function createFxBus({
       const spec={event:event.id||'fx'};
       if(palette)spec.color=palette[index%palette.length];
       if(event.token)spec.token=event.token;
+      if(event.origin&&Number.isFinite(event.origin.x)&&Number.isFinite(event.origin.y)){
+        spec.x=event.origin.x;
+        spec.y=event.origin.y;
+        spec.origin=true;
+        spec.vx=0;
+        spec.vy=0;
+      }
       const particle=pool.spawn(spec);
       if(particle.alive)alive++;
     }

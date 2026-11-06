@@ -2,13 +2,21 @@ import {gsap} from 'gsap';
 
 const TRANSFORM_PROPS='transform,x,y,scale,xPercent,yPercent,rotation';
 const REDUCED_HOLD_MS=1100;
+const SNAP_NEXT=0.450;
+const SNAP_END=0.900;
 
-function showNode(node){
+function paintPersistent(node){
   if(!node?.style)return;
   try{gsap.killTweensOf(node);}catch{/* a dead tween still needs the visible end */}
   try{gsap.set(node,{clearProps:TRANSFORM_PROPS});}catch{/* drop the inline transform below */}
   node.style.removeProperty('transform');
   node.style.opacity='1';
+}
+
+function dropTransient(node){
+  if(!node)return;
+  try{gsap.killTweensOf(node);}catch{/* removal still has to happen */}
+  node.remove();
 }
 
 function linesOf(events){
@@ -41,6 +49,45 @@ function burstOf(events){
   return best;
 }
 
+function hostOf(root){
+  return root?.querySelector?.('.sgv-fx-layer')||root;
+}
+
+function anchorElement(root,event){
+  switch(event?.anchor){
+    case 'swing-pill': return root.querySelector('[data-factor="swing"]');
+    case 'flip-pill': return root.querySelector('[data-factor="flip"]');
+    case 'jar': return root.querySelector('.sgv-chest-mouth')||root.querySelector('.sgv-bank-command');
+    case 'card': return root.querySelector('.sgv-flying-card')||root.querySelector('.sgv-card');
+    case 'pot': return root.querySelector('.sgv-pending-pot');
+    default: return root.querySelector('.sgv-meter-track');
+  }
+}
+
+// Pixel origin inside the FX layer. Snap uses the meter edge in the
+// direction of the committed overshoot; every other anchor uses its center.
+function originFor(root,host,event){
+  const node=anchorElement(root,event);
+  if(!node)return null;
+  const a=node.getBoundingClientRect();
+  const b=(host||root).getBoundingClientRect();
+  const width=Number.isFinite(a.width)?a.width:0;
+  const right=Number.isFinite(a.right)?a.right:a.left+width;
+  const edge=event?.id==='snap'?(Number(event.to)<0?'left':'right'):null;
+  const x=edge==='left'?a.left-b.left:edge==='right'?right-b.left:a.left-b.left+width/2;
+  const y=a.top-b.top+(Number.isFinite(a.height)?a.height:0)/2;
+  return {x,y};
+}
+
+function pin(node,origin){
+  node.style.position='absolute';
+  node.style.pointerEvents='none';
+  if(!origin)return;
+  node.style.left=origin.x+'px';
+  node.style.top=origin.y+'px';
+  node.style.transform='translate(-50%, -50%)';
+}
+
 function buildCallout(events){
   const main=primary(events);
   const node=document.createElement('span');
@@ -48,7 +95,6 @@ function buildCallout(events){
   if(main?.magnitude==='M4'||main?.id==='snap')node.classList.add('sgv-fx-callout-danger');
   node.setAttribute('aria-hidden','true');
   node.style.fontSize=labelSize(events)+'px';
-  node.style.pointerEvents='none';
   const lines=linesOf(events);
   const amount=events.find(event=>event.amount!=null)?.amount;
   if(lines.length===1&&amount==null)node.textContent=lines[0];
@@ -68,12 +114,17 @@ function buildCallout(events){
   return node;
 }
 
-function layerOf(root){
-  return root?.querySelector?.('.sgv-fx-layer')||null;
+function lineCallout(text,event){
+  const node=document.createElement('span');
+  node.className='sgv-fx-callout sgv-fx-callout-snap sgv-fx-callout-danger';
+  node.setAttribute('aria-hidden','true');
+  node.style.fontSize=(event.labelPx||34)+'px';
+  node.textContent=text;
+  return node;
 }
 
 function clearPrevious(root){
-  for(const node of root.querySelectorAll?.('.sgv-fx-callout, .sgv-fx-halo')||[])node.remove();
+  for(const node of root?.querySelectorAll?.('.sgv-fx-callout, .sgv-fx-halo')||[])node.remove();
 }
 
 function seconds(ms){
@@ -90,25 +141,28 @@ export function playSignatures({events=[],root=null,bus=null,reduced=false}={}){
   const list=Array.isArray(events)?events.filter(Boolean):[];
   if(root)clearPrevious(root);
   if(!root||!list.length)return empty(0);
+  const host=hostOf(root);
   const nodes=[];
   const showFinal=()=>{
-    for(const node of nodes)showNode(node);
+    for(const node of nodes)dropTransient(node);
+    nodes.length=0;
+    clearPrevious(root);
     const meter=root.querySelector?.('.sgv-meter-track');
-    if(meter){
-      try{gsap.killTweensOf(meter);}catch{/* still clear the offset */}
-      try{gsap.set(meter,{clearProps:TRANSFORM_PROPS});}catch{/* inline style below */}
-      meter.style?.removeProperty('transform');
-    }
-    for(const pill of root.querySelectorAll?.('[data-factor]')||[])showNode(pill);
+    paintPersistent(meter);
+    for(const pill of root.querySelectorAll?.('[data-factor]')||[])paintPersistent(pill);
+  };
+  const place=(node,event)=>{
+    pin(node,originFor(root,host,event));
+    nodes.push(node);
   };
   if(reduced){
     const callout=buildCallout(list);
     callout.style.opacity='1';
-    root.appendChild(callout);
-    nodes.push(callout);
+    place(callout,primary(list));
+    host.appendChild(callout);
     let held=callout;
     const timer=setTimeout(()=>{
-      if(held?.parentNode)held.remove();
+      dropTransient(held);
       held=null;
     },REDUCED_HOLD_MS);
     timer.unref?.();
@@ -123,25 +177,53 @@ export function playSignatures({events=[],root=null,bus=null,reduced=false}={}){
   }
 
   const timeline=gsap.timeline({paused:true});
+  let stopped=false;
   const burst=burstOf(list);
   const particles=burst?.particles||0;
-  const textual=list.filter(event=>event.callout||(event.callouts&&event.callouts.length));
+  const snap=list.find(event=>event.id==='snap'&&Array.isArray(event.callouts));
+  const textual=list.filter(event=>event!==snap&&(event.callout||(event.callouts&&event.callouts.length)));
+  const mount=(node,when)=>{
+    const add=()=>{if(!stopped&&node.parentNode!==host)host.appendChild(node);};
+    if(when<=0)add();
+    else timeline.call(add,null,when);
+  };
+  const reveal=(node,start,end)=>{
+    timeline.fromTo(node,{opacity:0},{
+      opacity:1,duration:0.150,ease:'power2.out',overwrite:'auto'
+    },start);
+    timeline.to(node,{
+      opacity:0,duration:0.150,ease:'sine.in',overwrite:'auto'
+    },Math.max(start,end-0.150));
+    timeline.call(()=>{if(!stopped)dropTransient(node);},null,end);
+  };
+  if(snap){
+    const [first,second]=snap.callouts;
+    const lead=lineCallout(first,snap);
+    const follow=second?lineCallout(second,snap):null;
+    place(lead,snap);
+    mount(lead,0);
+    reveal(lead,0,SNAP_END);
+    if(follow){
+      place(follow,snap);
+      mount(follow,SNAP_NEXT);
+      reveal(follow,SNAP_NEXT,SNAP_END);
+    }
+  }
   if(textual.length){
     const when=Math.max(...textual.map(event=>event.at||0));
-    const entry=textual.find(event=>event.entry!=null)?.entry??textual[0].entry??0.150;
+    const entry=textual.find(event=>event.entry!=null)?.entry??0.150;
     const life=textual[0].life??0.900;
     const callout=buildCallout(textual);
     callout.style.opacity='0';
-    nodes.push(callout);
-    if(when===0)root.appendChild(callout);
-    else timeline.call(()=>{if(callout.parentNode!==root)root.appendChild(callout);},null,when);
+    place(callout,primary(textual));
+    mount(callout,when);
     timeline.fromTo(callout,{opacity:0},{
       opacity:1,duration:entry,ease:'power2.out',overwrite:'auto'
     },when);
     timeline.to(callout,{
       opacity:0,duration:0.150,ease:'sine.in',overwrite:'auto'
     },when+life-0.150);
-    timeline.call(()=>{if(!stopped)callout.remove();},null,when+life);
+    timeline.call(()=>{if(!stopped)dropTransient(callout);},null,when+life);
   }
   for(const event of list){
     const at=event.at||0;
@@ -149,11 +231,11 @@ export function playSignatures({events=[],root=null,bus=null,reduced=false}={}){
       const halo=document.createElement('span');
       halo.className='sgv-fx-halo';
       halo.setAttribute('aria-hidden','true');
-      halo.style.pointerEvents='none';
-      nodes.push(halo);
-      timeline.call(()=>{if(halo.parentNode!==root)root.appendChild(halo);},null,at);
+      place(halo,event);
+      mount(halo,at);
       timeline.fromTo(halo,{opacity:0},{opacity:0.85,duration:event.halo/2,ease:'power2.out',overwrite:'auto'},at);
       timeline.to(halo,{opacity:0,duration:event.halo/2,ease:'sine.in',overwrite:'auto'},at+event.halo/2);
+      timeline.call(()=>{if(!stopped)dropTransient(halo);},null,at+event.halo);
     }
     timeline.call(()=>{
       const spec={id:event.id,particles:0};
@@ -165,8 +247,7 @@ export function playSignatures({events=[],root=null,bus=null,reduced=false}={}){
     },null,at);
     if(event.flash&&event.flashMs>0){
       timeline.call(()=>{
-        const layer=layerOf(root);
-        layer?.classList?.remove('sgv-fx-flash','sgv-fx-flash-cream','sgv-fx-flash-red');
+        host?.classList?.remove('sgv-fx-flash','sgv-fx-flash-cream','sgv-fx-flash-red');
       },null,at+seconds(event.flashMs));
     }
     if(event.shake){
@@ -198,17 +279,15 @@ export function playSignatures({events=[],root=null,bus=null,reduced=false}={}){
   if(burst&&particles>0){
     const at=(burst.at||0)+(burst.particleDelay||0);
     const token=(burst.id||'fx')+':'+at;
+    const origin=originFor(root,host,burst);
     timeline.call(()=>{
-      bus?.emit({id:burst.id,particles,colors:burst.colors,token});
+      bus?.emit({id:burst.id,particles,colors:burst.colors,token,origin});
     },null,at);
-    // Drop this burst after the callout, so a finished signature does not
-    // keep the canvas frame loop awake. Skip still drains the whole pool.
     timeline.call(()=>{
       bus?.pool?.release?.(particle=>particle.token===token);
     },null,at+0.900);
   }
 
-  let stopped=false;
   let finishing=false;
   const nativeKill=timeline.kill.bind(timeline);
   timeline.kill=function(...args){

@@ -134,8 +134,8 @@ export function createParticleCanvas({
       const index=free.indexOf(particle);
       place(particle,index,free.length);
       if(particle.born==null)particle.born=now;
-      particle.x+=particle.vx*dt;
-      particle.y+=particle.vy*dt;
+      particle.x+=(particle.vx||0)*dt;
+      particle.y+=(particle.vy||0)*dt;
       const age=Math.max(0,(now-particle.born)/1000);
       const fade=particle.life>0?Math.max(0,1-age/particle.life):1;
       const originX=width/2;

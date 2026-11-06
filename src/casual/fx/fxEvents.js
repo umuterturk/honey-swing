@@ -49,7 +49,8 @@ export function fxEventsFromChange(change={},action={},level={}){
       sound:preset.sound,
       haptic:preset.haptic,
       colors:[...preset.colors],
-      anchor:preset.anchor
+      anchor:preset.anchor,
+      to:change.to
     }));
     return events;
   }

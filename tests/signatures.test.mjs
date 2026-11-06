@@ -441,11 +441,12 @@ test('only Snap shakes, on x, for 0.280s at 3px',async()=>{
     assert.equal(Number(gsap.getProperty(meter,'x'))||0,0);
     assert.equal(win.getComputedStyle(meter).animationName,'none');
     const callout=root.querySelector('.sgv-fx-callout');
-    assert.match(callout.textContent,/SNAP!/);
-    assert.match(callout.textContent,/Pot lost\. Bank safe\./);
+    assert.equal(callout.textContent,'SNAP!');
+    assert.doesNotMatch(callout.textContent,/Pot lost/);
     assert.doesNotMatch(callout.textContent,PRAISE);
     assert.equal(root.querySelectorAll('.sgv-fx-callout').length,1);
     handle.cancel();
+    assert.equal(root.querySelectorAll('.sgv-fx-callout, .sgv-fx-halo').length,0);
     root.remove();
 
     const quiet=stage();
@@ -554,9 +555,8 @@ test('killing a signature paints the final state and one tap clears the fx',()=>
     actions:[{type:'steer',index:0},{type:'steer',index:0}]
   });
   handle.cancel();
-  assert.equal(callout.style.opacity,'1');
-  assert.equal(callout.style.transform||'','');
-  assert.doesNotMatch(callout.style.transform||'',/scale\(0\)|translate/);
+  assert.equal(callout.isConnected,false);
+  assert.equal(root.querySelectorAll('.sgv-fx-callout, .sgv-fx-halo').length,0);
   assert.equal(gsap.getTweensOf(callout).length,0);
   assert.equal(bus.liveParticles(),0);
   assert.equal(bus.tweenCount(),0);
@@ -588,11 +588,121 @@ test('killing a signature paints the final state and one tap clears the fx',()=>
   assert.equal(layer.classList.contains('sgv-fx-flash-cream'),false);
   assert.equal(layer.classList.contains('sgv-fx-shake'),false);
   assert.equal(pill.style.transform||'','');
+  assert.equal(pill.style.opacity,'1');
   assert.equal(gsap.getTweensOf(pill).length,0);
   assert.equal(Number(gsap.getProperty(meter,'x'))||0,0);
-  const entry=gsap.getTweensOf(root.querySelector('.sgv-fx-callout'))
-    .find(tween=>tween.vars.ease==='power2.out');
-  assert.equal(entry,undefined);
+  assert.equal(meter.style.opacity,'1');
+  assert.equal(root.querySelectorAll('.sgv-fx-callout, .sgv-fx-halo').length,0);
+  const zeroed=commit(10,[
+    {type:'steer',index:0},{type:'steer',index:0},{type:'steer',index:0}
+  ]);
+  const zeroPlay=playSignatures({
+    events:fxEventsFromChange(zeroed.steps[2].change,zeroed.steps[2].action,zeroed.level),
+    root,bus,reduced:false
+  });
+  zeroPlay.timeline.pause();
+  zeroPlay.timeline.time(0.05);
+  assert.match(root.querySelector('.sgv-fx-callout').textContent,/Pot safe\./);
+  assert.ok(root.querySelector('.sgv-fx-halo'));
+  zeroPlay.cancel();
+  assert.equal(root.querySelectorAll('.sgv-fx-callout, .sgv-fx-halo').length,0);
+  assert.equal(bus.liveParticles(),0);
+  root.remove();
+});
+
+function stubRect(node,rect){
+  node.getBoundingClientRect=()=>rect;
+}
+function anchorPoint(node,layer){
+  const a=node.getBoundingClientRect();
+  const b=layer.getBoundingClientRect();
+  return {x:a.left-b.left+a.width/2,y:a.top-b.top+a.height/2};
+}
+
+test('callouts and particles originate at the jar lip and the swing pill',()=>{
+  const root=stage();
+  const layer=root.querySelector('.sgv-fx-layer');
+  const lip=root.querySelector('.sgv-chest-mouth');
+  const pill=root.querySelector('[data-factor="swing"]');
+  stubRect(layer,{left:10,top:20,width:300,height:600,right:310,bottom:620});
+  stubRect(lip,{left:110,top:80,width:4,height:4,right:114,bottom:84});
+  stubRect(pill,{left:40,top:100,width:60,height:30,right:100,bottom:130});
+  const lipOrigin=anchorPoint(lip,layer);
+  const pillOrigin=anchorPoint(pill,layer);
+  const {bus}=busOf();
+  bus.attach(layer);
+  const banked=commit(4,[{type:'steer',index:0},{type:'steer',index:0},{type:'bank'}]);
+  const bank=playSignatures({
+    events:fxEventsFromChange(banked.steps[2].change,banked.steps[2].action,banked.level),
+    root,bus,reduced:false
+  });
+  bank.timeline.pause();
+  bank.timeline.time(0.02);
+  const bankCall=layer.querySelector('.sgv-fx-callout');
+  assert.equal(bankCall.parentNode,layer);
+  assert.equal(bankCall.style.left,lipOrigin.x+'px');
+  assert.equal(bankCall.style.top,lipOrigin.y+'px');
+  bank.timeline.time(0.20);
+  const bankBits=bus.pool.live().filter(particle=>particle.origin);
+  assert.ok(bankBits.length>0);
+  for(const particle of bankBits){
+    assert.equal(particle.x,lipOrigin.x);
+    assert.equal(particle.y,lipOrigin.y);
+  }
+  bank.cancel();
+  const swung=commit(3,[{type:'steer',index:0},{type:'steer',index:0}]);
+  const swing=playSignatures({
+    events:fxEventsFromChange(swung.steps[1].change,swung.steps[1].action,swung.level),
+    root,bus,reduced:false
+  });
+  swing.timeline.pause();
+  swing.timeline.time(0.20);
+  const swingCall=layer.querySelector('.sgv-fx-callout');
+  assert.equal(swingCall.parentNode,layer);
+  assert.equal(swingCall.style.left,pillOrigin.x+'px');
+  assert.equal(swingCall.style.top,pillOrigin.y+'px');
+  const swingBits=bus.pool.live().filter(particle=>particle.origin);
+  assert.ok(swingBits.length>0);
+  for(const particle of swingBits){
+    assert.equal(particle.x,pillOrigin.x);
+    assert.equal(particle.y,pillOrigin.y);
+  }
+  swing.cancel();
+  root.remove();
+});
+
+test('normal Snap shows SNAP! before the loss line and finishes by 0.900s',()=>{
+  const root=stage();
+  const {level,steps}=commit(11,[
+    {type:'flip'},{type:'flip'},{type:'flip'},{type:'steer',index:0}
+  ]);
+  const {bus}=busOf();
+  bus.attach(root.querySelector('.sgv-fx-layer'));
+  const handle=playSignatures({
+    events:fxEventsFromChange(steps[3].change,steps[3].action,level),
+    root,bus,reduced:false
+  });
+  const timeline=handle.timeline;
+  timeline.pause();
+  timeline.time(0.10);
+  assert.equal(root.querySelector('.sgv-fx-callout').textContent,'SNAP!');
+  assert.equal(root.querySelectorAll('.sgv-fx-callout').length,1);
+  timeline.time(0.50);
+  const lines=[...root.querySelectorAll('.sgv-fx-callout')].map(node=>node.textContent);
+  assert.ok(lines.includes('SNAP!'));
+  assert.ok(lines.includes('Pot lost. Bank safe.'));
+  timeline.time(0.900);
+  assert.equal(root.querySelectorAll('.sgv-fx-callout, .sgv-fx-halo').length,0);
+  const reduced=playSignatures({
+    events:fxEventsFromChange(steps[3].change,steps[3].action,level),
+    root,bus,reduced:true
+  });
+  const staticLines=reduced&&root.querySelector('.sgv-fx-callout').textContent;
+  assert.match(staticLines,/SNAP!/);
+  assert.match(staticLines,/Pot lost\. Bank safe\./);
+  assert.equal(gsap.getTweensOf(root.querySelector('.sgv-fx-callout')).length,0);
+  reduced.cancel();
+  assert.equal(root.querySelectorAll('.sgv-fx-callout').length,0);
   root.remove();
 });
 
@@ -999,8 +1109,8 @@ test('one tap during a bank signature clears particles, tweens, flash, and shake
     assert.equal(bus.liveParticles(),0);
     assert.equal(bus.tweenCount(),0);
     assert.equal(gsap.getTweensOf(callout).length,0);
-    assert.equal(callout.style.opacity,'1');
-    assert.equal(callout.style.transform||'','');
+    assert.equal(callout.isConnected,false);
+    assert.equal(host.querySelectorAll('.sgv-fx-callout, .sgv-fx-halo').length,0);
     assert.equal(layer.classList.contains('sgv-fx-flash'),false);
     assert.equal(layer.classList.contains('sgv-fx-shake'),false);
     assert.equal(Number(gsap.getProperty(host.querySelector('.sgv-meter-track'),'x'))||0,0);
