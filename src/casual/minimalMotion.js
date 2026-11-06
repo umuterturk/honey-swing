@@ -349,6 +349,18 @@ export function animateFactorReset(root){
   return ()=>{tw.kill();gsap.set(targets,{clearProps:'y,filter'});};
 }
 
+// A normal Bank builds the lip-to-lip timeline. Reduced motion keeps the
+// committed totals and a static +N at the Bank mouth instead of the stream.
+export function chooseBankPour({
+  reduced=false,hasRoot=false,hasSource=false,fromScore=0,toScore=0
+}={}){
+  const canScore=toScore>fromScore;
+  return {
+    timeline:!!(hasRoot&&hasSource&&!reduced&&canScore),
+    static:!!(hasRoot&&reduced&&canScore)
+  };
+}
+
 // Presentation-only choreography. Geometry is measured from real bottle lips:
 // first bring the Pot mouth above the Bank mouth, then pour a short stream.
 // Payouts and legal moves continue to come exclusively from the engine.
@@ -361,10 +373,13 @@ export function animateBankPour({
     onCount(toScore);
     onComplete();
   };
+  const choice=chooseBankPour({
+    reduced:reducedMotion(),hasRoot:!!root,hasSource:!!source,fromScore,toScore
+  });
   clearStatic();
-  if(!root||!source||reducedMotion()||toScore<=fromScore){
+  if(!choice.timeline){
     settle();
-    return root&&reducedMotion()?showReducedBank(root,fromScore,toScore):()=>{};
+    return choice.static?showReducedBank(root,fromScore,toScore):()=>{};
   }
   const bank=root.querySelector('.sgv-chest-body');
   const mouth=root.querySelector('.sgv-chest-mouth');
