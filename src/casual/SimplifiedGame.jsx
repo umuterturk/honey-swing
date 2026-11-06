@@ -5,6 +5,7 @@ import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.j
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour} from './minimalMotion.js';
 import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
+import {idleHintAction} from './idleHint.js';
 import {ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress} from './onboardingProgress.js';
 import {
   newOnboardingRound,onboardingLevel,onboardingActions,onboardingFinished,
@@ -58,11 +59,10 @@ export default function SimplifiedGame(){
   const remaining=deal.deck.length-deal.pos;
   const hearts=Math.max(0,level.maxSnaps-view.snaps);
   const shownHand=deal.hand.slice(0,level.visibleHandSlots);
-  const bankPulse=pulse&&canBank;
-  const flipLed=level.pulse==='flip'||(level.pulse==='card-then-flip'&&deal.S!==0&&canFlip);
-  const flipPulse=pulse&&!canBank&&canFlip&&(flipLed||!available.some(a=>a.type==='steer'));
-  const pulseIndex=!pulse||bankPulse||flipPulse?null:
-    available.find(a=>a.type==='steer')?.index;
+  const hint=pulse?idleHintAction(round):null;
+  const bankPulse=hint?.type==='bank';
+  const flipPulse=hint?.type==='flip';
+  const pulseIndex=hint?.type==='steer'?hint.index:null;
 
   useEffect(()=>()=>{
     presentationRef.current.abandon();
