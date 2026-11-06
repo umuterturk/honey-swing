@@ -20,6 +20,7 @@ const make=spec=>Object.freeze({
   showMeter:true,
   showFlip:spec.deck.length>spec.hand,
   showChances:spec.id>=11,
+  showSnapOverlap:spec.id>=11,
   visibleFactors:Object.freeze(spec.factors.slice()),
   rules:Object.freeze({
     ...CASUAL_RULES,
