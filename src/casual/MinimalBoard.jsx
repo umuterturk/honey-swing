@@ -1,5 +1,6 @@
 import React from 'react';
 import {meterPercent,meterMarks} from './meterScale.js';
+import {flipBandView} from './flipLandingBand.js';
 import {fluidFillPercent} from './presentation.js';
 import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from './cardDirection.js';
 
@@ -19,14 +20,37 @@ export function DropletIcon({className=''}) {
  </svg>;
 }
 
-export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=null,showDanger=true,beat='',dock=null}){
+export function FlipLandingBand({band,reduced=false}){
+ const view=flipBandView(band,{reduced});
+ if(view.hidden)return null;
+ const span=band.single?0:Math.max(0,band.right-band.left);
+ return <div className={'sgv-flip-band'+(band.single?' sgv-flip-band-mark':'')+(view.animate?'':' sgv-flip-band-reduced')+(band.danger?' sgv-flip-band-has-danger':'')}
+   style={band.single?{left:band.left+'%'}:{left:band.left+'%',width:span+'%'}}
+   aria-hidden="true">
+   {band.segments.map(segment=>{
+     const width=Math.max(0,segment.right-segment.left);
+     return <span key={segment.side}
+       className={'sgv-flip-band-danger sgv-flip-band-hatch'+(segment.chevron?' sgv-flip-band-chevron sgv-flip-band-chevron-'+segment.side:'')}
+       style={{left:(span?((segment.left-band.left)/span)*100:0)+'%',width:(span?(width/span)*100:0)+'%'}}/>;
+   })}
+   {view.ticks.map(tick=><span key={tick.value+(tick.chevron||'')}
+     className={'sgv-flip-band-tick'+(tick.chevron?' sgv-flip-band-chevron-'+tick.chevron:'')}
+     style={{left:(band.single?50:(span?((tick.percent-band.left)/span)*100:0))+'%'}}/>)}
+   {band.chevronMin&&<span className="sgv-flip-band-chevron sgv-flip-band-chevron-left"/>}
+   {band.chevronMax&&<span className="sgv-flip-band-chevron sgv-flip-band-chevron-right"/>}
+ </div>;
+}
+
+export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=null,showDanger=true,beat='',dock=null,band=null,reduced=false}){
  const percentage=meterPercent(position,limit);
+ const bandName=band?.aria?'; '+band.aria:'';
  return <section className="sgv-meter-section" aria-label="Swing meter and multipliers">
    <div className="sgv-meter-caption"><span className="sgv-meter-name">SWING</span></div>
    <div className="sgv-meter" role="group" data-value={position}
-     aria-label={'Swing at '+directionalValue(position)+(showDanger?'; Snap beyond '+limit+' left or '+limit+' right':'')}>
+     aria-label={'Swing at '+directionalValue(position)+(showDanger?'; Snap beyond '+limit+' left or '+limit+' right':'')+bandName}>
      <div className="sgv-meter-track" role="img" data-edge-danger={showDanger&&Math.abs(position)>=limit-2}
-       aria-label={'Swing position '+directionalValue(position)}>
+       aria-label={'Swing position '+directionalValue(position)+bandName}>
+       <FlipLandingBand band={band} reduced={reduced}/>
        <div className="sgv-meter-scale" aria-hidden="true">
          <div className="sgv-meter-ticks">
            {meterMarks(limit).map(number=>

@@ -7,6 +7,7 @@ import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './pres
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,successTap,takeFirstOutcome} from './presentationSequence.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
 import {clearWinMemo,idleHintAction} from './idleHint.js';
+import {flipChosenPayload,flipLandingBand,nextFlipBandShown} from './flipLandingBand.js';
 import {bankAssistiveMessage,nextBankAnnouncement} from './bankStatus.js';
 import {focusTargetAfterSkip,isSkipKey,rememberFocus} from './skipFocus.js';
 import {ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress} from './onboardingProgress.js';
@@ -57,7 +58,7 @@ export default function SimplifiedGame(){
   const resetMotionRef=useRef(null),lossMotionRef=useRef(null),breakMotionRef=useRef(null);
   const seenFactorsRef=useRef(new Set());
   const priorFocusRef=useRef(null),skipFocusedRef=useRef(false);
-  const bankAnnounceRef=useRef(null);
+  const bankAnnounceRef=useRef(null),bandEventRef=useRef(null);
   const [bankLive,setBankLive]=useState('');
   const level=onboardingLevel(round.levelId);
   const {game}=round,deal=game.deal;
@@ -76,6 +77,9 @@ export default function SimplifiedGame(){
   const shownHand=deal.hand.slice(0,level.visibleHandSlots);
   const bankMessage=bankAssistiveMessage(round);
   const hint=pulse?idleHintAction(round):null;
+  const flipBand=flipLandingBand(round);
+  const reducedMotion=typeof window!=='undefined'&&
+    window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const bankPulse=hint?.type==='bank';
   const flipPulse=hint?.type==='flip';
   const pulseIndex=hint?.type==='steer'?hint.index:null;
@@ -115,6 +119,14 @@ export default function SimplifiedGame(){
     },3000);
     return ()=>clearTimeout(timer);
   },[animating,round.turn,round.levelId,finished,level.id]);
+  useEffect(()=>{
+    const next=nextFlipBandShown(bandEventRef.current,level.id,flipBand);
+    bandEventRef.current=next.key;
+    if(!next.payload)return;
+    event(next.payload.name,{
+      level:next.payload.level,min:next.payload.min,max:next.payload.max,snapRisk:next.payload.snapRisk
+    });
+  },[flipBand,level.id]);
   useEffect(()=>{
     const root=rootRef.current;
     if(!root)return;
@@ -203,6 +215,10 @@ export default function SimplifiedGame(){
           snap:change.snap,zeroBreak:change.zeroBreak,bankGain:change.bankGain
         });
         if(round.turn===0)event('first_action',{level:level.id});
+        if(action.type==='flip'){
+          const chosen=flipChosenPayload(level.id,flipLandingBand(round));
+          event(chosen.name,{level:chosen.level,snapRisk:chosen.snapRisk});
+        }
         if(change.snap)event('snap',{level:level.id});
         if(change.zeroBreak)event('zero_break',{level:level.id});
         change.rewards.forEach(({kind,value})=>event('factor_changed',{level:level.id,kind,value}));
@@ -375,7 +391,8 @@ export default function SimplifiedGame(){
       <div className="sgv-middle">
         <HorizontalMeter position={view.position} limit={level.rules.snapLimit}
           multipliers={view.factors} visibleFactors={level.visibleFactors}
-          showDanger={level.showChances} beat={ack&&ack.kind!=='bank'?ack.text:beat} dock={docking?level.dock:null}/>
+          showDanger={level.showChances} beat={ack&&ack.kind!=='bank'?ack.text:beat} dock={docking?level.dock:null}
+          band={flipBand} reduced={reducedMotion}/>
         <span className="sgv-flight-center" aria-hidden="true"/>
         <div className="sgv-bottle-pair" aria-label="Pending Pot and secured glass">
           <PendingPot value={potDisplay} target={level.target}
