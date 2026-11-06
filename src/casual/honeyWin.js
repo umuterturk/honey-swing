@@ -6,7 +6,7 @@ import {burstParticles,burstRadius as burstTravel,flightDropletSize,flightDrople
 export const HONEY_MOTION=Object.freeze({
   cap:2.5,
   settled:1.3,
-  scrim:Object.freeze({start:0,end:0.12,opacity:0.72}),
+  scrim:Object.freeze({start:0,end:0.12,opacity:0.88}),
   praise:Object.freeze({
     start:0,peakEnd:0.14,end:0.22,opacityEnd:0.1,
     fromScale:0.55,peakScale:1.14,toScale:1
@@ -24,9 +24,9 @@ export const HONEY_MOTION=Object.freeze({
 // Overlay aliases. Component CSS mirrors these custom properties.
 export const HONEY_TOKENS=Object.freeze({
   scrim:'#1a0f12',
-  scrimOpacity:0.72,
-  backing:'#1a0f12',
-  backingOpacity:0.08,
+  scrimOpacity:0.88,
+  backing:'transparent',
+  backingOpacity:0,
   praise:Object.freeze({
     1:Object.freeze({fill:'#fff0cf',outline:'#704b69'}),
     2:Object.freeze({fill:'#f0c14a',outline:'#5a3a12'}),
@@ -126,7 +126,9 @@ function composite(top,alpha,bottom){
 export function compositeBacking(board=[255,255,255]){
   const ink=hexChannels(HONEY_TOKENS.scrim);
   const scrim=composite(ink,HONEY_TOKENS.scrimOpacity,board);
-  const text=composite(ink,HONEY_TOKENS.backingOpacity,scrim);
+  const text=HONEY_TOKENS.backingOpacity>0
+    ?composite(ink,HONEY_TOKENS.backingOpacity,scrim)
+    :scrim;
   return {text,scrim};
 }
 
@@ -147,6 +149,10 @@ export function contrastRatio(hex,background){
   return (lighter+0.05)/(darker+0.05);
 }
 
+const FILL_MAX=78;
+const HUD_PAD=10;
+const HUD_H=54;
+
 export function honeyLayout(width,height,insets={}){
   const top=Number(insets.top)||0;
   const right=Number(insets.right)||0;
@@ -155,39 +161,70 @@ export function honeyLayout(width,height,insets={}){
   const safeW=width-left-right;
   const safeH=height-top-bottom;
   const short=safeH<520;
-  const jarW=Math.min(200,0.58*safeW);
-  const jarH=jarW*1.25;
-  const numberH=short?48:64;
-  const subH=short?20:24;
-  const jarGap=short?8:10;
-  const subGap=short?4:8;
-  const stageTop=top+(short?80:84);
-  const stageBottom=height-bottom-(short?88:96);
-  const cluster=jarH+jarGap+numberH+subGap+subH;
-  const lead=Math.max(0,(stageBottom-stageTop-cluster)/2);
-  const jarY=stageTop+lead;
-  const numberY=jarY+jarH+jarGap;
+  const hud={x:left,y:top+HUD_PAD,w:safeW,h:HUD_H,bottom:top+HUD_PAD+HUD_H};
+  const praiseH=58;
+  const praiseY=Math.max(top+24,hud.bottom+8);
+  const praiseX=left+16;
+  const praiseW=safeW-32;
+  const jarW=Math.min(220,0.62*safeW);
+  const naturalH=jarW*1.25;
+  const numberH=72;
+  const subH=24;
+  const jarGap=10;
+  const subGap=8;
+  const stageTop=praiseY+praiseH+12;
+  const ctaH=56;
+  const ctaY=height-bottom-16-ctaH;
+  const limit=ctaY-16;
+  let jarH=naturalH;
+  if(short)jarH=Math.min(jarH,Math.max(96,safeH-320));
+  const maxBody=limit-stageTop-jarGap-numberH-subGap-subH;
+  if(maxBody>96)jarH=Math.min(jarH,maxBody);
+  const jarX=left+(safeW-jarW)/2;
+  const numberY=stageTop+jarH+jarGap;
   const subY=numberY+numberH+subGap;
-  const contentX=left+16;
-  const contentW=safeW-32;
   return {
-    safeW,safeH,short,
+    safeW,safeH,short,hud,
     praise:{
-      x:contentX,y:top+14,w:contentW,h:58,
+      x:praiseX,y:praiseY,w:praiseW,h:praiseH,
       font:Math.min(44,Math.max(36,36+(safeW-320)*8/70))
     },
-    jar:{x:left+(safeW-jarW)/2,y:jarY,w:jarW,h:jarH},
+    jar:{x:jarX,y:stageTop,w:jarW,h:jarH},
     number:{
-      x:contentX,y:numberY,w:contentW,h:numberH,
-      font:Math.min(56,Math.max(40,0.12*safeW))
+      x:praiseX,y:numberY,w:praiseW,h:numberH,
+      font:Math.min(72,Math.max(56,0.18*safeW))
     },
-    subline:{
-      x:contentX,y:subY,w:contentW,h:subH,
-      font:Math.min(18,Math.max(15,0.042*safeW))
-    },
-    cta:{x:contentX,y:height-bottom-16-56,w:contentW,h:56},
-    reset:{x:left+8,y:top+109,w:44,h:44}
+    subline:{x:praiseX,y:subY,w:praiseW,h:subH,font:18},
+    cta:{x:praiseX,y:ctaY,w:praiseW,h:ctaH},
+    reset:{x:width-right-16-44,y:top+16,w:44,h:44}
   };
+}
+
+export function fillHeightPercent(tally,target){
+  return FILL_MAX*fillFraction(tally,target);
+}
+
+export function applyHoneyLayout(node,width,height,insets){
+  if(!node||!(width>0)||!(height>0))return null;
+  const layout=honeyLayout(width,height,insets);
+  const set=(name,value)=>node.style.setProperty(name,value);
+  set('--honey-praise-top',layout.praise.y+'px');
+  set('--honey-praise-left',layout.praise.x+'px');
+  set('--honey-praise-width',layout.praise.w+'px');
+  set('--honey-praise-height',layout.praise.h+'px');
+  set('--honey-praise-font',layout.praise.font+'px');
+  set('--honey-jar-top',layout.jar.y+'px');
+  set('--honey-jar-left',layout.jar.x+'px');
+  set('--honey-jar-width',layout.jar.w+'px');
+  set('--honey-jar-height',layout.jar.h+'px');
+  set('--honey-count-top',layout.number.y+'px');
+  set('--honey-count-height',layout.number.h+'px');
+  set('--honey-count-font',layout.number.font+'px');
+  set('--honey-sub-top',layout.subline.y+'px');
+  set('--honey-sub-font',layout.subline.font+'px');
+  set('--honey-reset-top',layout.reset.y+'px');
+  set('--honey-reset-right',(width-layout.reset.x-layout.reset.w)+'px');
+  return layout;
 }
 
 export function fillFraction(tally,target){

@@ -314,7 +314,7 @@ test('skip and settle land on the exact secured score, a full jar, and 0 particl
   assert.ok(opacityOf(stage.praise)>0);
   handle.timeline.time(0.5);
   assert.equal(stage.tally.textContent,'28');
-  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(stage.liquid.style.height,'78%');
   handle.timeline.time(0.8);
   assert.equal(stage.tally.textContent,String(secured));
   handle.timeline.time(0.9);
@@ -329,7 +329,7 @@ test('skip and settle land on the exact secured score, a full jar, and 0 particl
   assert.equal(bus.liveParticles(),0);
   assert.equal(stage.tally.textContent,String(secured));
   assert.equal(stage.praise.style.opacity,'1');
-  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(stage.liquid.style.height,'78%');
   assert.equal(stage.subline.style.opacity,'0.9');
   assert.equal(gsap.getTweensOf(stage.praise).length,0);
   assert.equal(stage.cta.disabled,false);
@@ -352,7 +352,7 @@ test('a killed tween at the hidden frame still shows the final card',()=>{
   assert.equal(bus.liveParticles(),0);
   assert.equal(stage.tally.textContent,'8');
   assert.equal(stage.praise.style.opacity,'1');
-  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(stage.liquid.style.height,'78%');
   assert.doesNotMatch(stage.praise.style.transform||'',/scale\(0/);
   stage.remove();
 });
@@ -372,7 +372,7 @@ test('reduced motion shows the final card and emits 0 particles',()=>{
   assert.equal(gsap.getTweensOf(stage.praise).length,0);
   assert.equal(stage.tally.textContent,'18');
   assert.equal(stage.praise.style.opacity,'1');
-  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(stage.liquid.style.height,'78%');
   stage.remove();
 });
 
@@ -406,7 +406,8 @@ test('a fail plays no praise, stars, count-up, or particles',()=>{
   assert.match(card,/32 \/ 9/);
   assert.match(card,/>NEXT</);
   assert.equal((card.match(/sgv-win-star|data-star|★/g)||[]).length,0);
-  assert.match(card,/sgv-honey-jar/);
+  assert.match(card,/sgv-chest-body/);
+  assert.match(card,/sgv-fluid-surface/);
   assert.match(card,/sgv-win-tally/);
 });
 
@@ -464,7 +465,7 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     const view=await mount();
     const host=view.host;
     const praise=host.querySelector('.sgv-win-praise');
-    const liquid=host.querySelector('.sgv-honey-liquid');
+    const liquid=host.querySelector('.sgv-fluid-fill');
     const tally=host.querySelector('.sgv-win-tally');
     const subline=host.querySelector('.sgv-honey-subline');
     const cta=host.querySelector('.sgv-end-cta');
@@ -476,10 +477,15 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     assert.equal(subline.textContent,secured+' / 5');
     assert.equal(cta.disabled,false);
     assert.equal(cta.textContent,'NEXT');
-    const reset=host.querySelector('.sgv-honey-win .sgv-end-reset');
+    const reset=host.querySelector('.sgv-honey-reset');
     const resetStyle=win.getComputedStyle(reset);
     assert.equal(resetStyle.width,'44px');
     assert.equal(resetStyle.minWidth,'44px');
+    assert.equal(reset.getAttribute('aria-label'),'Reset progress');
+    assert.equal(reset.textContent,'↻');
+    assert.equal(resetStyle.overflow,'visible');
+    assert.equal(resetStyle.borderTopWidth,'0px');
+    assert.equal(resetStyle.fontSize,'22px');
     const timeline=timelineOf(praise);
     assert.ok(timeline,'the win card plays a celebration timeline');
     timeline.pause();
@@ -498,7 +504,7 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
     assert.equal(host.querySelector('.sgv-win-praise').textContent,'Divine!');
     assert.equal(host.querySelector('.sgv-win-star'),null);
-    assert.match(host.querySelector('.sgv-honey-liquid').style.transform,/scaleY\(1\)/);
+    assert.equal(host.querySelector('.sgv-fluid-fill').style.height,'78%');
     const shownPraise=host.querySelector('.sgv-win-praise');
     assert.equal(shownPraise.style.opacity,'1');
     assert.equal(win.getComputedStyle(shownPraise).opacity,'1');
@@ -575,7 +581,7 @@ test('reduced motion mounts the static final card with 0 particles',async()=>{
     assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
     assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
-    assert.match(host.querySelector('.sgv-honey-liquid').style.transform,/scaleY\(1\)/);
+    assert.equal(host.querySelector('.sgv-fluid-fill').style.height,'78%');
     assert.equal(bus.liveParticles(),0);
     assert.equal(bus.tweenCount(),0);
     assert.equal(gsap.getTweensOf(host.querySelector('.sgv-win-praise')).length,0);

@@ -121,41 +121,27 @@ test('count-up is a fixed 0.600s power2.out and ends on the engine integer',()=>
   }
 });
 
-test('layout reserves the spec slots at 320, 430, and a short safe height',()=>{
+test('layout clears the HUD and keeps the jar, count, and reset apart',()=>{
   const small=honeyLayout(320,568,{top:0,right:0,bottom:0,left:0});
-  assert.equal(small.short,false);
-  assert.ok(Math.abs(small.jar.w-185.6)<1e-9);
-  assert.ok(Math.abs(small.jar.h-232)<1e-9);
-  assert.ok(Math.abs(small.jar.x-67.2)<1e-9);
-  assert.ok(Math.abs(small.jar.y-109)<1e-9);
-  assert.ok(Math.abs(small.number.y-351)<1e-9);
-  assert.equal(small.number.h,64);
-  assert.ok(Math.abs(small.subline.y-423)<1e-9);
-  assert.equal(small.subline.h,24);
-  assert.ok(Math.abs(small.cta.y-496)<1e-9);
+  assert.ok(small.praise.y>=small.hud.bottom);
+  assert.ok(Math.abs(small.jar.w-198.4)<1e-9);
+  assert.ok(small.number.font>=56);
+  assert.equal(small.number.h,72);
+  assert.equal(small.subline.font,18);
   assert.equal(small.cta.h,56);
-  assert.equal(small.praise.font,36);
-  assert.equal(small.number.font,40);
-  assert.equal(small.subline.font,15);
-  assert.ok(small.jar.h*0.8>=small.jar.h*0.4);
+  assert.equal(small.reset.w,44);
+  assert.equal(small.reset.h,44);
   const large=honeyLayout(430,932,{top:0,right:0,bottom:0,left:0});
-  assert.equal(large.jar.w,200);
-  assert.equal(large.jar.h,250);
-  assert.equal(large.jar.x,115);
-  assert.ok(Math.abs(large.jar.y-282)<1e-9);
-  assert.ok(Math.abs(large.number.y-542)<1e-9);
-  assert.ok(Math.abs(large.number.font-51.6)<1e-9);
+  assert.ok(large.praise.y>=large.hud.bottom);
+  assert.equal(large.jar.w,220);
+  assert.equal(large.number.font,72);
   assert.equal(large.praise.font,44);
-  assert.equal(large.subline.font,18);
-  assert.ok(Math.abs(large.cta.y-860)<1e-9);
   const tight=honeyLayout(320,568,{top:44,right:0,bottom:34,left:0});
   assert.equal(tight.safeH,490);
   assert.equal(tight.short,true);
-  assert.ok(Math.abs(tight.jar.y-(44+85))<1e-6);
-  assert.ok(Math.abs(tight.jar.y+tight.jar.h-(44+317))<1e-6);
-  assert.ok(Math.abs(tight.number.y-(44+325))<1e-6);
-  assert.ok(Math.abs(tight.subline.y-(44+377))<1e-6);
-  assert.ok(Math.abs(tight.cta.y-(44+418))<1e-6);
+  assert.ok(tight.praise.y>=tight.hud.bottom);
+  assert.ok(tight.number.font>=56);
+  assert.equal(tight.number.h,72);
   for(const box of [small,large,tight]){
     const zones=[box.praise,box.jar,box.number,box.subline,box.cta,box.reset];
     for(let i=0;i<zones.length;i++){
@@ -163,8 +149,8 @@ test('layout reserves the spec slots at 320, 430, and a short safe height',()=>{
         assert.equal(rectsOverlap(zones[i],zones[j]),false,i+' overlaps '+j);
       }
     }
+    assert.ok(box.subline.y+box.subline.h<=box.cta.y);
     assert.ok(box.cta.h>=56);
-    assert.ok(box.reset.w>=44&&box.reset.h>=44);
   }
 });
 
@@ -174,8 +160,8 @@ test('praise and count contrast clear 4.5:1 on the composited backing',()=>{
     assert.ok(contrastRatio(hex,backing)>=4.5,hex+' '+contrastRatio(hex,backing));
   }
   assert.ok(contrastRatio(HONEY_TOKENS.glassRim,backing.scrim)>=3);
-  assert.equal(HONEY_TOKENS.scrimOpacity,0.72);
-  assert.equal(HONEY_TOKENS.backingOpacity,0.08);
+  assert.equal(HONEY_TOKENS.scrimOpacity,0.88);
+  assert.equal(HONEY_TOKENS.backingOpacity,0);
 });
 
 test('flight and lip burst follow the honey paths and droplet sizes',()=>{
@@ -303,9 +289,9 @@ function assertFinal(nodes,secured){
   assert.equal(nodes.praise.style.opacity,'1');
   assert.equal(nodes.praise.textContent,'Divine!');
   assert.doesNotMatch(nodes.praise.style.transform||'',/scale\(0/);
-  assert.match(nodes.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(nodes.liquid.style.height,'78%');
   assert.equal(nodes.subline.style.opacity,'0.9');
-  assert.equal(nodes.scrim.style.opacity,'0.72');
+  assert.equal(nodes.scrim.style.opacity,'0.88');
   assert.equal(nodes.cta.disabled,false);
   if(nodes.overflow){
     assert.equal(nodes.overflow.style.opacity,'1');
@@ -381,13 +367,13 @@ test('the count and the jar rise together and the lip burst waits until 0.850s',
   handle.timeline.pause();
   handle.timeline.time(0);
   assert.equal(nodes.tally.textContent,'0');
-  assert.match(nodes.liquid.style.transform,/scaleY\(0\)/);
+  assert.equal(nodes.liquid.style.height,'0%');
   assert.equal(nodes.cta.disabled,false);
   handle.timeline.time(0.2);
   assert.equal(nodes.tally.textContent,'0');
   handle.timeline.time(0.5);
   assert.equal(nodes.tally.textContent,'28');
-  assert.match(nodes.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(nodes.liquid.style.height,'78%');
   assert.equal(bus.liveParticles(),0);
   handle.timeline.time(0.8);
   assert.equal(nodes.tally.textContent,'32');
@@ -430,7 +416,7 @@ test('reduced motion is the static final card with 0 particles',()=>{
   assert.equal(bus.tweenCount(),0);
   assert.equal(nodes.tally.textContent,'18');
   assert.equal(nodes.praise.style.opacity,'1');
-  assert.match(nodes.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(nodes.liquid.style.height,'78%');
   assert.equal(nodes.subline.style.opacity,'0.9');
   assert.equal(nodes.overflow.style.opacity,'1');
   assert.equal(gsap.getTweensOf(nodes.praise).length,0);
@@ -516,11 +502,16 @@ test('win and fail markup have no star nodes and the win jar is not a button',()
   assert.match(won,/Divine!/);
   assert.match(won,/32 honey secured\. Target 9\./);
   assert.match(won,/32 \/ 9/);
-  assert.match(won,/sgv-honey-jar/);
-  assert.match(won,/sgv-honey-liquid/);
+  assert.match(won,/sgv-chest-body/);
+  assert.match(won,/sgv-chest-rim/);
+  assert.match(won,/sgv-fluid-fill/);
+  assert.match(won,/sgv-fluid-surface/);
   assert.match(won,/sgv-end-cta/);
   assert.match(won,/>NEXT</);
-  assert.match(won,/RESET PROGRESS/);
+  assert.match(won,/sgv-honey-reset/);
+  assert.match(won,/aria-label="Reset progress"/);
+  assert.match(won,/↻/);
+  assert.doesNotMatch(won,/RESET PROGRESS/);
   assert.match(won,/Level complete!/);
   assert.doesNotMatch(won,/sgv-win-star|data-star|★|aria-label="[^"]*star/i);
   assert.doesNotMatch(won,/<button[^>]*sgv-honey-jar|sgv-honey-jar[^>]*<button/);
@@ -551,8 +542,8 @@ test('honey styles are scoped under the end card and FX stays between the card a
   assert.match(css,/\.sgv-end-card \.sgv-win-praise/);
   assert.match(css,/\.sgv-end-card \.sgv-win-tally/);
   assert.match(css,/\.sgv-end-card \.sgv-honey-subline/);
-  assert.match(css,/min\(200px,\s*58%/);
-  assert.match(css,/scaleY/);
+  assert.match(css,/--honey-scrim-opacity/);
+  assert.match(css,/sgv-fluid-surface/);
   assert.doesNotMatch(css,/\.sgv-win-star|\.sgv-success-star|sgv-win-stars/);
   assert.doesNotMatch(screens,/sgv-win-star|★/);
   assert.doesNotMatch(motion,/sgv-win-star|★/);
@@ -582,11 +573,11 @@ test('honey styles are scoped under the end card and FX stays between the card a
   assert.equal(sweet.color,'#fff0cf');
   assert.equal(tasty.color,'#f0c14a');
   assert.equal(divine.color,'#ffe08a');
-  assert.equal(tally.fontSize,'40px');
+  assert.equal(tally.fontSize,'56px');
   assert.equal(tally.fontWeight,'900');
   assert.equal(tally.color,'#f0c14a');
   assert.match(String(tally.fontVariantNumeric),/tabular-nums/);
-  assert.equal(sub.fontSize,'15px');
+  assert.equal(sub.fontSize,'18px');
   assert.equal(sub.color,'#fff0cf');
   assert.notEqual(score.fontSize,sweet.fontSize);
   assert.equal(score.color,'#8b6954');
@@ -608,5 +599,46 @@ test('honey styles are scoped under the end card and FX stays between the card a
   assert.equal(fx.pointerEvents,'none');
   card.remove();
   phone.remove();
+  style.remove();
+});
+
+test('the win scrim, glass jar, and reset icon are styled before any tween',async()=>{
+  const css=await read('../src/casual/minimal.css');
+  const style=document.createElement('style');
+  style.textContent=css;
+  document.head.appendChild(style);
+  const host=document.createElement('div');
+  host.className='sgv-phone sgv-onboarding';
+  host.setAttribute('data-honey-win','true');
+  host.innerHTML='<header class="sgv-hud"></header>'+renderToStaticMarkup(createElement(LevelEndScreen,{
+    victory:true,score:8,target:5,label:'NEXT',
+    praise:{tier:3,text:'Divine!'},onReset(){}
+  }));
+  document.body.appendChild(host);
+  const scrim=win.getComputedStyle(host.querySelector('.sgv-honey-scrim'));
+  const overlay=win.getComputedStyle(host.querySelector('.sgv-honey-win'));
+  assert.ok(scrim.opacity==='.88'||scrim.opacity==='0.88');
+  assert.match(String(overlay.backgroundColor),/26,\s*15,\s*18|1a0f12/i);
+  assert.match(String(overlay.backdropFilter),/blur/);
+  assert.ok(host.querySelector('.sgv-chest-body'));
+  assert.ok(host.querySelector('.sgv-chest-rim'));
+  assert.ok(host.querySelector('.sgv-fluid-surface'));
+  assert.ok(host.querySelector('.sgv-glass-highlight-left'));
+  assert.equal(win.getComputedStyle(host.querySelector('.sgv-hud')).visibility,'hidden');
+  const reset=host.querySelector('.sgv-honey-reset');
+  const resetStyle=win.getComputedStyle(reset);
+  assert.equal(resetStyle.width,'44px');
+  assert.equal(resetStyle.height,'44px');
+  assert.equal(resetStyle.overflow,'visible');
+  assert.equal(resetStyle.borderTopWidth,'0px');
+  assert.equal(resetStyle.fontSize,'22px');
+  assert.equal(reset.getAttribute('aria-label'),'Reset progress');
+  assert.equal(reset.textContent,'↻');
+  assert.equal(win.getComputedStyle(host.querySelector('.sgv-win-tally')).fontSize,'56px');
+  const slot=win.getComputedStyle(host.querySelector('.sgv-honey-count-slot'));
+  assert.ok(slot.backgroundColor===''||slot.backgroundColor==='transparent'||slot.backgroundColor==='rgba(0, 0, 0, 0)');
+  const praise=win.getComputedStyle(host.querySelector('.sgv-honey-praise-slot'));
+  assert.ok(praise.backgroundColor===''||praise.backgroundColor==='transparent'||praise.backgroundColor==='rgba(0, 0, 0, 0)');
+  host.remove();
   style.remove();
 });

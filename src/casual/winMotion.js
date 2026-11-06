@@ -1,5 +1,5 @@
 import {gsap} from 'gsap';
-import {honeyEaseBack,honeyEaseOut,honeyParticles,overflowReveal,fillFraction} from './honeyWin.js';
+import {honeyEaseBack,honeyEaseOut,honeyParticles,overflowReveal,fillHeightPercent} from './honeyWin.js';
 import {
   burstParticles,burstRadius,displayedCount,flightDropletSize,flightDroplets,praiseFor
 } from './starThresholds.js';
@@ -20,12 +20,6 @@ function centerOf(node, layer){
   return {x:left+width/2-originX,y:top+height/2-originY};
 }
 
-function scaleOf(fraction){
-  if(fraction>=1)return 'scaleY(1)';
-  if(fraction<=0)return 'scaleY(0)';
-  return 'scaleY('+fraction+')';
-}
-
 // Praise, the hero jar, and the secured total. A killed tween still paints the
 // final card: the jar is full, the praise is visible, and the number is deal.T.
 export function playWinCelebration({
@@ -40,7 +34,7 @@ export function playWinCelebration({
   const intensity=tier|0;
   const paintFinal=()=>{
     card?.classList?.add('sgv-honey-final');
-    if(scrim?.style)scrim.style.opacity='0.72';
+    if(scrim?.style)scrim.style.opacity='0.88';
     if(praise?.style){
       praise.style.opacity='1';
       praise.style.transform='none';
@@ -49,8 +43,11 @@ export function playWinCelebration({
     if(tally)tally.textContent=String(safe);
     if(subline?.style)subline.style.opacity='0.9';
     if(liquid?.style){
-      liquid.style.transformOrigin='center bottom';
-      liquid.style.transform='scaleY(1)';
+      const full=fillHeightPercent(safe,goal);
+      liquid.style.transition='none';
+      liquid.style.height=(full>0?full:78)+'%';
+      liquid.style.opacity='1';
+      liquid.style.transform='none';
     }
     if(overflow?.style){
       overflow.style.opacity='1';
@@ -88,8 +85,11 @@ export function playWinCelebration({
     if(tally)tally.textContent=String(shown);
     const raw=progress>=1?safe:safe*progress;
     if(liquid?.style){
-      liquid.style.transformOrigin='center bottom';
-      liquid.style.transform=scaleOf(fillFraction(raw,goal));
+      const percent=fillHeightPercent(raw,goal);
+      liquid.style.transition='none';
+      liquid.style.height=percent+'%';
+      liquid.style.opacity=percent>0?'1':'0';
+      liquid.style.transform='none';
     }
     if(overflow?.style){
       const reveal=overflowReveal(progress,safe,goal);
@@ -125,11 +125,13 @@ export function playWinCelebration({
 
   if(tally)tally.textContent='0';
   if(liquid?.style){
-    liquid.style.transformOrigin='center bottom';
-    liquid.style.transform='scaleY(0)';
+    liquid.style.transition='none';
+    liquid.style.height='0%';
+    liquid.style.opacity='0';
+    liquid.style.transform='none';
   }
   if(subline?.style)subline.style.opacity='0';
-  if(scrim?.style)scrim.style.opacity='0';
+  if(scrim?.style)scrim.style.opacity='0.88';
   if(overflow?.style){
     overflow.style.opacity='0';
     overflow.style.transform='translateY(-8px)';
@@ -177,12 +179,7 @@ export function playWinCelebration({
     t:2.5,duration:2.5,ease:'none',overwrite:'auto',
     onUpdate(){sync(clock.t);}
   },0);
-  if(scrim){
-    timeline.fromTo(scrim,{opacity:0},{
-      opacity:0.72,duration:0.12,ease:'power2.out',overwrite:'auto',
-      onComplete(){scrim.style.opacity='0.72';}
-    },0);
-  }
+  if(scrim?.style)scrim.style.opacity='0.88';
   if(praise){
     gsap.set(praise,{transformOrigin:'50% 50%'});
     timeline.fromTo(praise,{opacity:0},{
