@@ -68,8 +68,14 @@ test('a win shows the committed score and CTA at t=0, and a loss does not',()=>{
   assert.equal(win.scoreAt,0);
   assert.equal(win.ctaAt,0);
   assert.equal(win.cta,'NEXT');
-  assert.equal(win.star.start,0.520);
+  assert.equal(win.star.start,0.220);
   assert.equal(win.star.end,0.820);
+  assert.equal(win.praiseMotion.start,0);
+  assert.equal(win.praiseMotion.end,0.200);
+  assert.equal(win.count.start,0.200);
+  assert.equal(win.count.hold,0.900);
+  assert.equal(win.burst.start,0.820);
+  assert.equal(win.settled,1.200);
   assert.equal(win.pour.end,0.650);
   assert.equal(win.pour.tip,42);
   assert.ok(win.pour.end<=0.650);
@@ -83,6 +89,11 @@ test('a win shows the committed score and CTA at t=0, and a loss does not',()=>{
   assert.equal(fail.cta,'TRY AGAIN');
   assert.equal(fail.pour,null);
   assert.equal(fail.star,null);
+  assert.equal(fail.stars,0);
+  assert.equal(fail.praise,null);
+  assert.equal(fail.particles,0);
+  assert.equal(fail.count,null);
+  assert.equal(fail.burst,null);
   assert.deepEqual(successTap('backdrop'),{settle:true,advance:false});
   assert.deepEqual(successTap('cta'),{settle:true,advance:true});
   assert.equal(claimLevelAdvance(false).advance,true);

@@ -5,6 +5,7 @@ import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.j
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour} from './minimalMotion.js';
 import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
+import {playWinCelebration} from './winMotion.js';
 import {playLevelStart} from './levelStartMotion.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
 import {createFxBus} from './fx/fxBus.js';
@@ -75,6 +76,7 @@ export default function SimplifiedGame(){
     fresh:freshStart,reduced:prefersReducedMotion()
   }).motion);
   const arrivalRef=useRef(null);
+  const winMotionRef=useRef(null);
   const [devMenuOpen,setDevMenuOpen]=useState(false);
   const rootRef=useRef(null),cancelRef=useRef(null),presentationRef=useRef(null);
   const fxRef=useRef(null);
@@ -126,6 +128,29 @@ export default function SimplifiedGame(){
     if(introGateRef.current)return;
     return beginArrival();
   },[round.levelId]);
+  useEffect(()=>{
+    if(!finished||!victory)return;
+    const root=rootRef.current;
+    if(!root)return;
+    const reduced=prefersReducedMotion();
+    const plan=successPlan({victory:true,levelId:round.levelId,secured:deal.T,reduced});
+    let alive=true;
+    const handle=playWinCelebration({
+      victory:true,secured:deal.T,tier:plan.stars||0,
+      praise:root.querySelector('.sgv-win-praise'),
+      stars:[...root.querySelectorAll('.sgv-win-star')],
+      tally:root.querySelector('.sgv-win-tally'),
+      cta:root.querySelector('.sgv-end-cta'),
+      reduced,bus:fxRef.current,
+      onSettled(){if(alive)setSuccessSettled(true);}
+    });
+    winMotionRef.current=handle;
+    return ()=>{
+      alive=false;
+      if(winMotionRef.current===handle)winMotionRef.current=null;
+      handle.cancel();
+    };
+  },[finished,victory,round.levelId,deal.T]);
   useEffect(()=>{
     const reduced=typeof window!=='undefined'&&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -233,10 +258,19 @@ export default function SimplifiedGame(){
       handle.cancel();
     };
   }
+  function stopWin(){
+    const handle=winMotionRef.current;
+    winMotionRef.current=null;
+    try{handle?.cancel();}catch{/* a half-played celebration still shows its end */}
+    try{fxRef.current.settle();}catch{/* settle must not block the tap */}
+    try{handle?.showFinal?.();}catch{/* the inline end state is enough */}
+  }
   function startLevel(id){
     clearWinMemo();
     try{arrivalRef.current?.cancel();}catch{/* the level change settles next */}
     arrivalRef.current=null;
+    try{winMotionRef.current?.cancel();}catch{/* the level change settles next */}
+    winMotionRef.current=null;
     fxRef.current.settle();
     presentationRef.current.abandon();
     cancelRef.current?.();resetMotionRef.current?.();
@@ -393,7 +427,10 @@ export default function SimplifiedGame(){
 
   const winLabel=level.id===GARDEN_2_START-1?'LOWER ORCHARD':
     level.id===ONBOARDING_COUNT?'PLAY AGAIN':'NEXT';
-  const ending=successPlan({victory,levelId:level.id,bank:round.game.lastAction?.type==='bank'});
+  const ending=successPlan({
+    victory,levelId:level.id,secured:deal.T,
+    bank:round.game.lastAction?.type==='bank',reduced:prefersReducedMotion()
+  });
   function settleSuccess(){setSuccessSettled(true);}
   function applyEndDecision(decision){
     if(!decision||decision.lock)return;
@@ -484,6 +521,7 @@ export default function SimplifiedGame(){
           return;
         }
         if(finished){
+          if(victory)stopWin();
           const decision=dismissLevelScreen(victory?'win':'lose','skip');
           if(!decision.dismiss||decision.lock)return;
           event.preventDefault();
@@ -605,8 +643,15 @@ export default function SimplifiedGame(){
         }}/>}
       {finished&&<LevelEndScreen victory={victory} score={deal.T} target={level.target}
         label={victory?winLabel:'TRY AGAIN'} orchard={!!ending.orchard} settled={successSettled}
-        onPrimary={()=>applyEndDecision(dismissLevelScreen(victory?'win':'lose','cta'))}
-        onBackdrop={()=>applyEndDecision(dismissLevelScreen(victory?'win':'lose','backdrop'))}
+        praise={ending.praise} stars={ending.stars||0} reduced={victory&&!ending.motion}
+        onPrimary={()=>{
+          if(victory)stopWin();
+          applyEndDecision(dismissLevelScreen(victory?'win':'lose','cta'));
+        }}
+        onBackdrop={()=>{
+          if(victory)stopWin();
+          applyEndDecision(dismissLevelScreen(victory?'win':'lose','backdrop'));
+        }}
         onReset={resetProgress}/>}
       {animating&&<button type="button" className="sgv-skip-surface" aria-label="Skip animation"
         onPointerDown={event=>{event.preventDefault();event.stopPropagation();finishPresentation();}}

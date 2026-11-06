@@ -37,10 +37,13 @@ export function LevelStartScreen({levelId,target,onDismiss}){
 
 export function LevelEndScreen({
   victory=false,score=0,target=0,label='NEXT',orchard=false,settled=false,
-  onPrimary,onBackdrop,onReset
+  praise=null,stars=0,reduced=false,onPrimary,onBackdrop,onReset
 }){
+  const earned=victory?Math.max(0,stars|0):0;
+  const staticCard=!!(reduced||settled);
   return createElement('div',{
-    className:'sgv-end-overlay sgv-level-end'+(settled?' sgv-success-settled':''),
+    className:'sgv-end-overlay sgv-level-end'+
+      (settled?' sgv-success-settled':'')+(reduced?' sgv-win-static':''),
     role:'dialog','aria-modal':'true','aria-labelledby':'sgv-end-title',
     onPointerDown:event=>{
       if(event.target!==event.currentTarget)return;
@@ -48,12 +51,23 @@ export function LevelEndScreen({
     }
   },
   createElement('div',{className:'sgv-end-card'},
-    victory?createElement('div',{className:'sgv-success-star','aria-hidden':'true'},'★'):null,
     orchard?createElement('span',{className:'sgv-orchard-hook','aria-hidden':'true'}):null,
+    victory&&praise?createElement('p',{
+      className:'sgv-win-praise sgv-win-praise-'+praise.tier
+    },praise.text):null,
+    earned?createElement('div',{
+      className:'sgv-win-stars',role:'img',
+      'aria-label':earned+(earned===1?' star':' stars')
+    },Array.from({length:earned},(_,index)=>createElement('span',{
+      key:index,className:'sgv-win-star','data-star':String(index+1),'aria-hidden':'true'
+    },'★'))):null,
+    victory?createElement('p',{
+      className:'sgv-win-tally','aria-label':'Score tally'
+    },staticCard?String(score):null):null,
     createElement('div',{className:'sgv-end-symbol'},victory?'★':'♡'),
     createElement('h1',{id:'sgv-end-title'},victory?'Level complete!':'Try again!'),
-    createElement('p',null,'Drops secured: '+score+' / '+target),
-    createElement('button',{type:'button',onClick:onPrimary},label),
+    createElement('p',{className:'sgv-end-score'},'Drops secured: '+score+' / '+target),
+    createElement('button',{type:'button',className:'sgv-end-cta',onClick:onPrimary},label),
     onReset?createElement('button',{
       type:'button',className:'sgv-end-reset',onClick:onReset
     },'RESET PROGRESS'):null
