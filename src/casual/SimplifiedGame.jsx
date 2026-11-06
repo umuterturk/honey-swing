@@ -6,6 +6,8 @@ import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,ani
 import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
+import {createFxBus} from './fx/fxBus.js';
+import {FxLayer} from './fx/FxLayer.jsx';
 import {clearWinMemo,idleHintAction} from './idleHint.js';
 import {LevelEndScreen,LevelStartScreen,dismissLevelScreen} from './levelScreens.js';
 import {bankAssistiveMessage,nextBankAnnouncement} from './bankStatus.js';
@@ -54,7 +56,9 @@ export default function SimplifiedGame(){
   }).motion);
   const [devMenuOpen,setDevMenuOpen]=useState(false);
   const rootRef=useRef(null),cancelRef=useRef(null),presentationRef=useRef(null);
-  if(!presentationRef.current)presentationRef.current=createActionPresentation();
+  const fxRef=useRef(null);
+  if(!fxRef.current)fxRef.current=createFxBus();
+  if(!presentationRef.current)presentationRef.current=createActionPresentation({fx:fxRef.current});
   const resetMotionRef=useRef(null),lossMotionRef=useRef(null),breakMotionRef=useRef(null);
   const seenFactorsRef=useRef(new Set());
   const priorFocusRef=useRef(null),skipFocusedRef=useRef(false);
@@ -82,11 +86,19 @@ export default function SimplifiedGame(){
   const pulseIndex=hint?.type==='steer'?hint.index:null;
 
   useEffect(()=>()=>{
+    fxRef.current.settle();
     presentationRef.current.abandon();
     cancelRef.current?.();resetMotionRef.current?.();
     lossMotionRef.current?.();breakMotionRef.current?.();
   },[]);
   useEffect(()=>{
+    if(!import.meta.env.DEV||typeof window==='undefined')return;
+    const emit=spec=>fxRef.current.emit(spec);
+    window.__swingFxEmit=emit;
+    return ()=>{if(window.__swingFxEmit===emit)delete window.__swingFxEmit;};
+  },[]);
+  useEffect(()=>{
+    fxRef.current.settle();
     event('level_start',{level:round.levelId});
   },[round.levelId]);
   useEffect(()=>{
@@ -156,6 +168,7 @@ export default function SimplifiedGame(){
 
   function startLevel(id){
     clearWinMemo();
+    fxRef.current.settle();
     presentationRef.current.abandon();
     cancelRef.current?.();resetMotionRef.current?.();
     lossMotionRef.current?.();breakMotionRef.current?.();
@@ -190,6 +203,7 @@ export default function SimplifiedGame(){
   }
 
   function finishPresentation(){
+    fxRef.current.settle();
     presentationRef.current.finishPresentation();
   }
   function play(action,source){
@@ -362,6 +376,7 @@ export default function SimplifiedGame(){
         }
       }}>
       <GardenScene/>
+      <FxLayer bus={fxRef.current}/>
       <div className="sgv-atmosphere" aria-hidden="true"/>
       <header className="sgv-hud sgv-tutorial-hud">
         <div className="sgv-level" aria-label={'Level '+level.id+(level.telegraph?' '+level.name:'')}>
