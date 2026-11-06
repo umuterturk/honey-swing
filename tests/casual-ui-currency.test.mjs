@@ -273,16 +273,17 @@ test('no visual bottle lids, but invisible lip and Bank mouth anchors remain for
  assert.match(css,/\.sgv-bottle-pair \.sgv-chest-rim\{display:none!important\}/);
 });
 
-test('Snap cracks and loses pending fluid; Zero Break cracks but retains Pot',()=>{
+test('Snap cracks and loses pending fluid; Zero Break keeps the Pot without a crack',()=>{
  const motion=read('src/casual/minimalMotion.js');
  const screen=read('src/casual/SimplifiedGame.jsx');
  const css=read('src/casual/minimal.css');
  assert.match(motion,/export function animatePotBreak\(root,kind='snap'\)/);
  assert.match(motion,/sgv-pot-fracture/);
  assert.match(screen,/breakMotionRef\.current=animatePotBreak\(root,'snap'\)/);
- assert.match(screen,/breakMotionRef\.current=animatePotBreak\(root,'zero'\)/);
+ assert.doesNotMatch(screen,/animatePotBreak\(root,'zero'\)/);
+ assert.match(screen,/Pot safe\./);
+ assert.match(screen,/animateFactorReset\(root\)/);
  assert.match(screen,/lossMotionRef\.current=animateSnapLoss\(root,change\.rawPotBefore\)/);
  assert.match(css,/\.sgv-pot-fracture-snap path\{/);
- assert.match(css,/\.sgv-pot-fracture-zero path\{/);
  assert.match(screen,/breakMotionRef\.current\?\.\(\)/);
 });

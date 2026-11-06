@@ -2,8 +2,10 @@ import {signed} from '../external/engines.js';
 import {multiplierParts,multiplierRewards} from './multiplierView.js';
 
 // Presentation-only selectors: values always come from an already committed engine deal.
-// Raw Pot is deliberately NOT the prospective Bank payout or resonance bonus.
+// A casual running Pot stores the accrued total on the deal. That number is the Bank
+// transfer. Older deals still expose the unmultiplied card sum, not a projected payout.
 export function rawPotValue(deal){
+  if(Number.isInteger(deal?.potValue))return deal.potValue;
   return (deal.pot||[]).reduce((total,id)=>total+Math.abs(signed(id)),0);
 }
 

@@ -1176,6 +1176,47 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
  .sgv-onboarding .sgv-tutorial-hud .sgv-gold-icon{width:18px;height:18px}
 }
 
+@keyframes sgv-dock-in{
+  from{opacity:0;transform:translateY(-12px) scale(.82)}
+  to{opacity:1;transform:none}
+}
+.sgv-dock,.sgv-onboarding .sgv-flip[data-dock="true"]{
+  animation:sgv-dock-in .8s cubic-bezier(.16,1.25,.4,1) both;
+}
+.sgv-meter-beat{
+  margin:6px 0 0;text-align:center;color:#7a4b28;
+  font-size:13px;font-weight:900;line-height:1.2;
+}
+.sgv-level-name{
+  display:block;margin-top:1px;font-size:10px;font-weight:900;
+  letter-spacing:.03em;color:#8a4b2a;line-height:1;
+}
+.sgv-orchard .sgv-atmosphere{
+  background:
+    radial-gradient(ellipse at 50% 38%,#ffd0a266,transparent 58%),
+    linear-gradient(180deg,#e08a3d2e,transparent 46%);
+}
+.sgv-glossary{
+  position:absolute;z-index:8;top:62px;left:50%;transform:translateX(-50%);
+  width:min(92%,320px);margin:0;padding:8px 12px;list-style:none;
+  border:3px solid #fff9cf;border-radius:15px;background:#fff8e9f5;
+  color:#784c75;font-size:13px;font-weight:800;text-align:center;
+  box-shadow:0 4px 10px #5d786a52;
+}
+.sgv-glossary li{margin:3px 0;animation:sgv-glossary-in .4s ease both}
+.sgv-glossary li:nth-child(2){animation-delay:.08s}
+.sgv-glossary li:nth-child(3){animation-delay:.16s}
+.sgv-glossary li:nth-child(4){animation-delay:.24s}
+@keyframes sgv-glossary-in{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .sgv-dock,.sgv-onboarding .sgv-flip[data-dock="true"],.sgv-glossary li{
+    animation:none;opacity:1;transform:none;
+  }
+}
+
 /* The modal covers the header; provide the same reset on its completion screen. */
 .sgv-onboarding .sgv-end-card .sgv-end-reset{
  background:linear-gradient(#fff8ed,#eee4db);

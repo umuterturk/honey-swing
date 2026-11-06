@@ -8,7 +8,7 @@ import {rawPotValue,visiblePotPayout,actionPresentation} from './presentation.js
 import {ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress} from './onboardingProgress.js';
 import {
   newOnboardingRound,onboardingLevel,onboardingActions,onboardingFinished,
-  onboardingVictory,stepOnboarding,wouldSnap,ONBOARDING_COUNT
+  onboardingVictory,stepOnboarding,wouldSnap,ONBOARDING_COUNT,GARDEN_2_START
 } from './onboardingLevels.js';
 
 const SESSION_KEY=ONBOARDING_SESSION_KEY;
@@ -35,24 +35,16 @@ const displayOf=round=>({
   factors:multiplierParts(round.game.deal),
   snaps:round.snaps
 });
-const idleHint=(level,round,actions)=>{
-  if(level.id<=2){
-    if(actions.some(a=>a.type==='bank'))return 'Tap BANK to fill the glass';
-    return 'Tap the card';
-  }
-  if(level.script[round.turn]?.type==='flip')return 'Try FLIP';
-  if(level.script[round.turn]?.type==='bank')return 'Bank your drops';
-  return level.lesson;
-};
-
 export default function SimplifiedGame(){
   const [round,setRound]=useState(initialRound);
   const [view,setView]=useState(()=>displayOf(round));
   const [shownGold,setShownGold]=useState(round.game.deal.T);
   const [animating,setAnimating]=useState(false);
   const [feedback,setFeedback]=useState(null);
-  const [hint,setHint]=useState('');
+  const [pulse,setPulse]=useState(false);
+  const [beat,setBeat]=useState('');
   const [help,setHelp]=useState(false);
+  const [docking,setDocking]=useState(()=>Boolean(onboardingLevel(round.levelId).dock));
   const [devMenuOpen,setDevMenuOpen]=useState(false);
   const rootRef=useRef(null),busyRef=useRef(false),cancelRef=useRef(null);
   const resetMotionRef=useRef(null),lossMotionRef=useRef(null),breakMotionRef=useRef(null);
@@ -64,13 +56,19 @@ export default function SimplifiedGame(){
   const canBank=available.some(a=>a.type==='bank'&&a.dropIndex==null);
   const canFlip=available.some(a=>a.type==='flip');
   const potentialPayout=overswingPayout(game,level.rules);
-  const potDisplay=visiblePotPayout(potentialPayout,rawPotValue(deal),view.rawPot);
+  // During a Bank pour the committed payout drains. Any other beat shows the
+  // accrued Pot directly, including a multiplied add that is larger than the old total.
+  const potDisplay=feedback==='bank'
+    ?visiblePotPayout(potentialPayout,rawPotValue(deal),view.rawPot)
+    :view.rawPot;
   const remaining=deal.deck.length-deal.pos;
   const hearts=Math.max(0,level.maxSnaps-view.snaps);
-  const scriptAction=level.script[round.turn];
-  // During a one-action teaching beat, don't offer other inactive choices.
-  // Never remove the hand just because a teaching beat focuses on FLIP.
   const shownHand=deal.hand.slice(0,level.visibleHandSlots);
+  const bankPulse=pulse&&canBank;
+  const flipLed=level.pulse==='flip'||(level.pulse==='card-then-flip'&&deal.S!==0&&canFlip);
+  const flipPulse=pulse&&!canBank&&canFlip&&(flipLed||!available.some(a=>a.type==='steer'));
+  const pulseIndex=!pulse||bankPulse||flipPulse?null:
+    available.find(a=>a.type==='steer')?.index;
 
   useEffect(()=>()=>{
     cancelRef.current?.();resetMotionRef.current?.();
@@ -80,14 +78,20 @@ export default function SimplifiedGame(){
     event('level_start',{level:round.levelId});
   },[round.levelId]);
   useEffect(()=>{
+    if(!level.dock)return;
+    setDocking(true);
+    const timer=setTimeout(()=>setDocking(false),800);
+    return ()=>clearTimeout(timer);
+  },[round.levelId,level.dock]);
+  useEffect(()=>{
+    setPulse(false);
     if(animating||finished)return;
     const timer=setTimeout(()=>{
-      const message=idleHint(level,round,available);
-      setHint(message);
+      setPulse(true);
       event('hint_shown',{level:level.id,turn:round.turn});
-    },5000);
+    },3000);
     return ()=>clearTimeout(timer);
-  },[animating,round.turn,round.levelId,finished]);
+  },[animating,round.turn,round.levelId,finished,level.id]);
 
   function startLevel(id){
     cancelRef.current?.();resetMotionRef.current?.();
@@ -98,7 +102,8 @@ export default function SimplifiedGame(){
     const next=newOnboardingRound(id);
     save(next);
     setRound(next);setView(displayOf(next));setShownGold(0);
-    setAnimating(false);setFeedback(null);setHint('');setHelp(false);
+    setAnimating(false);setFeedback(null);setPulse(false);setBeat('');setHelp(false);
+    setDocking(Boolean(onboardingLevel(id).dock));
     setDevMenuOpen(false);
     seenFactorsRef.current=new Set();
   }
@@ -111,13 +116,13 @@ export default function SimplifiedGame(){
     event('onboarding_reset',{level:1});
   }
   function nextLevel(){
-    if(round.levelId===ONBOARDING_COUNT)return startLevel(10);
+    if(round.levelId>=ONBOARDING_COUNT)return startLevel(ONBOARDING_COUNT);
     startLevel(round.levelId+1);
   }
   function skip(){
     event('tutorial_skip',{level:level.id});
-    try{localStorage.setItem(PROGRESS_KEY,String(ONBOARDING_COUNT));}catch{}
-    startLevel(ONBOARDING_COUNT);
+    try{localStorage.setItem(PROGRESS_KEY,String(GARDEN_2_START));}catch{}
+    startLevel(GARDEN_2_START);
   }
 
   function play(action,source){
@@ -141,8 +146,10 @@ export default function SimplifiedGame(){
       try{localStorage.setItem(PROGRESS_KEY,String(Math.min(ONBOARDING_COUNT,level.id+1)));}catch{}
     }
     const root=rootRef.current;
-    busyRef.current=true;setAnimating(true);setFeedback(action.type);
-    setHint('');setHelp(false);
+    busyRef.current=true;setAnimating(true);
+    setFeedback(change.snap?'snap':change.zeroBreak?'zero_break':action.type);
+    setBeat(change.zeroBreak?'Pot safe.':change.snap?'Pot lost. Bank safe.':'');
+    setPulse(false);setHelp(false);
     resetMotionRef.current?.();breakMotionRef.current?.();
     resetMotionRef.current=null;breakMotionRef.current=null;
     const done=()=>{
@@ -165,7 +172,8 @@ export default function SimplifiedGame(){
       .filter(({kind})=>!seenFactorsRef.current.has(kind)).map(({kind})=>kind);
     change.rewards.forEach(({kind})=>seenFactorsRef.current.add(kind));
     cancelRef.current=animateCardAction({
-      root,source,action,view:change,firstFactorAwards,
+      root,source,action,view:{...change,firstTap:round.levelId===1&&round.turn===0},
+      firstFactorAwards,
       onMeter:position=>{
         setView(v=>({...v,position}));
         if(change.snap)setFeedback('snap');
@@ -178,12 +186,9 @@ export default function SimplifiedGame(){
       },
       onFactors:factors=>{
         setView(v=>({...v,factors}));
-        if(change.zeroBreak&&level.id>=8){
-          setFeedback('zero_break');
-          breakMotionRef.current?.();breakMotionRef.current=animatePotBreak(root,'zero');
-        }
-        if((change.zeroBreak&&level.id>=8)||change.snap||
+        if(change.zeroBreak||change.snap||
           change.factorsAfter.some((f,i)=>f.value<change.factorsBefore[i].value)){
+          resetMotionRef.current?.();
           resetMotionRef.current=animateFactorReset(root);
         }
       },
@@ -191,32 +196,38 @@ export default function SimplifiedGame(){
     });
   }
 
+  const winLabel=level.id===GARDEN_2_START-1?'LOWER ORCHARD':
+    level.id===ONBOARDING_COUNT?'PLAY AGAIN':'NEXT';
   return <main className="sgv-page">
     <div ref={rootRef}
-      className={'sgv-phone sgv-onboarding sgv-onboarding-'+level.id+' sgv-event-'+(feedback||round.event.type)}
-      aria-busy={animating}>
+      className={'sgv-phone sgv-onboarding sgv-onboarding-'+level.id+
+        (level.garden===2?' sgv-orchard':'')+' sgv-event-'+(feedback||round.event.type)}
+      aria-busy={animating}
+      onPointerDown={()=>{if(docking)setDocking(false);}}>
       <GardenScene/>
       <div className="sgv-atmosphere" aria-hidden="true"/>
       <header className="sgv-hud sgv-tutorial-hud">
-        <div className="sgv-level" aria-label={'Level '+level.id}>
+        <div className="sgv-level" aria-label={'Level '+level.id+(level.telegraph?' '+level.name:'')}>
           <span>★</span><strong>Level {level.id}</strong>
+          {level.telegraph&&<small className="sgv-level-name">{level.name}</small>}
         </div>
         <div className="sgv-hud-right">
           <div className="sgv-gold-counter" aria-label={shownGold+' drops secured'}>
             <span className="sgv-gold-icon">●</span><strong>{shownGold}</strong>
           </div>
-          {level.showChances&&<div className="sgv-lives" aria-label={hearts+' chances remaining'}>
+          {level.showChances&&<div className={'sgv-lives'+(docking&&level.dock==='hearts'?' sgv-dock':'')}
+            aria-label={hearts+' chances remaining'}>
             {Array.from({length:level.maxSnaps},(_,i)=><span key={i}
               className={i<hearts?'sgv-heart':'sgv-heart sgv-heart-empty'}>♥</span>)}
           </div>}
           <div className="sgv-tutorial-tools">
-            <button type="button" className="sgv-reset-progress"
+            {import.meta.env.DEV&&<button type="button" className="sgv-reset-progress"
               onClick={resetProgress} aria-label="Reset onboarding progress and restart Level 1"
               title="Reset onboarding progress">
               <span aria-hidden="true" className="sgv-reset-icon">↺</span>
               <span className="sgv-reset-label">Reset</span>
-            </button>
-            {level.id>=5&&<>
+            </button>}
+            {level.id>=4&&<>
               <button type="button" className="sgv-dev-menu-toggle"
                 onClick={()=>setDevMenuOpen(open=>!open)}
                 aria-label="More onboarding tools" aria-expanded={devMenuOpen}>⋯</button>
@@ -224,9 +235,9 @@ export default function SimplifiedGame(){
                 <button type="button" onClick={()=>{setHelp(value=>!value);setDevMenuOpen(false);}}>
                   {help?'Hide help':'Show help'}
                 </button>
-                {level.id<ONBOARDING_COUNT&&<button type="button"
+                {level.id<GARDEN_2_START&&<button type="button"
                   onClick={()=>{setDevMenuOpen(false);skip();}}>
-                  Skip to Level 10
+                  Skip to Level 13
                 </button>}
               </div>}
             </>}
@@ -236,12 +247,12 @@ export default function SimplifiedGame(){
       <div className="sgv-middle">
         <HorizontalMeter position={view.position} limit={level.rules.snapLimit}
           multipliers={view.factors} visibleFactors={level.visibleFactors}
-          showDanger={level.showChances}/>
+          showDanger={level.showChances} beat={beat} dock={docking?level.dock:null}/>
         <span className="sgv-flight-center" aria-hidden="true"/>
         <div className="sgv-bottle-pair" aria-label="Pending Pot and secured glass">
           <PendingPot value={potDisplay} target={level.target}
             bankable={canBank} interactive={false}/>
-          <GlassChest banked={shownGold} target={level.target} minimal={level.id<=2}/>
+          <GlassChest banked={shownGold} target={level.target}/>
         </div>
       </div>
       <section className="sgv-controls sgv-tutorial-controls" aria-label="Card actions">
@@ -250,20 +261,22 @@ export default function SimplifiedGame(){
           {shownHand.map((id,i)=><SimpleCard key={id} id={id} index={i}
             value={signed(id)} showDirection={true}
             risky={level.showChances&&wouldSnap(round,{type:'steer',index:i})}
-            highlighted={!!hint&&level.id<=3&&available.some(a=>a.type==='steer'&&a.index===i)}
+            highlighted={pulseIndex===i}
             disabled={finished||animating||!available.some(a=>a.type==='steer'&&a.index===i)}
             onPlay={(index,element)=>play({type:'steer',index},element)}/>)}
         </div>
         <div className="sgv-actions sgv-tutorial-actions">
           <button type="button"
-            className={'sgv-action sgv-bank sgv-bank-command'+(hint&&canBank?' sgv-attention':'')}
+            className={'sgv-action sgv-bank sgv-bank-command'+(bankPulse?' sgv-attention':'')}
             disabled={!canBank}
             onClick={()=>play({type:'bank'},rootRef.current?.querySelector('.sgv-pending-pot'))}
             aria-label={canBank?'Bank '+potDisplay+' pending drops':'Bank available after two cards'}>
             <span className="sgv-action-text">BANK{canBank?' '+potDisplay:''}</span>
           </button>
-          {level.showFlip&&<button type="button"
-            className="sgv-action sgv-flip" data-hint={!!hint&&canFlip}
+          {level.showFlip&&remaining>0&&<button type="button"
+            className="sgv-action sgv-flip"
+            data-dock={docking&&level.dock==='flip'?true:undefined}
+            data-hint={flipPulse?true:undefined}
             disabled={!canFlip}
             onClick={e=>play({type:'flip'},e.currentTarget.querySelector('.sgv-next-card'))}
             aria-label={'Flip a hidden card. '+remaining+' remain'}>
@@ -274,19 +287,23 @@ export default function SimplifiedGame(){
           </button>}
         </div>
       </section>
-      {hint&&level.id>=4&&!finished&&<div className="sgv-tutorial-hint" role="status">{hint}</div>}
-      {help&&!finished&&<div className="sgv-tutorial-help" role="note">{level.lesson}</div>}
+      {help&&!finished&&<ul className="sgv-glossary" role="note">
+        <li>Card → meter → Pot</li>
+        <li>BANK → glass</li>
+        <li>Pill × this card</li>
+        <li>0 keeps the Pot. Snap empties it.</li>
+      </ul>}
       {finished&&<div className="sgv-end-overlay" role="dialog" aria-modal="true" aria-labelledby="sgv-end-title">
         <div className="sgv-end-card">
           <div className="sgv-end-symbol">{victory?'★':'♡'}</div>
-          <h1 id="sgv-end-title">{victory?(level.id===ONBOARDING_COUNT?'You mastered Swing!':'Level complete!'):'Try again!'}</h1>
+          <h1 id="sgv-end-title">{victory?'Level complete!':'Try again!'}</h1>
           <p>{'Drops secured: '+deal.T+' / '+level.target}</p>
           <button type="button" onClick={victory?nextLevel:()=>startLevel(level.id)}>
-            {victory?(level.id===ONBOARDING_COUNT?'REPLAY CHALLENGE':'NEXT LEVEL'):'TRY AGAIN'}
+            {victory?winLabel:'TRY AGAIN'}
           </button>
-          <button type="button" className="sgv-end-reset" onClick={resetProgress}>
+          {import.meta.env.DEV&&<button type="button" className="sgv-end-reset" onClick={resetProgress}>
             RESET PROGRESS
-          </button>
+          </button>}
         </div>
       </div>}
     </div>

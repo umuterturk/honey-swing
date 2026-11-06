@@ -19,7 +19,7 @@ export function DropletIcon({className=''}) {
  </svg>;
 }
 
-export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=null,showDanger=true}){
+export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=null,showDanger=true,beat='',dock=null}){
  const percentage=meterPercent(position,limit);
  return <section className="sgv-meter-section" aria-label="Swing meter and multipliers">
    <div className="sgv-meter-caption"><span className="sgv-meter-name">SWING</span></div>
@@ -42,11 +42,14 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
      </div>
      <div className="sgv-multipliers" role="group" aria-label="Swing, Flip, Jackpot multipliers">
        {multipliers.filter(({kind})=>!visibleFactors||visibleFactors.includes(kind)).map(({kind,value,label})=>
-         <span key={kind} className={'sgv-multiplier-pill sgv-multiplier-'+kind}
+         <span key={kind} className={'sgv-multiplier-pill sgv-multiplier-'+kind+
+           ((dock==='swing'&&kind==='swing')||(dock==='flip-pill'&&kind==='flip')||
+            (dock==='jackpot'&&kind==='jackpot')?' sgv-dock':'')}
            data-factor={kind} title={label} aria-label={label+': times '+value}>
            ×{value}
          </span>)}
      </div>
+     {beat?<p className="sgv-meter-beat" role="status">{beat}</p>:null}
    </div>
  </section>;
 }

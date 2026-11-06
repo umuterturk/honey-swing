@@ -71,7 +71,9 @@ export function animateCardAction({
     onComplete();
   }});
   source.style.opacity='.36';
-  animations.push(gsap.fromTo(source,{scale:1},{scale:.96,duration:.08,yoyo:true,repeat:1}));
+  animations.push(gsap.fromTo(source,{scale:1},{
+    scale:view.firstTap?1.12:.96,duration:view.firstTap?0.12:0.08,yoyo:true,repeat:1
+  }));
   tl.to(clone,{x:centerX,y:centerY,scale:1.13,
     rotation:action.type==='flip'?160:-5,duration:.23,ease:'power2.out'},0);
   tl.call(()=>{
@@ -95,28 +97,38 @@ export function animateCardAction({
     tl.call(()=>{if(alive){onSnap();onMeter(0);onPot(view.rawPotAfter);onFactors(view.factorsAfter);}},[],.53);
     tl.call(()=>{},[],.91);
   }else{
-    if(view.addedToPot>0){
+    const tier3=view.rewards.length>0;
+    // A strict cross holds a beat so the pill ticks before the multiplied add.
+    const hold=view.rewards.some(reward=>reward.kind==='swing')?.05:0;
+    const flyAdd=startAt=>{
+      if(view.addedToPot<=0)return;
       const coin=potChip(root,center,view.addedToPot);
       nodes.push(coin);
       gsap.set(coin,{opacity:0,scale:.6});
       tl.to(coin,{x:tray.x-center.x,y:tray.y-center.y,
-        opacity:1,scale:1.12,duration:.28,ease:'power2.out'},.24);
-      tl.to(coin,{opacity:0,scale:.52,duration:.12},.50);
-    }
-    tl.to(clone,{x:tray.x-start.x,y:tray.y-start.y,
-      scale:.12,rotation:action.type==='flip'?330:5,opacity:0,
-      duration:.34,ease:'power2.in'},.25);
-    tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],.54);
-    if(view.rewards.length){
+        opacity:1,scale:1.12,duration:.28,ease:'power2.out'},startAt);
+      tl.to(coin,{opacity:0,scale:.52,duration:.12},startAt+.26);
+    };
+    if(tier3){
       tl.call(()=>{
         if(!alive)return;
         animations.push(flyMultiplierRewards({
           root,rewards:view.rewards,firstFactorAwards
         }));
-      },[],.34);
-      tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],.76);
-      tl.call(()=>{},[],.86);
+      },[],.16);
+      tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],.58);
+      flyAdd(.63+hold);
+      tl.to(clone,{x:tray.x-start.x,y:tray.y-start.y,
+        scale:.12,rotation:action.type==='flip'?330:5,opacity:0,
+        duration:.34,ease:'power2.in'},.64+hold);
+      tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],.96+hold);
+      tl.call(()=>{},[],1.08+hold);
     }else{
+      flyAdd(.24);
+      tl.to(clone,{x:tray.x-start.x,y:tray.y-start.y,
+        scale:.12,rotation:action.type==='flip'?330:5,opacity:0,
+        duration:.34,ease:'power2.in'},.25);
+      tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],.54);
       tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],.55);
       tl.call(()=>{},[],.62);
     }
@@ -131,7 +143,7 @@ export function animateCardAction({
   };
 }
 
-const FIRST_AWARD_LABELS={swing:'CROSS BONUS',flip:'FLIP STREAK',jackpot:'JACKPOT'};
+const OBJECT_WORDS={swing:'CROSS',jackpot:'JACKPOT'};
 
 export function flyMultiplierRewards({root,rewards,firstFactorAwards=[]}){
   if(!root||!rewards?.length||reducedMotion())return ()=>{};
@@ -160,10 +172,10 @@ export function flyMultiplierRewards({root,rewards,firstFactorAwards=[]}){
       tweens.push(bounce);
     },[],delay+.40);
     tweens.push(flight);
-    if(firstFactorAwards.includes(kind)){
+    if(OBJECT_WORDS[kind]){
       const tip=document.createElement('span');
       tip.className='sgv-factor-tip';
-      tip.textContent=FIRST_AWARD_LABELS[kind]||'BONUS';
+      tip.textContent=OBJECT_WORDS[kind];
       Object.assign(tip.style,{left:end.x+'px',top:end.y+28+'px'});
       tip.setAttribute('aria-hidden','true');
       root.appendChild(tip);nodes.push(tip);

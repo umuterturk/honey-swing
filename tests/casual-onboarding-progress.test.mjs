@@ -21,12 +21,15 @@ test('development reset clears current and legacy onboarding progress only',()=>
     [ONBOARDING_SESSION_KEY]:JSON.stringify(newOnboardingRound(8)),
     [ONBOARDING_PROGRESS_KEY]:'9',
     'swing-casual-onboarding-session-v1':'old-session',
+    'swing-casual-onboarding-session-v2':'older-garden',
+    'swing-casual-onboarding-unlocked-v1':'10',
     'music-volume':'55',
     'other-game-progress':'keep'
   });
   assert.equal(clearOnboardingProgress(storage),true);
   for(const key of [ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,
-    'swing-casual-onboarding-session-v1']){
+    'swing-casual-onboarding-session-v1','swing-casual-onboarding-session-v2',
+    'swing-casual-onboarding-unlocked-v1']){
     assert.equal(storage.has(key),false);
   }
   assert.equal(storage.getItem('music-volume'),'55');
@@ -53,16 +56,15 @@ test('storage failure does not throw or block the interactive reset',()=>{
   assert.equal(clearOnboardingProgress({removeItem(){throw new Error('blocked');}}),false);
 });
 
-test('header always displays a reset button; win modal has an accessible fallback',async()=>{
+test('reset is a dev control in the header and on the win card, not a level gate',async()=>{
   const source=await readFile(new URL('../src/casual/SimplifiedGame.jsx',import.meta.url),'utf8');
   const header=source.slice(source.indexOf('<header className="sgv-hud sgv-tutorial-hud">'),
     source.indexOf('</header>'));
-  assert.match(header,/className="sgv-reset-progress"/);
+  assert.match(header,/import\.meta\.env\.DEV&&<button type="button" className="sgv-reset-progress"/);
   assert.match(header,/onClick=\{resetProgress\}/);
   assert.match(header,/aria-label="Reset onboarding progress and restart Level 1"/);
-  assert.ok(header.indexOf('sgv-reset-progress')<header.indexOf('level.id>=5'),
-    'Reset must not be gated behind onboarding level five');
-  assert.match(source,/className="sgv-end-reset" onClick=\{resetProgress\}/);
+  assert.doesNotMatch(header,/level\.id>=\d+&&<button type="button" className="sgv-reset-progress"/);
+  assert.match(source,/import\.meta\.env\.DEV&&<button type="button" className="sgv-end-reset" onClick=\{resetProgress\}/);
   const reset=source.slice(source.indexOf('function resetProgress(){'),
     source.indexOf('function nextLevel(){'));
   assert.match(reset,/clearOnboardingProgress\(window\.localStorage\)/);

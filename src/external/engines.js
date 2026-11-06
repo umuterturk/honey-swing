@@ -75,7 +75,10 @@ const OVERSWING_BASE_RULES=Object.freeze({
   maxFlips:null,bankTax:0,polarityReverse:false,shieldNextFlip:false,
   maxConsecutiveSummons:1,
   // Opt-in teaching gates; defaults preserve the original Overswing engine.
-  enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:true,enableResonance:true
+  enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:true,enableResonance:true,
+  // Casual Garden only. runningPot pays each card as Pot += M × rank.
+  // flipOnly keeps undealt cards out of the hand so they stay Flip plays.
+  runningPot:false,flipOnly:false
 });
 function overswingEffectiveRules(input={}){
   const rules={...OVERSWING_BASE_RULES,...input};
@@ -85,7 +88,8 @@ function overswingEffectiveRules(input={}){
     flipNoncrossPenalty:[0,1],snapLimit:[8,9,10],
     bankTax:[0,5,10,15],polarityReverse:[false,true],shieldNextFlip:[false,true],
     enableSwingFactor:[false,true],enableFlipFactor:[false,true],
-    enableJackpotFactor:[false,true],enableResonance:[false,true]
+    enableJackpotFactor:[false,true],enableResonance:[false,true],
+    runningPot:[false,true],flipOnly:[false,true]
   }))if(!allowed.includes(rules[name]))throw new RangeError('Invalid Overswing rule: '+name);
   if(rules.maxFlips!==null&&(!Number.isInteger(rules.maxFlips)||rules.maxFlips<1||rules.maxFlips>40))
     throw new RangeError('Invalid Overswing rule: maxFlips');
@@ -124,10 +128,14 @@ export function overswingActions(s,rules={}){
   return a;
 }
 export function overswingPayout(s,rules={}){
-  const d=s.deal,base=(d.pot.reduce((a,c)=>a+rank(c),0)+(d.resonancePoints||0))*overswingMultiplier(d);
+  const effective=overswingEffectiveRules(rules),d=s.deal;
+  // Casual Garden banks the accrued total as-is. Campaign Overswing still
+  // revalues the whole Pot by the live multiplier, then applies Crown and tax.
+  if(effective.runningPot)return d.potValue||0;
+  const base=(d.pot.reduce((a,c)=>a+rank(c),0)+(d.resonancePoints||0))*overswingMultiplier(d);
   const crown=d.hand.some(id=>royalRank(id)==='K')?(d.crownBonus||0):0;
   const gross=Math.floor(base*(100+crown)/100);
-  return Math.floor(gross*(100-overswingEffectiveRules(rules).bankTax)/100);
+  return Math.floor(gross*(100-effective.bankTax)/100);
 }
 function resetMultipliers(d){
   d.W=0;d.flipStreak=0;
@@ -135,11 +143,14 @@ function resetMultipliers(d){
 }
 function clearSwing(d){
   d.S=0;d.pot=[];d.plays=0;d.resonancePoints=0;
+  if(Number.isInteger(d.potValue))d.potValue=0;
   resetMultipliers(d);
   d.swingNo++;
 }
-function refillEmptyHand(d){
+function refillEmptyHand(d,rules){
   const drawn=[];
+  // A Flip-only pile is not a hand refill. Flip stays legal while cards remain.
+  if(rules.flipOnly)return drawn;
   // Preserve a single Royal across ordinary refills. Multiple held Royals
   // require choosing one to carry, rather than silently discarding another.
   if(d.pos<d.deck.length&&!d.hand.some(id=>!isRoyal(id))&&d.hand.length<=1){
@@ -247,22 +258,26 @@ export function stepOverswing(s,a,rules={}){
         d.pot.push(c);destination='pot';
         if(!outcome.swung&&!zeroBreak)d.W=Math.max(0,d.W-effective.flipNoncrossPenalty);
         if(!zeroBreak){
-          // Crossing grows JACKPOT only. A noncrossing FLIP grows FLIP.
-          if(outcome.swung){
+          // Campaign: a crossing FLIP grows JACKPOT and resets the streak.
+          // Casual running Pot with Jackpot off grows FLIP on that same cross
+          // and keeps the streak, so Swing and Flip both step.
+          const casualCrossGrowsFlip=outcome.swung&&!effective.enableJackpotFactor&&
+            effective.runningPot&&effective.enableFlipFactor;
+          if(outcome.swung&&effective.enableJackpotFactor){
             d.flipStreak=0;
-            if(effective.enableJackpotFactor)d.jackpotFactor+=effective.flipCrossJackpotGain;
-          }else{
-            if(effective.enableFlipFactor){
-              d.flipStreak++;
-              d.flipFactor=Math.max(d.flipFactor,d.flipStreak+1);
-            }
+            d.jackpotFactor+=effective.flipCrossJackpotGain;
+          }else if(outcome.swung&&!casualCrossGrowsFlip){
+            d.flipStreak=0;
+          }else if(effective.enableFlipFactor){
+            d.flipStreak++;
+            d.flipFactor=Math.max(d.flipFactor,d.flipStreak+1);
           }
         }
       }else{
         d.flipStreak=0;
         // Steering without a crossing spends one SWING tier; ZERO BREAK resets all tiers below.
         if(!outcome.swung&&!zeroBreak)d.W=Math.max(0,d.W-effective.steerNoncrossPenalty);
-        // Exact zero still deposits a STEER card in the Pot, without any bonus.
+        // Exact zero still deposits the STEER. A running Pot pays it at the board multiplier.
         if(opening||outcome.swung||zeroBreak||effective.steerAlwaysToPot){
           if(effective.enableResonance&&d.pot.length&&
              suit(d.pot.at(-1))===suit(c)&&d.resonancePoints<6)
@@ -270,9 +285,16 @@ export function stepOverswing(s,a,rules={}){
           d.pot.push(c);destination='pot';
         }else{d.discard.push(c);destination='discard';}
       }
+      // Factors above already skipped their growth on exact zero, so this is the
+      // multiplier on the board for a zero and the updated one for every other safe play.
+      const payoutMultiplier=overswingMultiplier(d);
       if(zeroBreak)resetMultipliers(d);
       if(royalRank(c)==='J'&&d.pos<d.deck.length)d.scoutNext=d.deck[d.pos];
-      const addedToPot=destination==='pot'?rank(c):0;
+      let addedToPot=destination==='pot'?rank(c):0;
+      if(effective.runningPot&&destination==='pot'){
+        addedToPot=payoutMultiplier*rank(c);
+        d.potValue=(d.potValue||0)+addedToPot;
+      }
       const resonanceGained=(d.resonancePoints||0)-(s.deal.resonancePoints||0);
       n.lastAction={type:a.type,card:c,from:previousS,to:d.S,
         snap:false,swung:outcome.swung,zeroBreak,
@@ -306,7 +328,7 @@ export function stepOverswing(s,a,rules={}){
       d.S=0;d.plays=0;resetMultipliers(d);d.swingNo++;
     }else clearSwing(d);
   }
-  const refill=refillEmptyHand(d);
+  const refill=refillEmptyHand(d,effective);
   // Refill consumes the top of the ordinary deck. A Scout preview must always
   // point at the next actual FLIP card, never a card moved into the hand.
   if(d.scoutNext!=null&&refill.length)

@@ -114,26 +114,30 @@ The physical arrangement is **two adjacent containers**: smaller Pot on the left
 
 **Bank eligibility** is determined by `overswingActions`; it generally requires pending value and sufficient actions since the last reset, with engine-specific exceptions. The onboarding layer may additionally require a teaching action first (e.g., a Flip or Zero Break). The button must remain disabled until both the engine and tutorial allow it.
 
-### 3.4 Three independent multipliers
+### 3.4 Multipliers
 
-The original engine has three independent factors:
+The original Overswing engine has three independent factors. Campaign defaults (`enableJackpotFactor: true`, `runningPot: false`) are unchanged:
 
-| Factor | Engine value | Cause in onboarding | First visibly introduced |
-|---|---|---|---|
-| **Swing** | `W + 1` | Strict nonzero sign crossing | Level 5 |
-| **Flip** | `flipFactor` | Safe non-crossing Flip streak | Level 6 |
-| **Jackpot** | `jackpotFactor` | Strict crossing performed by a Flip | Level 7 |
+| Factor | Engine value | Cause |
+|---|---|---|
+| **Swing** | `W + 1` | Strict nonzero sign crossing |
+| **Flip** | `flipFactor` | Safe non-crossing Flip streak |
+| **Jackpot** | `jackpotFactor` | Strict crossing performed by a Flip. The Flip streak resets; Flip does not grow on that play |
 
-A crossing Flip can legitimately award **Swing and Jackpot together**. Do not show a Flip-factor increase unless the engine actually awards it. The factors are displayed as compact numeric-only pills when unlocked, with accessible labels outside the visual numbers.
+A crossing Flip in that mode awards **Swing and Jackpot together**. Do not show a Flip-factor increase unless the engine awards it.
 
-The canonical payout is computed by `overswingPayout`, not duplicated in React. Conceptually, before modifiers/tax, it is:
+Garden 1 (`runningPot: true`, `enableJackpotFactor: false` on every level) does not teach Jackpot. `M = (W + 1) × flipFactor`. A strict-crossing Flip grows Swing and takes the same Flip step as a safe Flip, and the streak is not reset. A Steer still clears the streak and does not clear `flipFactor`. A board with no Flip shows Swing only. Pills are compact numbers, sourced from the engine, shown only once that factor is enabled.
+
+The canonical payout is computed by `overswingPayout`, not duplicated in React. Campaign, before modifiers/tax:
 
 ```text
 Gross payout = floor((sum of absolute ranks in Pot + resonance points)
                      × Swing factor × Flip factor × Jackpot factor)
 ```
 
-Per-level rules and any engine modifiers/tax are applied by the engine. During **all current onboarding levels**, resonance is **disabled**; bank capacity loss is `0`; bank tax is not introduced; the casual `steerAlwaysToPot` behavior is enabled; and noncrossing penalties are disabled. The `enableSwingFactor`, `enableFlipFactor` and `enableJackpotFactor` rules explicitly gate each multiplier until its teaching level. **Full original Overswing defaults remain unchanged** outside opted-in casual rules.
+Garden 1 banks a running total: each safe card adds `M × rank`, and Bank transfers that integer as-is.
+
+Per-level rules and any engine modifiers/tax are applied by the engine. During **all current onboarding levels**, resonance is **disabled**; bank capacity loss is `0`; bank tax is not introduced; the casual `steerAlwaysToPot` behavior is enabled; and noncrossing penalties are disabled. The `enableSwingFactor`, `enableFlipFactor` and `enableJackpotFactor` rules explicitly gate each multiplier. **Full original Overswing defaults remain unchanged** outside opted-in casual rules.
 
 ### 3.5 Win, loss and retry
 
