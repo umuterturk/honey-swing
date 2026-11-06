@@ -1,6 +1,6 @@
 import React from 'react';
 import {meterPercent,meterMarks} from './meterScale.js';
-import {flipBandView} from './flipLandingBand.js';
+import {flipBandMarkClass,flipBandView} from './flipLandingBand.js';
 import {fluidFillPercent} from './presentation.js';
 import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from './cardDirection.js';
 
@@ -24,18 +24,20 @@ export function FlipLandingBand({band,reduced=false}){
  const view=flipBandView(band,{reduced});
  if(view.hidden)return null;
  const span=band.single?0:Math.max(0,band.right-band.left);
- return <div className={'sgv-flip-band'+(band.single?' sgv-flip-band-mark':'')+(view.animate?'':' sgv-flip-band-reduced')+(band.danger?' sgv-flip-band-has-danger':'')}
-   style={band.single?{left:band.left+'%'}:{left:band.left+'%',width:span+'%'}}
-   aria-hidden="true">
+ const markClass=flipBandMarkClass(band);
+ return <div className="sgv-flip-band-layer" aria-hidden="true">
+   <div className={'sgv-flip-band'+(markClass?' '+markClass:'')+(view.animate?'':' sgv-flip-band-reduced')+(band.danger?' sgv-flip-band-has-danger':'')}
+     style={band.single?{left:band.left+'%'}:{left:band.left+'%',width:span+'%'}}/>
    {band.segments.map(segment=>{
-     const width=Math.max(0,segment.right-segment.left);
+     const width=segment.right-segment.left;
+     const inward=segment.side==='right'?{right:0,width:width+'%',minWidth:'12px'}:{left:0,width:width+'%',minWidth:'12px'};
      return <span key={segment.side}
-       className={'sgv-flip-band-danger sgv-flip-band-hatch'+(segment.chevron?' sgv-flip-band-chevron sgv-flip-band-chevron-'+segment.side:'')}
-       style={{left:(span?((segment.left-band.left)/span)*100:0)+'%',width:(span?(width/span)*100:0)+'%'}}/>;
+       className={'sgv-flip-band-danger sgv-flip-band-hatch sgv-flip-band-danger-'+segment.side}
+       style={inward}/>;
    })}
    {view.ticks.map(tick=><span key={tick.value+(tick.chevron||'')}
      className={'sgv-flip-band-tick'+(tick.chevron?' sgv-flip-band-chevron-'+tick.chevron:'')}
-     style={{left:(band.single?50:(span?((tick.percent-band.left)/span)*100:0))+'%'}}/>)}
+     style={{left:tick.percent+'%'}}/>)}
    {band.chevronMin&&<span className="sgv-flip-band-chevron sgv-flip-band-chevron-left"/>}
    {band.chevronMax&&<span className="sgv-flip-band-chevron sgv-flip-band-chevron-right"/>}
  </div>;

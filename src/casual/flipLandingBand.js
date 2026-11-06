@@ -6,6 +6,10 @@ import {onboardingActions,onboardingLevel} from './onboardingLevels.js';
 export const FLIP_BAND_APPEAR_MS=150;
 export const FLIP_BAND_MORPH_MS=120;
 export const FLIP_BAND_HIDE_MS=120;
+// 12px on the narrow portrait track (~320px) so a clamped Snap edge still hatches.
+export const FLIP_BAND_DANGER_MIN_PX=12;
+export const FLIP_BAND_TRACK_PX=320;
+export const FLIP_BAND_DANGER_MIN_PERCENT=FLIP_BAND_DANGER_MIN_PX/FLIP_BAND_TRACK_PX*100;
 
 const clamp=(value,limit)=>Math.max(-limit,Math.min(limit,value));
 const percent=(value,limit)=>meterPercent(clamp(value,limit),limit);
@@ -35,21 +39,14 @@ export function flipLandingBand(round){
     snap:showSnapOverlap&&Math.abs(value)>limit
   });
   const segments=[];
+  // Clamping a Snap landing onto ±limit makes the raw interval 0% wide.
+  // Grow that cap inward from the meter edge by the 12px minimum.
+  const minSpan=FLIP_BAND_DANGER_MIN_PERCENT;
   if(danger&&min<-limit){
-    segments.push({
-      side:'left',
-      left:percent(min,limit),
-      right:percent(Math.min(max,-limit),limit),
-      chevron:true
-    });
+    segments.push({side:'left',left:0,right:Math.min(100,minSpan),chevron:true});
   }
   if(danger&&max>limit){
-    segments.push({
-      side:'right',
-      left:percent(Math.max(min,limit),limit),
-      right:percent(max,limit),
-      chevron:true
-    });
+    segments.push({side:'right',left:Math.max(0,100-minSpan),right:100,chevron:true});
   }
   const aria=single
     ?'Flip can land on '+min+(danger?', including Snap risk':'')
@@ -79,6 +76,13 @@ export function flipBandView(band,{reduced=false}={}){
     aria:band.aria,
     blocksInput:false
   };
+}
+
+export function flipBandMarkClass(band){
+  if(!band?.single)return '';
+  return band.marks[0]?.snap
+    ?'sgv-flip-band-mark sgv-flip-band-mark-snap sgv-flip-band-hatch'
+    :'sgv-flip-band-mark';
 }
 
 export function flipBandShownPayload(levelId,band){

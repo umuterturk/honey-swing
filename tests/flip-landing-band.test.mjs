@@ -6,8 +6,8 @@ import {
   newOnboardingRound,onboardingActions,onboardingLevel,stepOnboarding
 } from '../src/casual/onboardingLevels.js';
 import {
-  FLIP_BAND_APPEAR_MS,flipBandShownPayload,flipBandView,flipChosenPayload,
-  flipLandingBand,flipLandings,nextFlipBandShown
+  FLIP_BAND_APPEAR_MS,FLIP_BAND_DANGER_MIN_PERCENT,flipBandMarkClass,flipBandShownPayload,
+  flipBandView,flipChosenPayload,flipLandingBand,flipLandings,nextFlipBandShown
 } from '../src/casual/flipLandingBand.js';
 
 const flip={type:'flip'},bank={type:'bank'};
@@ -87,6 +87,30 @@ test('red exists only for a real Snap landing from Level 11 on',()=>{
   assert.equal(minus.snap,false);
   assert.equal(plus.snap,false);
   assert.equal(band.segments.some(segment=>segment.side==='right'&&segment.chevron),true);
+  const right=band.segments.find(segment=>segment.side==='right');
+  assert.ok(right.right-right.left>0);
+  assert.ok(right.right-right.left>=FLIP_BAND_DANGER_MIN_PERCENT-1e-9);
+  assert.equal(right.right,100);
+});
+
+test('a single Snap mark uses the danger hatch, not honey',()=>{
+  const round=newOnboardingRound(11);
+  const deal=round.game.deal;
+  const direct={...round,game:{...round.game,deal:{...deal,S:5,pos:0,deck:[6]}}};
+  const band=flipLandingBand(direct);
+  assert.equal(band.single,true);
+  assert.equal(band.marks[0].value,12);
+  assert.equal(band.marks[0].snap,true);
+  assert.equal(band.danger,true);
+  assert.match(flipBandMarkClass(band),/sgv-flip-band-mark-snap/);
+  assert.match(flipBandMarkClass(band),/sgv-flip-band-hatch/);
+  const safe=flipLandingBand(newOnboardingRound(12));
+  assert.equal(safe.marks[0].snap,false);
+  assert.doesNotMatch(flipBandMarkClass(safe),/mark-snap/);
+  const css=readFileSync(new URL('../src/casual/minimal.css',import.meta.url),'utf8');
+  assert.match(css,/\.sgv-flip-band-mark-snap\{[^}]*var\(--sgv-flip-band-danger\)/);
+  assert.match(css,/\.sgv-flip-band-danger\{[^}]*min-width:12px/);
+  assert.match(css,/\.sgv-flip-band-danger-right\{right:0;left:auto\}/);
 });
 
 test('Level 12 opens on a single mark at -6',()=>{
