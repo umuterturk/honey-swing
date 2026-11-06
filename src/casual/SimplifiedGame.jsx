@@ -1,4 +1,4 @@
-import React,{useEffect,useRef,useState} from 'react';
+import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {overswingPayout,signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
 import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
@@ -160,7 +160,7 @@ export default function SimplifiedGame(){
       handle.cancel();
     };
   },[finished,victory,round.levelId,deal.T]);
-  useEffect(()=>{
+  useLayoutEffect(()=>{
     const phone=rootRef.current;
     if(!phone)return;
     const apply=()=>{

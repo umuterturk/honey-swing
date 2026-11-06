@@ -142,6 +142,50 @@ function timelineOf(node){
   return tween?tween.parent:null;
 }
 
+function assertComputedFill(node,label){
+  node.style.height='';
+  node.style.opacity='';
+  const computed=win.getComputedStyle(node);
+  const height=String(computed.height);
+  const pixels=parseFloat(height);
+  assert.equal(computed.opacity,'1',label+' opacity');
+  assert.notEqual(height,'0%',label+' height');
+  assert.notEqual(height,'0px',label+' height');
+  assert.ok(height==='78%'||pixels>0,label+' computed height '+height);
+}
+
+function parseLen(value,base){
+  if(!value||value==='auto'||value==='none')return null;
+  if(String(value).endsWith('%'))return parseFloat(value)/100*(base||0);
+  const number=parseFloat(value);
+  return Number.isFinite(number)?number:null;
+}
+function layoutRect(node,seen=new Set()){
+  if(!node||seen.has(node))return {left:0,top:0,width:0,height:0};
+  seen.add(node);
+  const style=win.getComputedStyle(node);
+  const parent=node.offsetParent||node.parentElement;
+  const parentRect=parent&&parent!==document.body&&parent!==document.documentElement
+    ?layoutRect(parent,seen):{left:0,top:0,width:0,height:0};
+  const width=parseLen(style.width,parentRect.width)||0;
+  const height=parseLen(style.height,parentRect.height)||0;
+  const positioned=style.position==='absolute'||style.position==='fixed'||style.position==='relative';
+  let left=parseLen(style.left,parentRect.width);
+  let top=parseLen(style.top,parentRect.height);
+  if(left==null)left=0;
+  if(top==null)top=0;
+  const shift=String(style.transform||'').match(/translateX\((-?[\d.]+)%\)/);
+  if(shift)left+=parseFloat(shift[1])/100*width;
+  const originLeft=positioned?parentRect.left:0;
+  const originTop=positioned?parentRect.top:0;
+  return {
+    left:originLeft+left,top:originTop+top,width,height,
+    right:originLeft+left+width,bottom:originTop+top+height,
+    x:originLeft+left,y:originTop+top
+  };
+}
+win.HTMLElement.prototype.getBoundingClientRect=function(){return layoutRect(this);};
+
 function opacityOf(node){
   const value=Number(gsap.getProperty(node,'opacity'));
   return Number.isFinite(value)?value:1;
@@ -505,7 +549,7 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
     assert.equal(host.querySelector('.sgv-win-praise').textContent,'Hiveful!');
     assert.equal(host.querySelector('.sgv-win-star'),null);
-    assert.equal(host.querySelector('.sgv-fluid-fill').style.height,'78%');
+    assert.equal(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill').style.height,'78%');
     const shownPraise=host.querySelector('.sgv-win-praise');
     assert.equal(shownPraise.style.opacity,'1');
     assert.equal(win.getComputedStyle(shownPraise).opacity,'1');
@@ -515,6 +559,9 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     assert.equal(bus.liveParticles(),0);
     assert.equal(host.querySelector('.sgv-end-cta').textContent,'NEXT');
     assert.equal(host.querySelector('.sgv-end-cta').disabled,false);
+    assert.ok(host.querySelector('.sgv-honey-final'));
+    assert.ok(host.querySelector('.sgv-success-settled'));
+    assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'skip-settled');
     const expected=assertStylesheetTransform(goal);
     assert.match(String(expected),/-50%/);
     await view.unmount();
@@ -568,6 +615,21 @@ test('a mounted loss shows the quiet end card',async()=>{
   });
 });
 
+test('the settled timeline keeps a computed full jar',async()=>{
+  await withStylesheet(async()=>{
+    resetStorage();
+    saveRound(bankedLevel1());
+    const view=await mount();
+    const host=view.host;
+    const timeline=timelineOf(host.querySelector('.sgv-win-praise'));
+    assert.ok(timeline);
+    await act(async()=>{timeline.time(1.3);});
+    assert.ok(host.querySelector('.sgv-success-settled'));
+    assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'settled');
+    await view.unmount();
+  });
+});
+
 test('reduced motion mounts the static final card with 0 particles',async()=>{
   await withStylesheet(async()=>{
     resetStorage();
@@ -582,12 +644,57 @@ test('reduced motion mounts the static final card with 0 particles',async()=>{
     assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
     assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
-    assert.equal(host.querySelector('.sgv-fluid-fill').style.height,'78%');
+    assert.equal(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill').style.height,'78%');
+    assert.ok(host.querySelector('.sgv-win-static'));
+    assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'reduced-motion');
     assert.equal(bus.liveParticles(),0);
     assert.equal(bus.tweenCount(),0);
     assert.equal(gsap.getTweensOf(host.querySelector('.sgv-win-praise')).length,0);
     assert.equal(host.querySelector('.sgv-end-cta').textContent,'NEXT');
     await view.unmount();
+  });
+});
+
+test('confetti starts at the laid-out lip on 320, 430, and a safe-area phone',async()=>{
+  await withStylesheet(async()=>{
+    const cases=[
+      {width:320,height:568,top:0,right:0,bottom:0,left:0},
+      {width:430,height:932,top:0,right:0,bottom:0,left:0},
+      {width:320,height:568,top:44,right:0,bottom:34,left:0}
+    ];
+    for(const box of cases){
+      resetStorage();
+      saveRound(bankedLevel1());
+      const sizer=document.createElement('style');
+      sizer.textContent=[
+        '.sgv-phone{width:'+box.width+'px !important;height:'+box.height+'px !important;',
+        '--safe-top:'+box.top+'px;--safe-right:'+box.right+'px;',
+        '--safe-bottom:'+box.bottom+'px;--safe-left:'+box.left+'px}'
+      ].join('');
+      document.head.appendChild(sizer);
+      const view=await mount();
+      const host=view.host.querySelector('.sgv-phone');
+      const layer=host.querySelector('.sgv-fx-layer');
+      const mouth=host.querySelector('.sgv-honey-mouth');
+      const timeline=timelineOf(host.querySelector('.sgv-win-praise'));
+      assert.ok(timeline,box.width+' timeline');
+      timeline.pause();
+      timeline.time(0.8);
+      const particle=layer.__fxBus.pool.live().find(entry=>entry.key==='burst-0');
+      const layerBox=layoutRect(layer);
+      const lip=layoutRect(mouth);
+      const origin={
+        x:lip.left+lip.width/2-layerBox.left,
+        y:lip.top+lip.height/2-layerBox.top
+      };
+      assert.ok(particle,box.width+' confetti');
+      assert.ok(Math.abs(particle.x-origin.x)<=1,box.width+' x '+particle.x+' vs '+origin.x);
+      assert.ok(Math.abs(particle.y-origin.y)<=1,box.width+' y '+particle.y+' vs '+origin.y);
+      if(box.width===430)assert.ok(origin.x>200,'430 lip is not the 320 fallback');
+      if(box.top===44)assert.ok(origin.y>140,'inset lip is below the zero-inset fallback');
+      await view.unmount();
+      sizer.remove();
+    }
   });
 });
 

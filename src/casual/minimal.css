@@ -1,4 +1,4 @@
-:root{font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-synthesis:none;color:#704b69;background:#79d0e9;--honey-scrim:#1a0f12;--honey-scrim-opacity:.92;--honey-text-backing:transparent;--honey-praise-h1:#fff0cf;--honey-praise-h1-outline:#704b69;--honey-praise-h2:#f0c14a;--honey-praise-h2-outline:#5a3a12;--honey-praise-h3:#ffe08a;--honey-praise-h3-outline:#5a3a12;--honey-praise-h3-glow:0 0 18px #f0c14a88;--honey-body:#e8a317;--honey-depth:#c47a0a;--honey-surface:#ffe08a;--honey-count:#f0c14a;--honey-count-outline:#3b2410;--honey-subline:#fff0cf;--honey-glass-rim:#acd7f7;--ease-out:cubic-bezier(.2,.8,.2,1);--ease-back:cubic-bezier(.34,1.56,.64,1);--fs-xxl:44px;--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px)}
+:root{font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-synthesis:none;color:#704b69;background:#79d0e9;--honey-scrim:#1a0f12;--honey-scrim-opacity:1;--honey-text-backing:transparent;--honey-praise-h1:#fff0cf;--honey-praise-h1-outline:#704b69;--honey-praise-h2:#f0c14a;--honey-praise-h2-outline:#5a3a12;--honey-praise-h3:#ffe08a;--honey-praise-h3-outline:#5a3a12;--honey-praise-h3-glow:0 0 18px #f0c14a88;--honey-body:#e8a317;--honey-depth:#c47a0a;--honey-surface:#ffe08a;--honey-count:#f0c14a;--honey-count-outline:#3b2410;--honey-subline:#fff0cf;--honey-glass-rim:#acd7f7;--ease-out:cubic-bezier(.2,.8,.2,1);--ease-back:cubic-bezier(.34,1.56,.64,1);--fs-xxl:44px;--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px)}
 *{box-sizing:border-box}
 html,body,#root{width:100%;height:100%;margin:0}
 body{overscroll-behavior:none}
@@ -152,8 +152,8 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 
 /* Honey win. The scrim covers the phone. FX stays at z 35, above this card (z 30)
    and below NEW! (z 40), so --z-overlay:50 is not applied here. */
-.sgv-honey-win{display:block;background:#1a0f12;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);container-type:size}
-.sgv-honey-win .sgv-honey-scrim{position:absolute;inset:0;z-index:0;background:#1a0f12;opacity:var(--honey-scrim-opacity);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);pointer-events:auto}
+.sgv-honey-win{display:block;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;container-type:size}
+.sgv-honey-win .sgv-honey-scrim{position:absolute;inset:0;z-index:0;background:#1a0f12;opacity:var(--honey-scrim-opacity);backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:auto}
 .sgv-honey-win .sgv-end-card{position:absolute;inset:0;z-index:1;width:auto;max-width:none;height:auto;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;pointer-events:none}
 .sgv-honey-win .sgv-end-card .sgv-end-cta,
 .sgv-honey-win .sgv-end-card .sgv-end-reset{pointer-events:auto}
@@ -171,7 +171,6 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-honey-win .sgv-end-card .sgv-honey-reset{all:unset;box-sizing:border-box;position:absolute;z-index:3;top:var(--honey-reset-top,calc(var(--safe-top) + 16px));right:var(--honey-reset-right,calc(var(--safe-right) + 16px));width:44px;min-width:44px;max-width:44px;height:44px;margin:0;padding:0;border:0;border-radius:22px;background:#fff0cf;color:#5a3a12;box-shadow:none;font:900 22px/44px ui-rounded,system-ui,sans-serif;text-align:center;overflow:visible;cursor:pointer;pointer-events:auto}
 .sgv-win-static .sgv-honey-scrim,.sgv-honey-final .sgv-honey-scrim,.sgv-success-settled.sgv-honey-win .sgv-honey-scrim{opacity:var(--honey-scrim-opacity)}
 .sgv-win-static .sgv-win-praise,.sgv-honey-final .sgv-win-praise,.sgv-success-settled .sgv-win-praise{opacity:1;transform:none}
-.sgv-win-static .sgv-honey-hero-art .sgv-fluid-fill,.sgv-honey-final .sgv-honey-hero-art .sgv-fluid-fill,.sgv-success-settled .sgv-honey-hero-art .sgv-fluid-fill{height:78%;opacity:1}
 .sgv-win-static .sgv-honey-subline,.sgv-honey-final .sgv-honey-subline,.sgv-success-settled .sgv-honey-subline{opacity:.9}
 .sgv-win-static .sgv-honey-overflow,.sgv-honey-final .sgv-honey-overflow,.sgv-success-settled .sgv-honey-overflow{opacity:1;transform:none}
 
@@ -1390,6 +1389,11 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-honey-win .sgv-honey-hero-art .sgv-chest-rim{display:block!important;top:0;height:18%}
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-fill{
   transition:none!important;height:0%;opacity:0;will-change:auto;
+}
+.sgv-honey-win.sgv-win-static .sgv-honey-hero-art .sgv-fluid-fill,
+.sgv-honey-win.sgv-honey-final .sgv-honey-hero-art .sgv-fluid-fill,
+.sgv-honey-win.sgv-success-settled .sgv-honey-hero-art .sgv-fluid-fill{
+  height:78%;opacity:1;
 }
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-surface,
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-bubble,

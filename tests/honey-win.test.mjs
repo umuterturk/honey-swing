@@ -165,7 +165,7 @@ test('praise and count contrast clear 4.5:1 on the composited backing',()=>{
     assert.ok(contrastRatio(hex,backing)>=4.5,hex+' '+contrastRatio(hex,backing));
   }
   assert.ok(contrastRatio(HONEY_TOKENS.glassRim,backing.scrim)>=3);
-  assert.equal(HONEY_TOKENS.scrimOpacity,0.92);
+  assert.equal(HONEY_TOKENS.scrimOpacity,1);
   assert.equal(HONEY_TOKENS.backingOpacity,0);
 });
 
@@ -306,7 +306,7 @@ function assertFinal(nodes,secured){
   if(nodes.hero)assert.equal(nodes.hero.style.transform,'none');
   if(nodes.gleam)assert.equal(nodes.gleam.style.opacity,'0');
   assert.equal(nodes.subline.style.opacity,'0.9');
-  assert.equal(nodes.scrim.style.opacity,'0.92');
+  assert.equal(nodes.scrim.style.opacity,'1');
   assert.equal(nodes.cta.disabled,false);
   if(nodes.overflow){
     assert.equal(nodes.overflow.style.opacity,'1');
@@ -634,11 +634,11 @@ test('the win scrim, glass jar, and reset icon are styled before any tween',asyn
   document.body.appendChild(host);
   const scrim=win.getComputedStyle(host.querySelector('.sgv-honey-scrim'));
   const overlay=win.getComputedStyle(host.querySelector('.sgv-honey-win'));
-  assert.ok(scrim.opacity==='.92'||scrim.opacity==='0.92');
-  assert.match(String(scrim.backdropFilter),/blur\(12px\)/);
-  assert.match(String(overlay.backdropFilter),/blur\(12px\)/);
-  assert.match(String(overlay.backgroundColor),/26,\s*15,\s*18|1a0f12/i);
-  assert.match(String(overlay.backdropFilter),/blur/);
+  assert.ok(scrim.opacity==='1'||scrim.opacity==='1.0');
+  assert.equal(scrim.backdropFilter,'none');
+  assert.match(String(scrim.backgroundColor),/26,\s*15,\s*18|1a0f12/i);
+  assert.ok(overlay.backgroundColor==='transparent'||overlay.backgroundColor==='rgba(0, 0, 0, 0)');
+  assert.equal(overlay.backdropFilter,'none');
   assert.ok(host.querySelector('.sgv-chest-body'));
   assert.ok(host.querySelector('.sgv-chest-rim'));
   assert.ok(host.querySelector('.sgv-fluid-surface'));
@@ -697,14 +697,28 @@ test('H3 confetti stays inside the pool because the flight droplets have already
 
 test('the fill bobs, the gleam sweeps, and the jar pops, then skip leaves scale 1',()=>{
   const nodes=stage();
+  const body=document.createElement('div');
+  body.className='sgv-chest-body';
+  body.style.width='220px';
+  nodes.gleam.style.width='56px';
+  nodes.hero.insertBefore(body,nodes.liquid);
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=play(nodes,{bus,tier:3,secured:32,target:9});
   handle.timeline.pause();
-  handle.timeline.time(0.5);
-  const bob=Number(String(nodes.surface.style.transform).replace(/[^\d.-]/g,''));
-  assert.ok(Math.abs(bob-3)<0.05,nodes.surface.style.transform);
-  assert.ok(Math.abs(Number(nodes.gleam.style.opacity)-0.55)<1e-9);
-  assert.match(nodes.gleam.style.transform,/translateX\(/);
+  let low=0;
+  let high=0;
+  for(let step=0;step<=60;step++){
+    handle.timeline.time(0.2+0.6*step/60);
+    const bob=Number(String(nodes.surface.style.transform).replace(/[^\d.-]/g,''))||0;
+    low=Math.min(low,bob);
+    high=Math.max(high,bob);
+  }
+  assert.ok(low<=-2.9,String(low));
+  assert.ok(high>=2.9,String(high));
+  handle.timeline.time(0.8);
+  const traveled=Number(String(nodes.gleam.style.transform).replace(/[^\d.-]/g,''));
+  assert.match(nodes.gleam.style.transform,/translateX\([-\d.]+px\)/);
+  assert.ok(traveled>=220,nodes.gleam.style.transform);
   let peak=1;
   for(let step=80;step<=98;step++){
     handle.timeline.time(step/100);

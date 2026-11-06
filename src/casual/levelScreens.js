@@ -113,6 +113,7 @@ export function LevelEndScreen({
   const announcement=(praise?praise.text+' ':'')+score+' honey secured. Target '+target+'.';
   return createElement('div',{
     className:'sgv-end-overlay sgv-level-end sgv-honey-win'+
+      (staticCard?' sgv-honey-final':'')+
       (settled?' sgv-success-settled':'')+(reduced?' sgv-win-static':''),
     role:'dialog','aria-modal':'true','aria-labelledby':'sgv-honey-status',
     onPointerDown:event=>{

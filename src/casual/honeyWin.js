@@ -6,7 +6,7 @@ import {burstParticles,burstRadius as burstTravel,flightDropletSize,flightDrople
 export const HONEY_MOTION=Object.freeze({
   cap:2.5,
   settled:1.3,
-  scrim:Object.freeze({start:0,end:0,opacity:0.92}),
+  scrim:Object.freeze({start:0,end:0,opacity:1}),
   praise:Object.freeze({
     start:0,peakEnd:0.14,end:0.22,opacityEnd:0.1,
     fromScale:0.55,peakScale:1.14,toScale:1
@@ -24,7 +24,7 @@ export const HONEY_MOTION=Object.freeze({
 // Overlay aliases. Component CSS mirrors these custom properties.
 export const HONEY_TOKENS=Object.freeze({
   scrim:'#1a0f12',
-  scrimOpacity:0.92,
+  scrimOpacity:1,
   backing:'transparent',
   backingOpacity:0,
   praise:Object.freeze({

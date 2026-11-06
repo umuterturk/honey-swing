@@ -34,7 +34,7 @@ export function playWinCelebration({
   const intensity=tier|0;
   const paintFinal=()=>{
     card?.classList?.add('sgv-honey-final');
-    if(scrim?.style)scrim.style.opacity='0.92';
+    if(scrim?.style)scrim.style.opacity='1';
     if(praise?.style){
       praise.style.opacity='1';
       praise.style.transform='none';
@@ -144,7 +144,7 @@ export function playWinCelebration({
     liquid.style.transform='none';
   }
   if(subline?.style)subline.style.opacity='0';
-  if(scrim?.style)scrim.style.opacity='0.92';
+  if(scrim?.style)scrim.style.opacity='1';
   if(overflow?.style){
     overflow.style.opacity='0';
     overflow.style.transform='translateY(-8px)';
@@ -190,19 +190,30 @@ export function playWinCelebration({
   const hero=card?.querySelector?.('.sgv-honey-hero-art')||null;
   const surface=liquid?.querySelector?.('.sgv-fluid-surface')||null;
   const gleam=hero?.querySelector?.('.sgv-honey-gleam-sweep')||null;
+  function pxWidth(node){
+    if(!node)return 0;
+    const rect=node.getBoundingClientRect?.();
+    if(rect&&rect.width>0)return rect.width;
+    const declared=parseFloat(node.style?.width||'');
+    return declared>0?declared:0;
+  }
   function paintPretty(time){
-    const active=time>=0.2&&time<0.8;
+    const active=time>=0.2&&time<=0.8;
     const along=active?(time-0.2)/0.6:0;
     if(surface?.style)
-      surface.style.transform=active?'translateY('+(Math.sin(along*Math.PI)*3)+'px)':'none';
+      surface.style.transform=active?'translateY('+(Math.sin(along*Math.PI*2)*3)+'px)':'none';
     if(gleam?.style){
       if(!active){
         gleam.style.opacity='0';
         gleam.style.transform='none';
       }else{
+        const body=hero?.querySelector?.('.sgv-chest-body')||hero;
+        const bodyW=pxWidth(body);
+        const stripeW=pxWidth(gleam);
+        const x=-stripeW+(bodyW+stripeW)*along;
         const rise=along<=0.5?along/0.5:(1-along)/0.5;
         gleam.style.opacity=String(rise*0.55);
-        gleam.style.transform='translateX('+(-120+240*along)+'%)';
+        gleam.style.transform='translateX('+x+'px)';
       }
     }
   }
@@ -211,7 +222,7 @@ export function playWinCelebration({
     t:2.5,duration:2.5,ease:'none',overwrite:'auto',
     onUpdate(){sync(clock.t);paintPretty(clock.t);}
   },0);
-  if(scrim?.style)scrim.style.opacity='0.92';
+  if(scrim?.style)scrim.style.opacity='1';
   if(praise){
     gsap.set(praise,{transformOrigin:'50% 50%'});
     timeline.fromTo(praise,{opacity:0},{
