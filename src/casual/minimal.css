@@ -58,8 +58,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-multiplier-flip{--pill-color:#c9eaff;--pill-rim:#7eb8db;--pill-text:#3f73a9}
 .sgv-multiplier-jackpot{--pill-color:#ffe29a;--pill-rim:#d9ac59;--pill-text:#a46a35}
 .sgv-bonus-flyer{position:absolute;z-index:25;display:grid;place-items:center;min-width:43px;height:32px;border-radius:17px;padding:3px 7px 4px;border:3px solid #fff8cd;background:linear-gradient(#fff6bb,#ffd35f);box-shadow:0 3px 0 #d69b42,0 5px 10px #a8764d70;color:#885326;font-size:18px;font-weight:1000;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap;pointer-events:none;transform-origin:center;will-change:transform,opacity}
-.sgv-event-snap .sgv-meter-track{animation:sgv-meter-shake .4s ease}
-@keyframes sgv-meter-shake{0%,100%{translate:0 0}20%,60%{translate:-7px 0}40%,80%{translate:7px 0}}
+.sgv-event-snap .sgv-meter-track{animation:none;animation-name:none}
 .sgv-flight-center{position:absolute;left:50%;top:41%;width:1px;height:1px;pointer-events:none}
 
 /* Glass is transparent; gold really appears behind the reflections. */
@@ -1310,6 +1309,19 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
    pointer-events stays none so the CTA and backdrop still receive the tap. */
 .sgv-fx-layer{position:absolute;inset:0;z-index:35;overflow:hidden;pointer-events:none}
 .sgv-fx-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.sgv-fx-callout{
+  position:absolute;z-index:2;display:grid;justify-items:center;gap:2px;
+  margin:0;padding:0;color:#704b69;font-weight:900;line-height:1.05;letter-spacing:.02em;
+  pointer-events:none;white-space:nowrap;
+}
+.sgv-fx-callout-danger{color:#9d243c}
+.sgv-fx-amount{font-variant-numeric:tabular-nums}
+.sgv-fx-halo{
+  position:absolute;width:96px;height:96px;margin:0;
+  border-radius:50%;background:#fff0cf;pointer-events:none;
+}
+.sgv-fx-layer.sgv-fx-flash-cream{box-shadow:inset 0 0 0 100vmax #fff0cf59}
+.sgv-fx-layer.sgv-fx-flash-red{box-shadow:inset 0 0 0 8px #e23d4a}
 
 /* NEW! sits on its own gate. The board underneath does not receive the tap. */
 .sgv-phone[data-intro-gate="true"] .sgv-controls{pointer-events:none}

@@ -14,10 +14,18 @@ export function createParticlePool({cap=PARTICLE_CAP}={}){
     live.push(particle);
     return particle;
   }
-  function release(particle){
-    const index=live.indexOf(particle);
+  function release(particleOrMatch){
+    if(typeof particleOrMatch==='function'){
+      for(let index=live.length-1;index>=0;index--){
+        if(!particleOrMatch(live[index]))continue;
+        live[index].alive=false;
+        live.splice(index,1);
+      }
+      return;
+    }
+    const index=live.indexOf(particleOrMatch);
     if(index<0)return;
-    particle.alive=false;
+    particleOrMatch.alive=false;
     live.splice(index,1);
   }
   function drain(){

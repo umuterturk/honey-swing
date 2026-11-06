@@ -85,6 +85,9 @@ export function actionPresentation(before,after,action){
     factorsBefore:multiplierParts(previous),
     factorsAfter:multiplierParts(current),
     rewards:multiplierRewards(current,result),
-    event:after.event.type
+    event:after.event.type,
+    gain:Number.isFinite(result.gain)?result.gain:0,
+    swingW:current.W??0,
+    flipFactor:current.flipFactor??1
   };
 }
