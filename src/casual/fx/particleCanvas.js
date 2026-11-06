@@ -33,16 +33,24 @@ function readBox(canvas){
   return {cssWidth,cssHeight,dpr};
 }
 
-function place(particle,index,total){
-  if(particle.placed)return;
+// One ring for the honey burst and for anchored signature bursts.
+export function radialMotion(index,total){
   const count=Math.max(total,1);
   const angle=(index/count)*Math.PI*2-Math.PI/2;
   const spread=18+(index%5)*2;
-  particle.vx=Math.cos(angle)*(90+index*3);
-  particle.vy=Math.sin(angle)*(90+index*3);
-  if(Math.hypot(particle.vx,particle.vy)<1)particle.vx=90;
-  particle.x=Math.cos(angle)*spread;
-  particle.y=Math.sin(angle)*spread;
+  let vx=Math.cos(angle)*(90+index*3);
+  let vy=Math.sin(angle)*(90+index*3);
+  if(Math.hypot(vx,vy)<1)vx=90;
+  return {angle,spread,vx,vy};
+}
+
+function place(particle,index,total){
+  if(particle.placed)return;
+  const motion=radialMotion(index,total);
+  particle.vx=motion.vx;
+  particle.vy=motion.vy;
+  particle.x=Math.cos(motion.angle)*motion.spread;
+  particle.y=Math.sin(motion.angle)*motion.spread;
   particle.size=2.5+(index%3);
   particle.life=LIFE;
   particle.color=particle.event==='win-burst'?BURST_COLORS[index%BURST_COLORS.length]:'#fff0cf';
@@ -125,8 +133,14 @@ export function createParticleCanvas({
     if(last)budget?.sample(frameMs);
     const dt=frameMs/1000;
     last=now;
-    const free=live.filter(particle=>!particle.absolute);
+    const free=live.filter(particle=>!particle.absolute&&!particle.anchored);
     live.forEach(particle=>{
+      if(particle.anchored){
+        particle.x+=(particle.vx||0)*dt;
+        particle.y+=(particle.vy||0)*dt;
+        drawAbsolute(ctx,particle);
+        return;
+      }
       if(particle.absolute){
         drawAbsolute(ctx,particle);
         return;

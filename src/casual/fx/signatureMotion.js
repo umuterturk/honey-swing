@@ -1,7 +1,9 @@
 import {gsap} from 'gsap';
+import {centerOf} from './layerPoint.js';
 
 const TRANSFORM_PROPS='transform,x,y,scale,xPercent,yPercent,rotation';
 const REDUCED_HOLD_MS=1100;
+const SNAP_LEAD_END=0.440;
 const SNAP_NEXT=0.450;
 const SNAP_END=0.900;
 
@@ -64,18 +66,22 @@ function anchorElement(root,event){
   }
 }
 
-// Pixel origin inside the FX layer. Snap uses the meter edge in the
-// direction of the committed overshoot; every other anchor uses its center.
+// Snap uses a meter edge. Every other anchor is the shared layer-local center.
 function originFor(root,host,event){
   const node=anchorElement(root,event);
-  if(!node)return null;
-  const a=node.getBoundingClientRect();
-  const b=(host||root).getBoundingClientRect();
-  const width=Number.isFinite(a.width)?a.width:0;
-  const right=Number.isFinite(a.right)?a.right:a.left+width;
-  const edge=event?.id==='snap'?(Number(event.to)<0?'left':'right'):null;
-  const x=edge==='left'?a.left-b.left:edge==='right'?right-b.left:a.left-b.left+width/2;
-  const y=a.top-b.top+(Number.isFinite(a.height)?a.height:0)/2;
+  const layer=host?.classList?.contains?.('sgv-fx-layer')?host:root.querySelector?.('.sgv-fx-layer')||host;
+  if(event?.id!=='snap')return centerOf(node,layer);
+  const rect=node?.getBoundingClientRect?.();
+  if(!rect)return null;
+  const origin=layer?.getBoundingClientRect?.();
+  const originX=origin&&Number.isFinite(origin.left)?origin.left:(origin?.x||0);
+  const originY=origin&&Number.isFinite(origin.top)?origin.top:(origin?.y||0);
+  const left=Number.isFinite(rect.left)?rect.left:(rect.x||0);
+  const top=Number.isFinite(rect.top)?rect.top:(rect.y||0);
+  const width=rect.width||0;
+  const right=Number.isFinite(rect.right)?rect.right:left+width;
+  const x=Number(event.to)<0?left-originX:right-originX;
+  const y=top+(rect.height||0)/2-originY;
   return {x,y};
 }
 
@@ -202,9 +208,11 @@ export function playSignatures({events=[],root=null,bus=null,reduced=false}={}){
     const follow=second?lineCallout(second,snap):null;
     place(lead,snap);
     mount(lead,0);
-    reveal(lead,0,SNAP_END);
+    reveal(lead,0,SNAP_LEAD_END);
     if(follow){
+      const followOrigin=originFor(root,host,snap);
       place(follow,snap);
+      if(followOrigin)follow.style.top=(followOrigin.y+28)+'px';
       mount(follow,SNAP_NEXT);
       reveal(follow,SNAP_NEXT,SNAP_END);
     }

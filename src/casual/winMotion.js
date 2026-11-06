@@ -1,24 +1,11 @@
 import {gsap} from 'gsap';
+import {centerOf} from './fx/layerPoint.js';
 import {honeyEaseBack,honeyEaseOut,honeyParticles,overflowReveal,fillFraction} from './honeyWin.js';
 import {
   burstParticles,burstRadius,displayedCount,flightDropletSize,flightDroplets,praiseFor
 } from './starThresholds.js';
 
 const PEAK=1.14;
-
-function centerOf(node, layer){
-  const rect=node?.getBoundingClientRect?.();
-  if(!rect)return null;
-  const width=rect.width||0;
-  const height=rect.height||0;
-  const left=Number.isFinite(rect.left)?rect.left:(rect.x||0);
-  const top=Number.isFinite(rect.top)?rect.top:(rect.y||0);
-  if(!(width||height||left||top))return null;
-  const origin=layer?.getBoundingClientRect?.();
-  const originX=origin&&Number.isFinite(origin.left)?origin.left:(origin?.x||0);
-  const originY=origin&&Number.isFinite(origin.top)?origin.top:(origin?.y||0);
-  return {x:left+width/2-originX,y:top+height/2-originY};
-}
 
 function scaleOf(fraction){
   if(fraction>=1)return 'scaleY(1)';

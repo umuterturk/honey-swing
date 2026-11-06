@@ -1,6 +1,7 @@
 import {gsap} from 'gsap';
 import {createFrameBudget} from './frameBudget.js';
 import {createParticlePool} from './particlePool.js';
+import {radialMotion} from './particleCanvas.js';
 import {play as playSound} from '../services/audio.js';
 import {pulse as pulseHaptic} from '../services/haptics.js';
 
@@ -113,11 +114,18 @@ export function createFxBus({
       if(palette)spec.color=palette[index%palette.length];
       if(event.token)spec.token=event.token;
       if(event.origin&&Number.isFinite(event.origin.x)&&Number.isFinite(event.origin.y)){
-        spec.x=event.origin.x;
-        spec.y=event.origin.y;
+        const motion=radialMotion(index,count);
+        spec.anchored=true;
+        spec.placed=true;
         spec.origin=true;
-        spec.vx=0;
-        spec.vy=0;
+        spec.originX=event.origin.x;
+        spec.originY=event.origin.y;
+        spec.x=event.origin.x+Math.cos(motion.angle)*motion.spread;
+        spec.y=event.origin.y+Math.sin(motion.angle)*motion.spread;
+        spec.vx=motion.vx;
+        spec.vy=motion.vy;
+        spec.size=2.5+(index%3);
+        spec.life=0.38;
       }
       const particle=pool.spawn(spec);
       if(particle.alive)alive++;

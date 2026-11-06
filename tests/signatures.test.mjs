@@ -619,16 +619,86 @@ function anchorPoint(node,layer){
   return {x:a.left-b.left+a.width/2,y:a.top-b.top+a.height/2};
 }
 
+test('an anchored burst keeps distinct preset velocities',()=>{
+  const root=stage();
+  const layer=root.querySelector('.sgv-fx-layer');
+  const lip=root.querySelector('.sgv-chest-mouth');
+  stubRect(layer,{left:0,top:0,width:390,height:700,right:390,bottom:700});
+  stubRect(lip,{left:300,top:590,width:20,height:30,right:320,bottom:620});
+  const {bus}=busOf();
+  bus.attach(layer);
+  const banked=commit(4,[{type:'steer',index:0},{type:'steer',index:0},{type:'bank'}]);
+  const handle=playSignatures({
+    events:fxEventsFromChange(banked.steps[2].change,banked.steps[2].action,banked.level),
+    root,bus,reduced:false
+  });
+  handle.timeline.pause();
+  handle.timeline.time(0.20);
+  const bits=bus.pool.live().filter(particle=>particle.origin);
+  assert.ok(bits.length>1);
+  const speeds=bits.map(particle=>particle.vx.toFixed(6)+':'+particle.vy.toFixed(6));
+  assert.equal(new Set(speeds).size,bits.length);
+  for(const particle of bits)assert.ok(Math.hypot(particle.vx,particle.vy)>0.05);
+  handle.cancel();
+  root.remove();
+});
+
+test('an anchored particle maps onto a backing store that is not the CSS size',async()=>{
+  const {createParticlePool}=await import('../src/casual/fx/particlePool.js');
+  const {createParticleCanvas}=await import('../src/casual/fx/particleCanvas.js');
+  const canvas=document.createElement('canvas');
+  canvas.width=300;
+  canvas.height=150;
+  const calls=[];
+  canvas.getContext=()=>({
+    clearRect(){},
+    beginPath(){},
+    arc(...args){calls.push(args);},
+    fill(){},
+    setTransform(){},
+    set fillStyle(value){calls.push(['fill',value]);},
+    set globalAlpha(value){calls.push(['alpha',value]);}
+  });
+  const pool=createParticlePool();
+  pool.spawn({
+    anchored:true,x:310,y:605,vx:0,vy:0,size:4,life:1,color:'#fff0cf',alive:true,event:'bank'
+  });
+  let frame=null;
+  const view=createParticleCanvas({
+    canvas,pool,reduced:()=>false,
+    size:()=>({cssWidth:390,cssHeight:700,dpr:2}),
+    requestFrame(fn){frame=fn;return 1;},
+    cancelFrame(){frame=null;}
+  });
+  view.kick();
+  assert.equal(canvas.width,780);
+  assert.equal(canvas.height,1400);
+  assert.notEqual(canvas.width,390);
+  assert.equal(typeof frame,'function');
+  frame(16);
+  const arc=calls.find(entry=>typeof entry[0]==='number');
+  assert.ok(arc,'the anchored droplet is drawn');
+  assert.equal(arc[0],620);
+  assert.equal(arc[1],1210);
+  view.stop();
+});
+
 test('callouts and particles originate at the jar lip and the swing pill',()=>{
   const root=stage();
   const layer=root.querySelector('.sgv-fx-layer');
   const lip=root.querySelector('.sgv-chest-mouth');
   const pill=root.querySelector('[data-factor="swing"]');
-  stubRect(layer,{left:10,top:20,width:300,height:600,right:310,bottom:620});
-  stubRect(lip,{left:110,top:80,width:4,height:4,right:114,bottom:84});
-  stubRect(pill,{left:40,top:100,width:60,height:30,right:100,bottom:130});
+  stubRect(layer,{left:35,top:60,width:390,height:700,right:425,bottom:760});
+  stubRect(lip,{left:145,top:140,width:20,height:10,right:165,bottom:150});
+  stubRect(pill,{left:70,top:160,width:60,height:30,right:130,bottom:190});
   const lipOrigin=anchorPoint(lip,layer);
   const pillOrigin=anchorPoint(pill,layer);
+  assert.equal(lipOrigin.x,120);
+  assert.equal(lipOrigin.y,85);
+  assert.notEqual(lipOrigin.x,145+10);
+  assert.equal(pillOrigin.x,65);
+  assert.equal(pillOrigin.y,115);
+  assert.notEqual(pillOrigin.y,160+15);
   const {bus}=busOf();
   bus.attach(layer);
   const banked=commit(4,[{type:'steer',index:0},{type:'steer',index:0},{type:'bank'}]);
@@ -644,11 +714,13 @@ test('callouts and particles originate at the jar lip and the swing pill',()=>{
   assert.equal(bankCall.style.top,lipOrigin.y+'px');
   bank.timeline.time(0.20);
   const bankBits=bus.pool.live().filter(particle=>particle.origin);
-  assert.ok(bankBits.length>0);
+  assert.ok(bankBits.length>1);
   for(const particle of bankBits){
-    assert.equal(particle.x,lipOrigin.x);
-    assert.equal(particle.y,lipOrigin.y);
+    assert.equal(particle.originX,lipOrigin.x);
+    assert.equal(particle.originY,lipOrigin.y);
+    assert.ok(Math.hypot(particle.x-lipOrigin.x,particle.y-lipOrigin.y)<40);
   }
+  assert.ok(new Set(bankBits.map(particle=>particle.x)).size>1);
   bank.cancel();
   const swung=commit(3,[{type:'steer',index:0},{type:'steer',index:0}]);
   const swing=playSignatures({
@@ -662,11 +734,13 @@ test('callouts and particles originate at the jar lip and the swing pill',()=>{
   assert.equal(swingCall.style.left,pillOrigin.x+'px');
   assert.equal(swingCall.style.top,pillOrigin.y+'px');
   const swingBits=bus.pool.live().filter(particle=>particle.origin);
-  assert.ok(swingBits.length>0);
+  assert.ok(swingBits.length>1);
   for(const particle of swingBits){
-    assert.equal(particle.x,pillOrigin.x);
-    assert.equal(particle.y,pillOrigin.y);
+    assert.equal(particle.originX,pillOrigin.x);
+    assert.equal(particle.originY,pillOrigin.y);
+    assert.ok(Math.hypot(particle.x-pillOrigin.x,particle.y-pillOrigin.y)<40);
   }
+  assert.ok(new Set(swingBits.map(particle=>particle.x+':'+particle.y)).size>1);
   swing.cancel();
   root.remove();
 });
@@ -684,14 +758,20 @@ test('normal Snap shows SNAP! before the loss line and finishes by 0.900s',()=>{
   });
   const timeline=handle.timeline;
   timeline.pause();
-  timeline.time(0.10);
-  assert.equal(root.querySelector('.sgv-fx-callout').textContent,'SNAP!');
-  assert.equal(root.querySelectorAll('.sgv-fx-callout').length,1);
-  timeline.time(0.50);
-  const lines=[...root.querySelectorAll('.sgv-fx-callout')].map(node=>node.textContent);
-  assert.ok(lines.includes('SNAP!'));
-  assert.ok(lines.includes('Pot lost. Bank safe.'));
-  timeline.time(0.900);
+  let sawLead=false;
+  let sawFollow=false;
+  for(let step=0;step<=90;step++){
+    timeline.time(step/100);
+    const nodes=[...root.querySelectorAll('.sgv-fx-callout')];
+    assert.ok(nodes.length<=1,'Snap lines overlap at '+(step/100));
+    if(nodes[0]?.textContent==='SNAP!')sawLead=true;
+    if(nodes[0]?.textContent==='Pot lost. Bank safe.'){
+      assert.equal(sawLead,true);
+      sawFollow=true;
+    }
+  }
+  assert.equal(sawLead,true);
+  assert.equal(sawFollow,true);
   assert.equal(root.querySelectorAll('.sgv-fx-callout, .sgv-fx-halo').length,0);
   const reduced=playSignatures({
     events:fxEventsFromChange(steps[3].change,steps[3].action,level),
@@ -783,9 +863,10 @@ test('a winning bank leaves the J3 win card without a signature',async()=>{
     assert.equal(host.querySelector('.sgv-fx-callout'),null);
     assert.equal(host.querySelector('.sgv-fx-halo'),null);
     assert.equal(host.querySelector('.sgv-win-praise').textContent,'Divine!');
-    assert.equal(host.querySelectorAll('.sgv-win-star').length,3);
+    assert.equal(host.querySelector('.sgv-win-star'),null);
+    assert.ok(host.querySelector('.sgv-honey-jar'));
     assert.equal(host.querySelector('.sgv-win-tally').textContent,'5');
-    assert.match(host.querySelector('.sgv-end-score').textContent,/Drops secured: 5 \/ 5/);
+    assert.equal(host.querySelector('.sgv-honey-subline').textContent,'5 / 5');
     const layer=host.querySelector('.sgv-fx-layer');
     assert.equal(layer.__fxBus.liveParticles(),0);
     assert.equal(layer.classList.contains('sgv-fx-flash'),false);
@@ -883,9 +964,10 @@ test('reduced motion: level win shows praise, stars, and the exact score',async(
     const host=view.host;
     const bus=host.querySelector('.sgv-fx-layer').__fxBus;
     assert.equal(host.querySelector('.sgv-win-praise').textContent,'Divine!');
-    assert.equal(host.querySelectorAll('.sgv-win-star').length,3);
+    assert.equal(host.querySelector('.sgv-win-star'),null);
+    assert.ok(host.querySelector('.sgv-honey-jar'));
     assert.equal(host.querySelector('.sgv-win-tally').textContent,'5');
-    assert.match(host.querySelector('.sgv-end-score').textContent,/Drops secured: 5 \/ 5/);
+    assert.equal(host.querySelector('.sgv-honey-subline').textContent,'5 / 5');
     assert.equal(host.querySelector('.sgv-end-cta').textContent,'NEXT');
     assert.equal(host.querySelector('.sgv-end-cta').disabled,false);
     assert.equal(bus.liveParticles(),0);
