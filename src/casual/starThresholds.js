@@ -1,5 +1,7 @@
-// Presentation-only star table. Secured is deal.T. Nothing here writes a score.
-// Appendix A, with Appendix B locked: L11/L18 star3 = 32/30, L1/L2/L5 auto 3★.
+// Honey intensity thresholds. Secured is deal.T. Nothing here writes a score.
+// honey2 = star2 and honey3 = star3. The field names stay so this numeric
+// source does not need a rename. Nothing in the win or fail UI reads them as stars.
+// Appendix A, with Appendix B locked: L11/L18 honey3 = 32/30, L1/L2/L5 auto Divine.
 export const STAR_THRESHOLDS=Object.freeze({
   1:Object.freeze({target:5,star2:5,star3:5,auto3:true}),
   2:Object.freeze({target:6,star2:6,star3:6,auto3:true}),
@@ -25,19 +27,30 @@ export const STAR_THRESHOLDS=Object.freeze({
 
 const PRAISE=Object.freeze([
   null,
-  Object.freeze({tier:1,text:'Sweet!',sound:'praise.sweet'}),
-  Object.freeze({tier:2,text:'Tasty!',sound:'praise.tasty'}),
-  Object.freeze({tier:3,text:'Divine!',sound:'praise.divine'})
+  Object.freeze({tier:1,text:'Sweet!',sound:'praise.h1'}),
+  Object.freeze({tier:2,text:'Tasty!',sound:'praise.h2'}),
+  Object.freeze({tier:3,text:'Divine!',sound:'praise.h3'})
 ]);
 const BURST=Object.freeze([0,12,18,24]);
+const BURST_RADIUS=Object.freeze([0,48,64,80]);
+const FLIGHT=Object.freeze([0,8,12,16]);
+const FLIGHT_SIZE=Object.freeze([0,16,18,20]);
+// PM override: the count-up is a fixed 0.600s, not the digit-based 40/80/120ms.
+export const COUNT_UP_SECONDS=0.6;
 
 function integer(value){
   const number=Math.trunc(Number(value));
   return Number.isFinite(number)?number:0;
 }
 
-// Highest qualifying tier, 3 then 2 then 1. Equal thresholds grant the higher tier.
-export function winStars(levelId,secured){
+function tierCount(table,tier){
+  const count=table[tier];
+  return count>0?count:0;
+}
+
+// Highest qualifying honey intensity, H3 then H2 then H1. Equal thresholds grant H3.
+// L1, L2, and L5 are Divine on any win.
+export function honeyTier(levelId,secured){
   const row=STAR_THRESHOLDS[levelId];
   if(!row)throw new RangeError('Unknown level '+levelId);
   const score=integer(secured);
@@ -48,30 +61,36 @@ export function winStars(levelId,secured){
   return 1;
 }
 
-export function praiseFor(stars){
-  return PRAISE[stars]||null;
+export function praiseFor(tier){
+  return PRAISE[tier]||null;
 }
 
-export function burstParticles(stars){
-  const count=BURST[stars];
-  return count>0?count:0;
+export function burstParticles(tier){
+  return tierCount(BURST,tier);
 }
 
-// duration = min(0.700, 0.040 × digits). The count then holds until 0.900.
-export function countUpDuration(secured){
-  const value=Math.abs(integer(secured));
-  const text=String(value);
-  const digits=text.includes('e')||text.includes('E')?21:Math.max(1,text.length);
-  const duration=0.040*digits;
-  return duration>0.700?0.700:duration;
+export function burstRadius(tier){
+  return tierCount(BURST_RADIUS,tier);
 }
 
-// Every frame is an integer. Progress at or past the end is the engine value.
+export function flightDroplets(tier){
+  return tierCount(FLIGHT,tier);
+}
+
+export function flightDropletSize(tier){
+  return tierCount(FLIGHT_SIZE,tier);
+}
+
+export function countUpDuration(){
+  return COUNT_UP_SECONDS;
+}
+
+// Floor until the eased progress completes, then the exact engine integer.
 export function displayedCount(progress,secured){
   const target=integer(secured);
   if(!(progress<1))return target;
-  if(progress<=0||target<=0)return target<0?0:0;
-  const shown=Math.round(target*progress);
+  if(progress<=0||target<=0)return 0;
+  const shown=Math.floor(target*progress);
   if(!Number.isFinite(shown))return 0;
   return Math.min(target,Math.max(0,shown));
 }

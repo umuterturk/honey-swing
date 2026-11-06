@@ -1,4 +1,5 @@
 import {createElement} from 'react';
+import {overflowMarks} from './honeyWin.js';
 
 // Screens are visual. They never take the presentation lock, so a card, Bank,
 // or Snap skip from the first frame still settles in that same tap.
@@ -35,41 +36,83 @@ export function LevelStartScreen({levelId,target,onDismiss}){
   ));
 }
 
-export function LevelEndScreen({
-  victory=false,score=0,target=0,label='NEXT',orchard=false,settled=false,
-  praise=null,stars=0,reduced=false,onPrimary,onBackdrop,onReset
-}){
-  const earned=victory?Math.max(0,stars|0):0;
-  const staticCard=!!(reduced||settled);
+function resetButton(onReset){
+  if(!onReset)return null;
+  return createElement('button',{
+    type:'button',className:'sgv-end-reset',onClick:onReset,
+    onPointerDown:event=>event.stopPropagation()
+  },'RESET PROGRESS');
+}
+
+function quietLoss({score,target,label,onPrimary,onBackdrop,onReset}){
   return createElement('div',{
-    className:'sgv-end-overlay sgv-level-end'+
-      (settled?' sgv-success-settled':'')+(reduced?' sgv-win-static':''),
-    role:'dialog','aria-modal':'true','aria-labelledby':'sgv-end-title',
+    className:'sgv-end-overlay sgv-level-end',role:'dialog','aria-modal':'true',
+    'aria-labelledby':'sgv-end-title',
     onPointerDown:event=>{
-      if(event.target!==event.currentTarget)return;
+      if(event.target?.closest?.('button'))return;
       onBackdrop?.();
     }
   },
   createElement('div',{className:'sgv-end-card'},
-    orchard?createElement('span',{className:'sgv-orchard-hook','aria-hidden':'true'}):null,
-    victory&&praise?createElement('p',{
-      className:'sgv-win-praise sgv-win-praise-'+praise.tier
-    },praise.text):null,
-    earned?createElement('div',{
-      className:'sgv-win-stars',role:'img',
-      'aria-label':earned+(earned===1?' star':' stars')
-    },Array.from({length:earned},(_,index)=>createElement('span',{
-      key:index,className:'sgv-win-star','data-star':String(index+1),'aria-hidden':'true'
-    },'★'))):null,
-    victory?createElement('p',{
-      className:'sgv-win-tally','aria-label':'Score tally'
-    },staticCard?String(score):null):null,
-    createElement('div',{className:'sgv-end-symbol'},victory?'★':'♡'),
-    createElement('h1',{id:'sgv-end-title'},victory?'Level complete!':'Try again!'),
+    createElement('div',{className:'sgv-end-symbol','aria-hidden':'true'},'♡'),
+    createElement('h1',{id:'sgv-end-title'},'Try again!'),
     createElement('p',{className:'sgv-end-score'},'Drops secured: '+score+' / '+target),
     createElement('button',{type:'button',className:'sgv-end-cta',onClick:onPrimary},label),
-    onReset?createElement('button',{
-      type:'button',className:'sgv-end-reset',onClick:onReset
-    },'RESET PROGRESS'):null
+    resetButton(onReset)
+  ));
+}
+
+export function LevelEndScreen({
+  victory=false,score=0,target=0,label='NEXT',settled=false,
+  praise=null,reduced=false,onPrimary,onBackdrop,onReset
+}){
+  if(!victory)return quietLoss({score,target,label,onPrimary,onBackdrop,onReset});
+  const tier=praise?.tier||0;
+  const staticCard=!!(reduced||settled);
+  const marks=overflowMarks(tier,score,target);
+  const announcement=(praise?praise.text+' ':'')+score+' honey secured. Target '+target+'.';
+  return createElement('div',{
+    className:'sgv-end-overlay sgv-level-end sgv-honey-win'+
+      (settled?' sgv-success-settled':'')+(reduced?' sgv-win-static':''),
+    role:'dialog','aria-modal':'true','aria-labelledby':'sgv-honey-status',
+    onPointerDown:event=>{
+      if(event.target?.closest?.('button'))return;
+      onBackdrop?.();
+    }
+  },
+  createElement('div',{className:'sgv-honey-scrim','aria-hidden':'true'}),
+  createElement('div',{className:'sgv-end-card'},
+    createElement('h1',{id:'sgv-end-title',className:'sgv-honey-title'},'Level complete!'),
+    createElement('p',{id:'sgv-honey-status',className:'sgv-honey-status',role:'status'},announcement),
+    praise?createElement('div',{className:'sgv-honey-praise-slot'},
+      createElement('p',{
+        className:'sgv-win-praise sgv-win-praise-'+praise.tier,'aria-hidden':'true'
+      },praise.text)
+    ):null,
+    createElement('div',{className:'sgv-honey-stage'},
+      createElement('div',{
+        className:'sgv-honey-jar','aria-hidden':'true','data-honey-tier':String(tier)
+      },
+      createElement('div',{className:'sgv-honey-jar-body'},
+        createElement('div',{className:'sgv-honey-cavity'},
+          createElement('div',{className:'sgv-honey-liquid'})
+        ),
+        createElement('div',{className:'sgv-honey-glass'}),
+        createElement('span',{className:'sgv-honey-mouth'}),
+        marks.length?createElement('div',{className:'sgv-honey-overflow','aria-hidden':'true'},
+          marks.map(mark=>createElement('span',{
+            key:mark.key,className:'sgv-honey-mark sgv-honey-'+mark.kind,
+            style:{left:mark.x,width:mark.w+'px',height:mark.h+'px'}
+          }))
+        ):null
+      )),
+      createElement('div',{className:'sgv-honey-count-slot'},
+        createElement('p',{className:'sgv-win-tally','aria-hidden':'true'},
+          staticCard?String(score):'0')
+      ),
+      createElement('p',{className:'sgv-honey-subline','aria-hidden':'true'},score+' / '+target)
+    ),
+    createElement('button',{type:'button',className:'sgv-end-cta',onClick:onPrimary},label),
+    resetButton(onReset)
   ));
 }

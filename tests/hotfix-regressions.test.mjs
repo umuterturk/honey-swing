@@ -84,7 +84,9 @@ test('level start and win and lose screens render and can be dismissed',()=>{
   }));
   assert.match(win,/sgv-end-overlay/);
   assert.match(win,/Level complete!/);
-  assert.match(win,/Drops secured: 11 \/ 8/);
+  assert.match(win,/11 \/ 8/);
+  assert.match(win,/sgv-honey-jar/);
+  assert.doesNotMatch(win,/sgv-win-star|★/);
   assert.match(win,/>NEXT</);
   const lose=renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:false,score:2,target:8,label:'TRY AGAIN',onPrimary(){},onBackdrop(){}
