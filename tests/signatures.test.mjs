@@ -659,6 +659,31 @@ test('the fx layer stays at z-index 35 under NEW! and ignores pointers',async()=
   });
 });
 
+test('a winning bank leaves the J3 win card without a signature',async()=>{
+  await withStylesheet(async()=>{
+    resetStorage();
+    seeBank();
+    useMotion(true);
+    const view=await mount();
+    const host=view.host;
+    await act(async()=>{tap(host.querySelector('.sgv-level-start-dismiss'));});
+    await act(async()=>{tap(host.querySelector('.sgv-card'));});
+    await act(async()=>{tap(host.querySelector('.sgv-card'));});
+    await act(async()=>{tap(host.querySelector('.sgv-bank-command'));});
+    assert.equal(host.querySelector('.sgv-fx-callout'),null);
+    assert.equal(host.querySelector('.sgv-fx-halo'),null);
+    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Divine!');
+    assert.equal(host.querySelectorAll('.sgv-win-star').length,3);
+    assert.equal(host.querySelector('.sgv-win-tally').textContent,'5');
+    assert.match(host.querySelector('.sgv-end-score').textContent,/Drops secured: 5 \/ 5/);
+    const layer=host.querySelector('.sgv-fx-layer');
+    assert.equal(layer.__fxBus.liveParticles(),0);
+    assert.equal(layer.classList.contains('sgv-fx-flash'),false);
+    assert.equal(layer.classList.contains('sgv-fx-shake'),false);
+    await view.unmount();
+  });
+});
+
 test('signatures are emitted from the committed move and engines.js stays untouched',async()=>{
   const source=await read('../src/casual/SimplifiedGame.jsx');
   const start=source.slice(source.indexOf('startMotion({change},complete){'),
@@ -671,6 +696,13 @@ test('signatures are emitted from the committed move and engines.js stays untouc
   assert.doesNotMatch(events,/external\/engines/);
   const engines=await read('../src/external/engines.js');
   assert.doesNotMatch(engines,/fxEvents|playSignatures|BANKED!|SIGNATURE_PRESETS/);
+  const winMotion=await read('../src/casual/winMotion.js');
+  const screens=await read('../src/casual/levelScreens.js');
+  const sequence=await read('../src/casual/presentationSequence.js');
+  assert.doesNotMatch(winMotion,/playSignatures|fxEventsFromChange|BANKED!|sgv-fx-callout/);
+  assert.doesNotMatch(screens,/playSignatures|fxEventsFromChange|BANKED!|sgv-fx-callout/);
+  assert.doesNotMatch(sequence,/playSignatures|fxEventsFromChange|BANKED!/);
+  assert.match(source,/playWinCelebration\(/);
   const motion=await read('../src/casual/minimalMotion.js');
   assert.match(motion,/export function animateBankPour\(/);
   assert.match(motion,/export function animateCardAction\(/);

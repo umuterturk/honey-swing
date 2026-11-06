@@ -400,6 +400,14 @@ export default function SimplifiedGame(){
         const settled=settledPresentation(next);
         cancelRef.current=null;resetMotionRef.current=null;
         lossMotionRef.current=null;breakMotionRef.current=null;
+        // The win card is J3's. A winning move drops its signature before that
+        // celebration starts, so praise, stars, and the burst stay untouched.
+        if(onboardingVictory(next)){
+          try{signatureRef.current?.cancel();}catch{/* the win bus must start empty */}
+          signatureRef.current=null;
+          root?.querySelectorAll('.sgv-fx-callout, .sgv-fx-halo')
+            .forEach(node=>node.remove());
+        }
         setRound(settled.round);setView(settled.view);setShownGold(settled.shownGold);
         setFeedback(settled.feedback);setAnimating(settled.animating);
       },
