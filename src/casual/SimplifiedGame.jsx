@@ -4,7 +4,7 @@ import {GardenScene} from './CasualArt.jsx';
 import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour} from './minimalMotion.js';
 import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
-import {levelStartPlan,startTap} from './presentationSequence.js';
+import {claimLevelAdvance,levelStartPlan,startTap,successPlan,successTap} from './presentationSequence.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
 import {clearWinMemo,idleHintAction} from './idleHint.js';
 import {bankAssistiveMessage,nextBankAnnouncement} from './bankStatus.js';
@@ -43,6 +43,9 @@ export default function SimplifiedGame(){
   const [help,setHelp]=useState(false);
   const [docking,setDocking]=useState(()=>Boolean(onboardingLevel(round.levelId).dock));
   const freshStart=round.turn===0&&!(round.game.deal.plays);
+  const [successPour,setSuccessPour]=useState(false);
+  const [successSettled,setSuccessSettled]=useState(false);
+  const advancedRef=useRef(false);
   const [arriving,setArriving]=useState(()=>levelStartPlan(round.levelId,{
     fresh:freshStart,
     reduced:typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
@@ -150,6 +153,7 @@ export default function SimplifiedGame(){
     setRound(next);setView(displayOf(next));setShownGold(0);
     setAnimating(false);setFeedback(null);setPulse(false);setBeat('');setHelp(false);
     setDocking(Boolean(onboardingLevel(id).dock));
+    setSuccessPour(false);setSuccessSettled(false);advancedRef.current=false;
     setDevMenuOpen(false);
     seenFactorsRef.current=new Set();
   }
@@ -193,6 +197,10 @@ export default function SimplifiedGame(){
           event('level_complete',{level:level.id,actions:next.turn});
           if(level.id===ONBOARDING_COUNT)event('onboarding_complete');
           try{localStorage.setItem(PROGRESS_KEY,String(Math.min(ONBOARDING_COUNT,level.id+1)));}catch{}
+          const settled=settledPresentation(next);
+          setRound(settled.round);setView(settled.view);setShownGold(settled.shownGold);
+          setSuccessPour(action.type==='bank');
+          setSuccessSettled(false);
         }
       },
       onSettle({next}){
@@ -202,7 +210,12 @@ export default function SimplifiedGame(){
         setRound(settled.round);setView(settled.view);setShownGold(settled.shownGold);
         setFeedback(settled.feedback);setAnimating(settled.animating);
       },
-      startMotion({change},complete){
+      startMotion({next,change},complete){
+        if(onboardingVictory(next)){
+          setAnimating(false);setFeedback(null);setPulse(false);setHelp(false);
+          complete();
+          return ()=>{setSuccessPour(false);setSuccessSettled(true);};
+        }
         setAnimating(true);
         setFeedback(change.snap?'snap':change.zeroBreak?'zero_break':action.type);
         setBeat(change.zeroBreak?'Pot safe.':change.snap?'Pot lost. Bank safe.':'');
@@ -257,6 +270,14 @@ export default function SimplifiedGame(){
 
   const winLabel=level.id===GARDEN_2_START-1?'LOWER ORCHARD':
     level.id===ONBOARDING_COUNT?'PLAY AGAIN':'NEXT';
+  const ending=successPlan({victory,levelId:level.id,bank:round.game.lastAction?.type==='bank'});
+  function settleSuccess(){setSuccessPour(false);setSuccessSettled(true);}
+  function advanceLevel(){
+    const claim=claimLevelAdvance(advancedRef.current);
+    advancedRef.current=claim.claimed;
+    settleSuccess();
+    if(claim.advance)nextLevel();
+  }
   return <main className="sgv-page">
     <div ref={rootRef}
       className={'sgv-phone sgv-onboarding sgv-onboarding-'+level.id+
@@ -380,14 +401,29 @@ export default function SimplifiedGame(){
         <li>Pill × this card</li>
         <li>0 keeps the Pot. Snap empties it.</li>
       </ul>}
-      {finished&&<div className="sgv-end-overlay" role="dialog" aria-modal="true" aria-labelledby="sgv-end-title">
+      {finished&&victory&&ending.effects&&<div
+        className={'sgv-success'+(successSettled?' sgv-success-settled':'')+(successPour&&ending.pour?' sgv-success-pour':'')}
+        onPointerDown={event=>{
+          if(event.target!==event.currentTarget)return;
+          const tap=successTap('backdrop');
+          event.preventDefault();event.stopPropagation();
+          if(tap.settle)settleSuccess();
+        }}>
+        <div className="sgv-success-star" aria-hidden="true">★</div>
+        {ending.orchard&&<span className="sgv-orchard-hook" aria-hidden="true"/>}
+        <p className="sgv-success-score">{'Drops secured: '+deal.T+' / '+level.target}</p>
+        <button type="button" onClick={()=>{
+          const tap=successTap('cta');
+          if(tap.settle)settleSuccess();
+          if(tap.advance)advanceLevel();
+        }}>{winLabel}</button>
+      </div>}
+      {finished&&!victory&&<div className="sgv-end-overlay" role="dialog" aria-modal="true" aria-labelledby="sgv-end-title">
         <div className="sgv-end-card">
-          <div className="sgv-end-symbol">{victory?'★':'♡'}</div>
-          <h1 id="sgv-end-title">{victory?'Level complete!':'Try again!'}</h1>
+          <div className="sgv-end-symbol">♡</div>
+          <h1 id="sgv-end-title">Try again!</h1>
           <p>{'Drops secured: '+deal.T+' / '+level.target}</p>
-          <button type="button" onClick={victory?nextLevel:()=>startLevel(level.id)}>
-            {victory?winLabel:'TRY AGAIN'}
-          </button>
+          <button type="button" onClick={()=>startLevel(level.id)}>TRY AGAIN</button>
           {import.meta.env.DEV&&<button type="button" className="sgv-end-reset" onClick={resetProgress}>
             RESET PROGRESS
           </button>}

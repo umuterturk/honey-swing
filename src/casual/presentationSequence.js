@@ -34,3 +34,27 @@ export function startTap({action=false,arrival=false}={}){
   if(arrival)return {consume:false,finishArrival:true,pass:true};
   return {consume:false,finishArrival:false,pass:true};
 }
+
+// Audit §2. t=0 is the committed win. The fail screen has none of these effects.
+export function successPlan({victory=false,levelId=1,bank=false}={}){
+  if(!victory)return {effects:false,scoreAt:0,ctaAt:0,cta:'TRY AGAIN',pour:null,star:null,orchard:null};
+  return {
+    effects:true,
+    scoreAt:0,
+    ctaAt:0,
+    cta:levelId===12?'LOWER ORCHARD':'NEXT',
+    pour:bank?{start:0,approachEnd:0.180,liquidEnd:0.460,end:0.650,tip:42}:null,
+    star:{start:0.520,mid:0.680,end:0.820,fromScale:0.75,peakScale:1.10,opacityEnd:0.620},
+    ctaEmphasis:{start:0.820,end:1.100},
+    orchard:levelId===12?{start:0.820,fadeEnd:1.060,end:1.500,fromScale:0.96}:null
+  };
+}
+
+export function successTap(target){
+  if(target==='cta')return {settle:true,advance:true};
+  return {settle:true,advance:false};
+}
+
+export function claimLevelAdvance(already){
+  return {advance:!already,claimed:true};
+}

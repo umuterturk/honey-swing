@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {onboardingLevel} from '../src/casual/onboardingLevels.js';
-import {LEVEL_START,levelStartPlan,startTap} from '../src/casual/presentationSequence.js';
+import {LEVEL_START,claimLevelAdvance,levelStartPlan,startTap,successPlan,successTap} from '../src/casual/presentationSequence.js';
 
 test('level start settles by 0.300s and docks only L3, L5, L6, and L11',()=>{
   const plan=levelStartPlan(3);
@@ -34,6 +34,33 @@ test('a restored or reduced-motion level does not replay the arrival',()=>{
   assert.equal(levelStartPlan(5,{reduced:true}).motion,false);
   assert.equal(levelStartPlan(5,{reduced:true}).idleOutline,true);
   assert.equal(levelStartPlan(5,{reduced:true}).dock,null);
+});
+
+test('a win shows the committed score and CTA at t=0, and a loss does not',()=>{
+  const win=successPlan({victory:true,levelId:4,bank:true});
+  assert.equal(win.effects,true);
+  assert.equal(win.scoreAt,0);
+  assert.equal(win.ctaAt,0);
+  assert.equal(win.cta,'NEXT');
+  assert.equal(win.star.start,0.520);
+  assert.equal(win.star.end,0.820);
+  assert.equal(win.pour.end,0.650);
+  assert.equal(win.pour.tip,42);
+  assert.ok(win.pour.end<=0.650);
+  assert.equal(win.orchard,null);
+  const last=successPlan({victory:true,levelId:12,bank:true});
+  assert.equal(last.cta,'LOWER ORCHARD');
+  assert.equal(last.orchard.start,0.820);
+  assert.equal(last.orchard.end,1.500);
+  const fail=successPlan({victory:false,levelId:4,bank:true});
+  assert.equal(fail.effects,false);
+  assert.equal(fail.cta,'TRY AGAIN');
+  assert.equal(fail.pour,null);
+  assert.equal(fail.star,null);
+  assert.deepEqual(successTap('backdrop'),{settle:true,advance:false});
+  assert.deepEqual(successTap('cta'),{settle:true,advance:true});
+  assert.equal(claimLevelAdvance(false).advance,true);
+  assert.equal(claimLevelAdvance(true).advance,false);
 });
 
 test('the first tap finishes arrival and still reaches a legal control',()=>{
