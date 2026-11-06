@@ -13,6 +13,10 @@ import {LevelEndScreen,LevelStartScreen,dismissLevelScreen} from './levelScreens
 import {bankAssistiveMessage,nextBankAnnouncement} from './bankStatus.js';
 import {focusTargetAfterSkip,isSkipKey,rememberFocus} from './skipFocus.js';
 import {ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress} from './onboardingProgress.js';
+import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
+import {
+  boardTapDuringIntro,dismissFeatureIntro,featureIntroForEntry,introPointerDecision
+} from './featureIntroRegistry.js';
 import {
   newOnboardingRound,onboardingLevel,onboardingActions,onboardingFinished,
   onboardingVictory,wouldSnap,ONBOARDING_COUNT,GARDEN_2_START
@@ -20,6 +24,13 @@ import {
 
 const SESSION_KEY=ONBOARDING_SESSION_KEY;
 const PROGRESS_KEY=ONBOARDING_PROGRESS_KEY;
+function prefersReducedMotion(){
+  return typeof window!=='undefined'&&
+    !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+function browserStorage(){
+  try{return window.localStorage;}catch{return null;}
+}
 const event=(name,details={})=>{
   if(typeof window==='undefined')return;
   window.dispatchEvent(new CustomEvent('swing-casual-event',{detail:{name,...details}}));
@@ -37,6 +48,15 @@ function initialRound(){
 }
 export default function SimplifiedGame(){
   const [round,setRound]=useState(initialRound);
+  const openingRef=useRef(null);
+  if(openingRef.current===null)openingRef.current=featureIntroForEntry({
+    round,storage:browserStorage(),reduced:prefersReducedMotion()
+  });
+  const [introGate,setIntroGate]=useState(openingRef.current.gate);
+  const [introCard,setIntroCard]=useState(openingRef.current.intro);
+  const introGateRef=useRef(openingRef.current.gate);
+  const introStartRef=useRef(null);
+  const levelReadyRef=useRef(null);
   const [view,setView]=useState(()=>displayOf(round));
   const [shownGold,setShownGold]=useState(round.game.deal.T);
   const [animating,setAnimating]=useState(false);
@@ -46,13 +66,12 @@ export default function SimplifiedGame(){
   const [help,setHelp]=useState(false);
   const [docking,setDocking]=useState(()=>Boolean(onboardingLevel(round.levelId).dock));
   const freshStart=round.turn===0&&!(round.game.deal.plays);
-  const [startOpen,setStartOpen]=useState(freshStart);
+  const [startOpen,setStartOpen]=useState(freshStart&&!openingRef.current.gate);
   const [ack,setAck]=useState(null);
   const [successSettled,setSuccessSettled]=useState(false);
   const advancedRef=useRef(false);
-  const [arriving,setArriving]=useState(()=>levelStartPlan(round.levelId,{
-    fresh:freshStart,
-    reduced:typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  const [arriving,setArriving]=useState(()=>openingRef.current.gate?false:levelStartPlan(round.levelId,{
+    fresh:freshStart,reduced:prefersReducedMotion()
   }).motion);
   const [devMenuOpen,setDevMenuOpen]=useState(false);
   const rootRef=useRef(null),cancelRef=useRef(null),presentationRef=useRef(null);
@@ -67,7 +86,7 @@ export default function SimplifiedGame(){
   const level=onboardingLevel(round.levelId);
   const {game}=round,deal=game.deal;
   const victory=onboardingVictory(round),finished=onboardingFinished(round);
-  const available=finished||animating?[]:onboardingActions(round);
+  const available=finished||animating||introGate?[]:onboardingActions(round);
   const canBank=available.some(a=>a.type==='bank'&&a.dropIndex==null);
   const canFlip=available.some(a=>a.type==='flip');
   const potentialPayout=overswingPayout(game,level.rules);
@@ -100,6 +119,8 @@ export default function SimplifiedGame(){
   useEffect(()=>{
     fxRef.current.settle();
     event('level_start',{level:round.levelId});
+    levelReadyRef.current=round.levelId;
+    introStartRef.current?.();
   },[round.levelId]);
   useEffect(()=>{
     const reduced=typeof window!=='undefined'&&
@@ -111,23 +132,30 @@ export default function SimplifiedGame(){
     return ()=>clearTimeout(timer);
   },[round.levelId,level.dock]);
   useEffect(()=>{
-    const reduced=typeof window!=='undefined'&&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const plan=levelStartPlan(round.levelId,{fresh:round.turn===0&&!(round.game.deal.plays),reduced});
+    if(introGate){
+      setArriving(false);
+      return;
+    }
+    const fresh=round.turn===0&&!(round.game.deal.plays);
+    const plan=levelStartPlan(round.levelId,{fresh,reduced:prefersReducedMotion()});
     setArriving(plan.motion);
     if(!plan.motion)return;
     const timer=setTimeout(()=>setArriving(false),plan.settled*1000);
     return ()=>clearTimeout(timer);
-  },[round.levelId]);
+  },[round.levelId,introGate]);
+  useEffect(()=>{
+    if(!introGate||!introCard)return;
+    event('feature_intro_shown',{feature:introCard.id,level:round.levelId});
+  },[introGate,introCard,round.levelId]);
   useEffect(()=>{
     setPulse(false);
-    if(animating||finished)return;
+    if(animating||finished||introGate)return;
     const timer=setTimeout(()=>{
       setPulse(true);
       event('hint_shown',{level:level.id,turn:round.turn});
     },3000);
     return ()=>clearTimeout(timer);
-  },[animating,round.turn,round.levelId,finished,level.id]);
+  },[animating,round.turn,round.levelId,finished,level.id,introGate]);
   useEffect(()=>{
     const root=rootRef.current;
     if(!root)return;
@@ -180,12 +208,38 @@ export default function SimplifiedGame(){
     setAnimating(false);setFeedback(null);setPulse(false);setBeat('');setHelp(false);
     setDocking(Boolean(onboardingLevel(id).dock));
     setSuccessSettled(false);advancedRef.current=false;
-    setAck(null);setStartOpen(true);
+    setAck(null);
+    const opening=featureIntroForEntry({
+      round:next,storage:browserStorage(),reduced:prefersReducedMotion()
+    });
+    openingRef.current=opening;
+    introGateRef.current=opening.gate;
+    setIntroGate(opening.gate);
+    setIntroCard(opening.intro);
+    setStartOpen(!opening.gate);
+    if(opening.gate)setArriving(false);
     setDevMenuOpen(false);
     seenFactorsRef.current=new Set();
   }
+  function dismissIntro(via){
+    if(!introGateRef.current)return;
+    introGateRef.current=false;
+    const outcome=dismissFeatureIntro({
+      levelId:round.levelId,storage:browserStorage(),via,fx:fxRef.current
+    });
+    if(!outcome.dismissed){
+      introGateRef.current=true;
+      return;
+    }
+    introGateRef.current=outcome.gate;
+    setIntroGate(outcome.gate);
+    setIntroCard(outcome.intro);
+    event('feature_intro_dismiss',{feature:outcome.id,level:round.levelId,via});
+    if(outcome.handoff==='level-start')setStartOpen(true);
+  }
   function resetProgress(){
-    // One-tap development reset: clear both persisted checkpoints, then restart.
+    // One-tap development reset: clear the session, the unlocked level, and the
+    // seen feature cards, then restart.
     try{clearOnboardingProgress(window.localStorage);}catch{}
     // The new Level 1 state is saved by startLevel even after clearing storage.
     setDevMenuOpen(false);
@@ -208,6 +262,7 @@ export default function SimplifiedGame(){
   }
   function play(action,source){
     if(finished)return;
+    if(!boardTapDuringIntro(introGateRef.current).play)return;
     const root=rootRef.current;
     // Commit before motion: an interrupted animation or reload never replays a move.
     runPresentedAction(round,action,presentationRef.current,{
@@ -317,7 +372,19 @@ export default function SimplifiedGame(){
         (level.garden===2?' sgv-orchard':'')+' sgv-event-'+(feedback||round.event.type)+
         (arriving?' sgv-arrive':'')}
       aria-busy={animating}
+      data-intro-gate={introGate?true:undefined}
       onPointerDownCapture={event=>{
+        const introHit=introPointerDecision({
+          gate:introGateRef.current,
+          inIntro:!!event.target?.closest?.('.sgv-feature-intro')
+        });
+        if(introHit.handled){
+          if(!introHit.dismiss){
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          return;
+        }
         const presenting=presentationRef.current.isPresenting();
         if(startOpen&&!presenting){
           const opening=dismissLevelScreen('start','tap');
@@ -345,6 +412,17 @@ export default function SimplifiedGame(){
         }
       }}
       onClickCapture={event=>{
+        const introHit=introPointerDecision({
+          gate:introGateRef.current,
+          inIntro:!!event.target?.closest?.('.sgv-feature-intro')
+        });
+        if(introHit.handled){
+          if(!introHit.dismiss){
+            event.preventDefault();
+            event.stopPropagation();
+          }
+          return;
+        }
         if(presentationRef.current.acceptClick()!=='action'){
           event.preventDefault();
           event.stopPropagation();
@@ -352,6 +430,12 @@ export default function SimplifiedGame(){
       }}
       onKeyDownCapture={event=>{
         if(!isSkipKey(event.key))return;
+        if(introGateRef.current){
+          event.preventDefault();
+          event.stopPropagation();
+          dismissIntro(event.target?.closest?.('.sgv-feature-intro-play')?'play':'scrim');
+          return;
+        }
         if(presentationRef.current.isPresenting()){
           event.preventDefault();
           event.stopPropagation();
@@ -467,7 +551,10 @@ export default function SimplifiedGame(){
         <li>Pill × this card</li>
         <li>0 keeps the Pot. Snap empties it.</li>
       </ul>}
-      {startOpen&&!finished&&!animating&&<LevelStartScreen levelId={level.id} target={level.target}
+      {introGate&&introCard&&<FeatureIntroOverlay intro={introCard}
+        reduced={prefersReducedMotion()} bus={fxRef.current} onDismiss={dismissIntro}
+        levelId={round.levelId} introStartRef={introStartRef} levelReadyRef={levelReadyRef}/>}
+      {startOpen&&!introGate&&!finished&&!animating&&<LevelStartScreen levelId={level.id} target={level.target}
         onDismiss={()=>{
           const opening=dismissLevelScreen('start','cta');
           if(opening.dismiss&&!opening.lock)setStartOpen(false);
