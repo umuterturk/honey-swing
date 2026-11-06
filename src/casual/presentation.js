@@ -40,6 +40,28 @@ export function bankPourAmounts(rawPot,securedBefore,securedAfter,progress){
   };
 }
 
+export function displayOf(round){
+  return {
+    position:round.game.deal.S,
+    rawPot:rawPotValue(round.game.deal),
+    resonance:round.game.deal.resonancePoints||0,
+    factors:multiplierParts(round.game.deal),
+    snaps:round.snaps
+  };
+}
+
+// The visual endpoint of a committed action. Numbers come from that action's
+// engine result; finishing a motion installs this once and clears the lock.
+export function settledPresentation(next){
+  return {
+    round:next,
+    view:displayOf(next),
+    shownGold:next.game.deal.T,
+    feedback:null,
+    animating:false
+  };
+}
+
 export function actionPresentation(before,after,action){
   const previous=before.game.deal;
   const current=after.game.deal;

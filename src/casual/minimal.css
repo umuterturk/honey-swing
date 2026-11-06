@@ -125,6 +125,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-intro-message span{font-size:clamp(18px,5vw,24px);line-height:1}
 .sgv-intro-message strong{font-size:clamp(49px,14vw,72px);color:#ea558a;line-height:1;text-shadow:0 4px #ffe1b9}
 @keyframes sgv-target-fly{0%{opacity:0;transform:translate(-50%,-140%) scale(.5)}16%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}25%,70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-185%) scale(.3)}}
+.sgv-skip-surface{position:absolute;inset:0;z-index:28;margin:0;padding:0;border:0;background:transparent;cursor:pointer}
 .sgv-end-overlay{position:absolute;z-index:30;inset:0;display:grid;place-items:center;background:#496d728f;backdrop-filter:blur(5px)}
 .sgv-end-card{width:min(85%,360px);padding:24px 20px 28px;text-align:center;border:6px solid #fffbea;border-radius:30px;background:linear-gradient(#fffbea,#ffdeb0);box-shadow:0 8px 0 #d6a06a,0 18px 30px #55556f7a}
 .sgv-end-symbol{font-size:65px;color:#ffca4c;text-shadow:0 5px #cc9134}

@@ -3,12 +3,12 @@ import {overswingPayout,signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
 import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour} from './minimalMotion.js';
-import {multiplierParts} from './multiplierView.js';
-import {rawPotValue,visiblePotPayout,actionPresentation} from './presentation.js';
+import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
+import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
 import {ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress} from './onboardingProgress.js';
 import {
   newOnboardingRound,onboardingLevel,onboardingActions,onboardingFinished,
-  onboardingVictory,stepOnboarding,wouldSnap,ONBOARDING_COUNT,GARDEN_2_START
+  onboardingVictory,wouldSnap,ONBOARDING_COUNT,GARDEN_2_START
 } from './onboardingLevels.js';
 
 const SESSION_KEY=ONBOARDING_SESSION_KEY;
@@ -28,13 +28,6 @@ function initialRound(){
   }catch{}
   return newOnboardingRound(1);
 }
-const displayOf=round=>({
-  position:round.game.deal.S,
-  rawPot:rawPotValue(round.game.deal),
-  resonance:round.game.deal.resonancePoints||0,
-  factors:multiplierParts(round.game.deal),
-  snaps:round.snaps
-});
 export default function SimplifiedGame(){
   const [round,setRound]=useState(initialRound);
   const [view,setView]=useState(()=>displayOf(round));
@@ -46,7 +39,8 @@ export default function SimplifiedGame(){
   const [help,setHelp]=useState(false);
   const [docking,setDocking]=useState(()=>Boolean(onboardingLevel(round.levelId).dock));
   const [devMenuOpen,setDevMenuOpen]=useState(false);
-  const rootRef=useRef(null),busyRef=useRef(false),cancelRef=useRef(null);
+  const rootRef=useRef(null),cancelRef=useRef(null),presentationRef=useRef(null);
+  if(!presentationRef.current)presentationRef.current=createActionPresentation();
   const resetMotionRef=useRef(null),lossMotionRef=useRef(null),breakMotionRef=useRef(null);
   const seenFactorsRef=useRef(new Set());
   const level=onboardingLevel(round.levelId);
@@ -71,6 +65,7 @@ export default function SimplifiedGame(){
     available.find(a=>a.type==='steer')?.index;
 
   useEffect(()=>()=>{
+    presentationRef.current.abandon();
     cancelRef.current?.();resetMotionRef.current?.();
     lossMotionRef.current?.();breakMotionRef.current?.();
   },[]);
@@ -94,11 +89,11 @@ export default function SimplifiedGame(){
   },[animating,round.turn,round.levelId,finished,level.id]);
 
   function startLevel(id){
+    presentationRef.current.abandon();
     cancelRef.current?.();resetMotionRef.current?.();
     lossMotionRef.current?.();breakMotionRef.current?.();
     cancelRef.current=null;resetMotionRef.current=null;
     lossMotionRef.current=null;breakMotionRef.current=null;
-    busyRef.current=false;
     const next=newOnboardingRound(id);
     save(next);
     setRound(next);setView(displayOf(next));setShownGold(0);
@@ -125,74 +120,87 @@ export default function SimplifiedGame(){
     startLevel(GARDEN_2_START);
   }
 
+  function finishPresentation(){
+    presentationRef.current.finishPresentation();
+  }
   function play(action,source){
-    if(finished||busyRef.current)return;
-    const next=stepOnboarding(round,action);
-    if(next===round)return;
-    const change=actionPresentation(round,next,action);
-    // Commit before motion: an interrupted animation or reload never replays a move.
-    save(next);
-    event(action.type==='steer'?'card_play':action.type,{
-      level:level.id,turn:next.turn,card:change.signedCard,
-      snap:change.snap,zeroBreak:change.zeroBreak,bankGain:change.bankGain
-    });
-    if(round.turn===0)event('first_action',{level:level.id});
-    if(change.snap)event('snap',{level:level.id});
-    if(change.zeroBreak)event('zero_break',{level:level.id});
-    change.rewards.forEach(({kind,value})=>event('factor_changed',{level:level.id,kind,value}));
-    if(onboardingVictory(next)){
-      event('level_complete',{level:level.id,actions:next.turn});
-      if(level.id===ONBOARDING_COUNT)event('onboarding_complete');
-      try{localStorage.setItem(PROGRESS_KEY,String(Math.min(ONBOARDING_COUNT,level.id+1)));}catch{}
-    }
+    if(finished)return;
     const root=rootRef.current;
-    busyRef.current=true;setAnimating(true);
-    setFeedback(change.snap?'snap':change.zeroBreak?'zero_break':action.type);
-    setBeat(change.zeroBreak?'Pot safe.':change.snap?'Pot lost. Bank safe.':'');
-    setPulse(false);setHelp(false);
-    resetMotionRef.current?.();breakMotionRef.current?.();
-    resetMotionRef.current=null;breakMotionRef.current=null;
-    const done=()=>{
-      busyRef.current=false;cancelRef.current=null;
-      setRound(next);setView(displayOf(next));setShownGold(next.game.deal.T);
-      setFeedback(null);setAnimating(false);
-    };
-    if(!root||!source){done();return;}
-    if(action.type==='bank'){
-      cancelRef.current=animateBankPour({
-        root,source,potValue:change.rawPotBefore,
-        fromScore:change.securedBefore,toScore:change.securedAfter,
-        onPourProgress:rawPot=>setView(v=>({...v,rawPot})),
-        onTake:()=>setView(v=>({...v,rawPot:0,resonance:0})),
-        onCount:setShownGold,onComplete:done
-      });
-      return;
-    }
-    const firstFactorAwards=change.rewards
-      .filter(({kind})=>!seenFactorsRef.current.has(kind)).map(({kind})=>kind);
-    change.rewards.forEach(({kind})=>seenFactorsRef.current.add(kind));
-    cancelRef.current=animateCardAction({
-      root,source,action,view:{...change,firstTap:round.levelId===1&&round.turn===0},
-      firstFactorAwards,
-      onMeter:position=>{
-        setView(v=>({...v,position}));
-        if(change.snap)setFeedback('snap');
-      },
-      onPot:rawPot=>setView(v=>({...v,rawPot,resonance:change.resonanceAfter})),
-      onSnap:()=>{
-        breakMotionRef.current?.();breakMotionRef.current=animatePotBreak(root,'snap');
-        lossMotionRef.current?.();lossMotionRef.current=animateSnapLoss(root,change.rawPotBefore);
-        setView(v=>({...v,snaps:change.snapsAfter}));
-      },
-      onFactors:factors=>{
-        setView(v=>({...v,factors}));
-        if(change.zeroBreak||change.snap||
-          change.factorsAfter.some((f,i)=>f.value<change.factorsBefore[i].value)){
-          resetMotionRef.current?.();
-          resetMotionRef.current=animateFactorReset(root);
+    // Commit before motion: an interrupted animation or reload never replays a move.
+    runPresentedAction(round,action,presentationRef.current,{
+      onCommit({next,change}){
+        save(next);
+        event(action.type==='steer'?'card_play':action.type,{
+          level:level.id,turn:next.turn,card:change.signedCard,
+          snap:change.snap,zeroBreak:change.zeroBreak,bankGain:change.bankGain
+        });
+        if(round.turn===0)event('first_action',{level:level.id});
+        if(change.snap)event('snap',{level:level.id});
+        if(change.zeroBreak)event('zero_break',{level:level.id});
+        change.rewards.forEach(({kind,value})=>event('factor_changed',{level:level.id,kind,value}));
+        if(onboardingVictory(next)){
+          event('level_complete',{level:level.id,actions:next.turn});
+          if(level.id===ONBOARDING_COUNT)event('onboarding_complete');
+          try{localStorage.setItem(PROGRESS_KEY,String(Math.min(ONBOARDING_COUNT,level.id+1)));}catch{}
         }
       },
-      onComplete:done
+      onSettle({next}){
+        const settled=settledPresentation(next);
+        cancelRef.current=null;resetMotionRef.current=null;
+        lossMotionRef.current=null;breakMotionRef.current=null;
+        setRound(settled.round);setView(settled.view);setShownGold(settled.shownGold);
+        setFeedback(settled.feedback);setAnimating(settled.animating);
+      },
+      startMotion({change},complete){
+        setAnimating(true);
+        setFeedback(change.snap?'snap':change.zeroBreak?'zero_break':action.type);
+        setBeat(change.zeroBreak?'Pot safe.':change.snap?'Pot lost. Bank safe.':'');
+        setPulse(false);setHelp(false);
+        resetMotionRef.current?.();breakMotionRef.current?.();
+        resetMotionRef.current=null;breakMotionRef.current=null;
+        const cancelAll=()=>{
+          cancelRef.current?.();resetMotionRef.current?.();
+          lossMotionRef.current?.();breakMotionRef.current?.();
+        };
+        if(!root||!source){complete();return cancelAll;}
+        if(motionKind(action,change)==='bank'){
+          cancelRef.current=animateBankPour({
+            root,source,potValue:change.rawPotBefore,
+            fromScore:change.securedBefore,toScore:change.securedAfter,
+            onPourProgress:rawPot=>setView(v=>({...v,rawPot})),
+            onTake:()=>setView(v=>({...v,rawPot:0,resonance:0})),
+            onCount:setShownGold,onComplete:complete
+          });
+          return cancelAll;
+        }
+        const firstFactorAwards=change.rewards
+          .filter(({kind})=>!seenFactorsRef.current.has(kind)).map(({kind})=>kind);
+        change.rewards.forEach(({kind})=>seenFactorsRef.current.add(kind));
+        cancelRef.current=animateCardAction({
+          root,source,action,view:{...change,firstTap:round.levelId===1&&round.turn===0},
+          firstFactorAwards,
+          onMeter:position=>{
+            setView(v=>({...v,position}));
+            if(change.snap)setFeedback('snap');
+          },
+          onPot:rawPot=>setView(v=>({...v,rawPot,resonance:change.resonanceAfter})),
+          onSnap:()=>{
+            breakMotionRef.current?.();breakMotionRef.current=animatePotBreak(root,'snap');
+            lossMotionRef.current?.();lossMotionRef.current=animateSnapLoss(root,change.rawPotBefore);
+            setView(v=>({...v,snaps:change.snapsAfter}));
+          },
+          onFactors:factors=>{
+            setView(v=>({...v,factors}));
+            if(change.zeroBreak||change.snap||
+              change.factorsAfter.some((f,i)=>f.value<change.factorsBefore[i].value)){
+              resetMotionRef.current?.();
+              resetMotionRef.current=animateFactorReset(root);
+            }
+          },
+          onComplete:complete
+        });
+        return cancelAll;
+      }
     });
   }
 
@@ -203,7 +211,19 @@ export default function SimplifiedGame(){
       className={'sgv-phone sgv-onboarding sgv-onboarding-'+level.id+
         (level.garden===2?' sgv-orchard':'')+' sgv-event-'+(feedback||round.event.type)}
       aria-busy={animating}
-      onPointerDown={()=>{if(docking)setDocking(false);}}>
+      onPointerDownCapture={event=>{
+        if(docking)setDocking(false);
+        if(presentationRef.current.acceptPointerDown()==='skip'){
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }}
+      onClickCapture={event=>{
+        if(presentationRef.current.acceptClick()!=='action'){
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      }}>
       <GardenScene/>
       <div className="sgv-atmosphere" aria-hidden="true"/>
       <header className="sgv-hud sgv-tutorial-hud">
@@ -306,6 +326,8 @@ export default function SimplifiedGame(){
           </button>}
         </div>
       </div>}
+      {animating&&<button type="button" className="sgv-skip-surface" aria-label="Skip animation"
+        onPointerDown={event=>{event.preventDefault();event.stopPropagation();finishPresentation();}}/>}
     </div>
   </main>;
 }
