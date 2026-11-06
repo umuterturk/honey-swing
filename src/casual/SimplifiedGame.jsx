@@ -9,6 +9,8 @@ import {playWinCelebration} from './winMotion.js';
 import {playLevelStart} from './levelStartMotion.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
 import {createFxBus} from './fx/fxBus.js';
+import {fxEventsFromChange} from './fx/fxEvents.js';
+import {playSignatures} from './fx/signatureMotion.js';
 import {FxLayer} from './fx/FxLayer.jsx';
 import {clearWinMemo,idleHintAction} from './idleHint.js';
 import {LevelEndScreen,LevelStartScreen,dismissLevelScreen} from './levelScreens.js';
@@ -79,6 +81,7 @@ export default function SimplifiedGame(){
   const winMotionRef=useRef(null);
   const [devMenuOpen,setDevMenuOpen]=useState(false);
   const rootRef=useRef(null),cancelRef=useRef(null),presentationRef=useRef(null);
+  const signatureRef=useRef(null);
   const fxRef=useRef(null);
   if(!fxRef.current)fxRef.current=createFxBus();
   if(!presentationRef.current)presentationRef.current=createActionPresentation({fx:fxRef.current});
@@ -109,6 +112,8 @@ export default function SimplifiedGame(){
   const pulseIndex=hint?.type==='steer'?hint.index:null;
 
   useEffect(()=>()=>{
+    try{signatureRef.current?.cancel();}catch{/* unmount still settles the bus */}
+    signatureRef.current=null;
     fxRef.current.settle();
     presentationRef.current.abandon();
     cancelRef.current?.();resetMotionRef.current?.();
@@ -294,6 +299,10 @@ export default function SimplifiedGame(){
     arrivalRef.current=null;
     try{winMotionRef.current?.cancel();}catch{/* the level change settles next */}
     winMotionRef.current=null;
+    try{signatureRef.current?.cancel();}catch{/* the level change settles next */}
+    signatureRef.current=null;
+    rootRef.current?.querySelectorAll('.sgv-fx-callout, .sgv-fx-halo')
+      .forEach(node=>node.remove());
     fxRef.current.settle();
     presentationRef.current.abandon();
     cancelRef.current?.();resetMotionRef.current?.();
@@ -401,7 +410,15 @@ export default function SimplifiedGame(){
         setPulse(false);setHelp(false);
         resetMotionRef.current?.();breakMotionRef.current?.();
         resetMotionRef.current=null;breakMotionRef.current=null;
+        try{signatureRef.current?.cancel();}catch{/* the next signature replaces it */}
+        const signature=playSignatures({
+          events:fxEventsFromChange(change,action,level),
+          root,bus:fxRef.current,reduced:prefersReducedMotion()
+        });
+        signatureRef.current=signature;
         const cancelAll=()=>{
+          try{signature.cancel();}catch{/* settle still clears the bus */}
+          if(signatureRef.current===signature)signatureRef.current=null;
           cancelRef.current?.();resetMotionRef.current?.();
           lossMotionRef.current?.();breakMotionRef.current?.();
         };

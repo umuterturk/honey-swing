@@ -24,12 +24,21 @@ export function createParticlePool({cap=PARTICLE_CAP}={}){
     for(const particle of live)particle.alive=false;
     live.length=0;
   }
+  function release(match){
+    if(typeof match!=='function')return;
+    for(let index=live.length-1;index>=0;index--){
+      if(!match(live[index]))continue;
+      live[index].alive=false;
+      live.splice(index,1);
+    }
+  }
   return {
     cap,
     spawn,
     release,
     liveCount:()=>live.length,
     live:()=>live.slice(),
-    drain
+    drain,
+    release
   };
 }

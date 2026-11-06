@@ -212,7 +212,7 @@ export function animateCardAction({
   };
 }
 
-const OBJECT_WORDS={swing:'CROSS',jackpot:'JACKPOT'};
+const OBJECT_WORDS={jackpot:'JACKPOT'};
 
 export function flyMultiplierRewards({root,rewards,firstFactorAwards=[],origin=null}){
   if(!root||!rewards?.length||reducedMotion())return ()=>{};

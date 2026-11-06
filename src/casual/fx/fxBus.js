@@ -7,6 +7,7 @@ import {pulse as pulseHaptic} from '../services/haptics.js';
 export const FX_TWEEN_CAP=24;
 const FLASH_CLASS='sgv-fx-flash';
 const SHAKE_CLASS='sgv-fx-shake';
+const FX_CLASSES=[FLASH_CLASS,FLASH_CLASS+'-cream',FLASH_CLASS+'-red',SHAKE_CLASS];
 
 // Cosmetic queue only. Emit returns immediately and never starts a presentation.
 function prefersReducedMotion(){
@@ -73,6 +74,7 @@ export function createFxBus({
   function clearClasses(){
     if(root?.classList){
       for(const name of classes)root.classList.remove(name);
+      for(const name of FX_CLASSES)root.classList.remove(name);
     }
     classes.clear();
   }
@@ -104,9 +106,13 @@ export function createFxBus({
   function emit(event={}){
     if(isReduced())return quiet;
     const count=particleCount(event.particles);
+    const palette=Array.isArray(event.colors)&&event.colors.length?event.colors:null;
     let alive=0;
     for(let index=0;index<count;index++){
-      const particle=pool.spawn({event:event.id||'fx'});
+      const spec={event:event.id||'fx'};
+      if(palette)spec.color=palette[index%palette.length];
+      if(event.token)spec.token=event.token;
+      const particle=pool.spawn(spec);
       if(particle.alive)alive++;
     }
     let tween=null;
