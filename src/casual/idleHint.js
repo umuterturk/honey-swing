@@ -18,6 +18,8 @@ function fingerprint(round){
   });
 }
 const winMemo=new Map();
+export function clearWinMemo(){winMemo.clear();}
+export function winMemoSize(){return winMemo.size;}
 export function hasWinningContinuation(round){
   const key=fingerprint(round);
   if(winMemo.has(key))return winMemo.get(key);
