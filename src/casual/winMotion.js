@@ -6,10 +6,18 @@ import {
 
 const PEAK=1.14;
 
-function centerOf(node){
+function centerOf(node, layer){
   const rect=node?.getBoundingClientRect?.();
-  if(!rect||!(rect.width||rect.height||rect.x||rect.y))return null;
-  return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};
+  if(!rect)return null;
+  const width=rect.width||0;
+  const height=rect.height||0;
+  const left=Number.isFinite(rect.left)?rect.left:(rect.x||0);
+  const top=Number.isFinite(rect.top)?rect.top:(rect.y||0);
+  if(!(width||height||left||top))return null;
+  const origin=layer?.getBoundingClientRect?.();
+  const originX=origin&&Number.isFinite(origin.left)?origin.left:(origin?.x||0);
+  const originY=origin&&Number.isFinite(origin.top)?origin.top:(origin?.y||0);
+  return {x:left+width/2-originX,y:top+height/2-originY};
 }
 
 function scaleOf(fraction){
@@ -23,7 +31,7 @@ function scaleOf(fraction){
 export function playWinCelebration({
   victory=true,secured=0,target=0,tier=0,praise=null,tally=null,subline=null,
   liquid=null,overflow=null,scrim=null,cta=null,card=null,
-  source=null,pot=null,mouth=null,sourcePoint=null,mouthPoint=null,
+  source=null,pot=null,mouth=null,layer=null,sourcePoint=null,mouthPoint=null,
   reduced=false,bus=null,onSettled,schedule=null,clearSchedule=null,doc=null
 }={}){
   const score=Math.trunc(Number(secured));
@@ -71,8 +79,9 @@ export function playWinCelebration({
     return {motion:false,timeline:null,particles:0,showFinal:paintFinal,cancel(){paintFinal();}};
   }
 
-  const from=sourcePoint||centerOf(source)||centerOf(pot)||{x:160,y:84};
-  const to=mouthPoint||centerOf(mouth)||{x:from.x,y:from.y+140};
+  const fx=layer||card?.closest?.('.sgv-phone')?.querySelector?.('.sgv-fx-layer')||null;
+  const from=sourcePoint||centerOf(source,fx)||centerOf(pot,fx)||{x:160,y:84};
+  const to=mouthPoint||centerOf(mouth,fx)||{x:from.x,y:from.y+140};
   const paintCount=eased=>{
     const progress=eased>=1?1:Math.max(0,eased||0);
     const shown=displayedCount(progress,safe);

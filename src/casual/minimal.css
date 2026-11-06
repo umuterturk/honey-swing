@@ -174,7 +174,8 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-honey-win .sgv-honey-subline{opacity:0}
 .sgv-honey-win .sgv-end-cta{position:absolute;z-index:3;left:calc(var(--safe-left) + 16px);right:calc(var(--safe-right) + 16px);bottom:calc(var(--safe-bottom) + 16px);width:auto;min-width:0;height:56px;min-height:56px;margin:0;box-shadow:0 5px 0 #348f67,0 0 0 3px rgb(240 193 74 / var(--honey-cta-outline,0))}
 .sgv-honey-win .sgv-end-cta:active{transform:scale(.96);box-shadow:0 1px 0 #348f67;transition:transform 80ms,box-shadow 80ms}
-.sgv-honey-win .sgv-end-reset{position:absolute;z-index:3;left:calc(var(--safe-left) + 8px);top:calc(var(--safe-top) + 109px);width:44px;min-width:44px;height:44px;margin:0;padding:0;overflow:hidden}
+.sgv-onboarding .sgv-honey-win .sgv-end-card .sgv-end-reset,
+.sgv-honey-win .sgv-end-card .sgv-end-reset{position:absolute;z-index:3;left:calc(var(--safe-left) + 8px);top:calc(var(--safe-top) + 109px);width:44px;min-width:44px;max-width:44px;height:44px;margin:0;padding:0;overflow:hidden}
 .sgv-honey-short .sgv-honey-stage{top:calc(var(--safe-top) + 80px);bottom:calc(var(--safe-bottom) + 88px)}
 .sgv-honey-short .sgv-honey-count-slot{height:48px;margin-top:8px}
 .sgv-honey-short .sgv-honey-subline{height:20px;margin-top:4px;line-height:20px}
@@ -1280,8 +1281,9 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
   }
 }
 
-/* The modal covers the header; provide the same reset on its completion screen. */
-.sgv-onboarding .sgv-end-card .sgv-end-reset{
+/* The loss card covers the header, so it keeps the wide reset. The honey win
+   card uses the 44px rule above; this one must not match .sgv-honey-win. */
+.sgv-onboarding .sgv-end-overlay:not(.sgv-honey-win) .sgv-end-card .sgv-end-reset{
  background:linear-gradient(#fff8ed,#eee4db);
  color:#795572;text-shadow:none;border-color:#fffaf1;
  box-shadow:0 3px 0 #c7b7ad;font-size:13px;

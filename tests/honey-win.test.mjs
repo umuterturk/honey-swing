@@ -314,6 +314,42 @@ function assertFinal(nodes,secured){
   assert.equal(nodes.overlay.classList.contains('sgv-honey-final'),true);
 }
 
+test('droplet and burst origins are layer-local CSS pixels',()=>{
+  const layer=document.createElement('div');
+  layer.className='sgv-fx-layer';
+  const source=document.createElement('div');
+  const mouth=document.createElement('div');
+  const box=(left,top,width,height)=>({
+    left,top,x:left,y:top,width,height,right:left+width,bottom:top+height
+  });
+  layer.getBoundingClientRect=()=>box(35,60,320,568);
+  source.getBoundingClientRect=()=>box(135,80,40,20);
+  mouth.getBoundingClientRect=()=>box(175,260,10,10);
+  const sourceOrigin={x:155-35,y:90-60};
+  const mouthOrigin={x:180-35,y:265-60};
+  const nodes=stage();
+  const bus=createFxBus({reducedMotion:()=>false});
+  const handle=playWinCelebration({
+    victory:true,secured:32,target:9,tier:1,
+    praise:nodes.praise,tally:nodes.tally,subline:nodes.subline,
+    liquid:nodes.liquid,cta:nodes.cta,card:nodes.overlay,
+    source,mouth,layer,reduced:false,bus
+  });
+  handle.timeline.pause();
+  handle.timeline.time(0.1);
+  const flight=bus.pool.live().find(particle=>particle.key==='flight-0');
+  assert.ok(flight);
+  assert.equal(flight.x,sourceOrigin.x);
+  assert.equal(flight.y,sourceOrigin.y);
+  handle.timeline.time(0.85);
+  const burst=bus.pool.live().find(particle=>particle.key==='burst-0');
+  assert.ok(burst);
+  assert.equal(burst.x,mouthOrigin.x);
+  assert.equal(burst.y,mouthOrigin.y);
+  handle.cancel();
+  nodes.remove();
+});
+
 test('a skipped or killed celebration paints the final jar, praise, and score',()=>{
   const nodes=stage();
   const bus=createFxBus({reducedMotion:()=>false});

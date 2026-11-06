@@ -476,6 +476,10 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     assert.equal(subline.textContent,secured+' / 5');
     assert.equal(cta.disabled,false);
     assert.equal(cta.textContent,'NEXT');
+    const reset=host.querySelector('.sgv-honey-win .sgv-end-reset');
+    const resetStyle=win.getComputedStyle(reset);
+    assert.equal(resetStyle.width,'44px');
+    assert.equal(resetStyle.minWidth,'44px');
     const timeline=timelineOf(praise);
     assert.ok(timeline,'the win card plays a celebration timeline');
     timeline.pause();
@@ -531,24 +535,30 @@ test('the CTA advances during the celebration',async()=>{
 });
 
 test('a mounted loss shows the quiet end card',async()=>{
-  resetStorage();
-  const round=lostLevel();
-  assert.equal(round.game.deal.T,0);
-  saveRound(round);
-  const view=await mount();
-  const host=view.host;
-  assert.match(host.textContent,/Try again!/);
-  assert.match(host.textContent,/TRY AGAIN/);
-  assert.match(host.textContent,/Drops secured: 0 \/ 11/);
-  assert.equal(host.querySelector('.sgv-win-praise'),null);
-  assert.equal(host.querySelector('.sgv-win-star'),null);
-  assert.equal(host.querySelector('.sgv-win-tally'),null);
-  assert.doesNotMatch(host.textContent,/Sweet!|Tasty!|Divine!/);
-  const bus=host.querySelector('.sgv-fx-layer').__fxBus;
-  assert.equal(bus.liveParticles(),0);
-  assert.equal(bus.tweenCount(),0);
-  assert.equal(gsap.getTweensOf(host.querySelector('.sgv-end-card')).length,0);
-  await view.unmount();
+  await withStylesheet(async()=>{
+    resetStorage();
+    const round=lostLevel();
+    assert.equal(round.game.deal.T,0);
+    saveRound(round);
+    const view=await mount();
+    const host=view.host;
+    assert.match(host.textContent,/Try again!/);
+    assert.match(host.textContent,/TRY AGAIN/);
+    assert.match(host.textContent,/Drops secured: 0 \/ 11/);
+    assert.equal(host.querySelector('.sgv-win-praise'),null);
+    assert.equal(host.querySelector('.sgv-win-star'),null);
+    assert.equal(host.querySelector('.sgv-win-tally'),null);
+    assert.doesNotMatch(host.textContent,/Sweet!|Tasty!|Divine!/);
+    const resetStyle=win.getComputedStyle(host.querySelector('.sgv-end-reset'));
+    assert.equal(resetStyle.minWidth,'65%');
+    assert.equal(resetStyle.paddingTop,'10px');
+    assert.equal(resetStyle.marginTop,'13px');
+    const bus=host.querySelector('.sgv-fx-layer').__fxBus;
+    assert.equal(bus.liveParticles(),0);
+    assert.equal(bus.tweenCount(),0);
+    assert.equal(gsap.getTweensOf(host.querySelector('.sgv-end-card')).length,0);
+    await view.unmount();
+  });
 });
 
 test('reduced motion mounts the static final card with 0 particles',async()=>{

@@ -146,6 +146,7 @@ export default function SimplifiedGame(){
       mouth:root.querySelector('.sgv-honey-mouth'),
       source:root.querySelector('.sgv-gold-counter'),
       pot:root.querySelector('.sgv-pending-pot'),
+      layer:root.querySelector('.sgv-fx-layer'),
       cta:root.querySelector('.sgv-end-cta'),
       card:root.querySelector('.sgv-honey-win'),
       reduced,bus:fxRef.current,
