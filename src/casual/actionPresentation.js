@@ -4,21 +4,28 @@ import {actionPresentation} from './presentation.js';
 // One visual transaction. The engine action is committed before begin();
 // finishPresentation only installs that result. abandon() is for unmount and
 // level changes, which must not replay or settle the interrupted action.
-export function createActionPresentation(){
+// fx.settle() only kills cosmetic timelines. It does not commit or delay input.
+export function createActionPresentation(options={}){
+  const fx=options?.fx??null;
   let current=null;
   let swallowClick=false;
   function isPresenting(){return current!=null;}
   function finishPresentation(){
     const job=current;
-    if(!job)return false;
+    if(!job){
+      fx?.settle();
+      return false;
+    }
     current=null;
     job.settled=true;
     job.cancelMotion?.();
+    fx?.settle();
     job.applyFinal?.();
     return true;
   }
   function abandon(){
     const job=current;
+    fx?.settle();
     if(!job)return false;
     current=null;
     job.settled=true;
