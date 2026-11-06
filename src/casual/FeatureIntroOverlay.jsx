@@ -30,16 +30,30 @@ function BankDemo({intro,reduced}){
 }
 
 // One NEW! card. PLAY and the scrim both dismiss; the board underneath does not.
-export function FeatureIntroOverlay({intro,reduced=false,bus=null,onDismiss}){
+export function FeatureIntroOverlay({
+  intro,reduced=false,bus=null,onDismiss,levelId=0,introStartRef=null,levelReadyRef=null
+}){
   const scrimRef=useRef(null);
   const cardRef=useRef(null);
   const playRef=useRef(null);
   useLayoutEffect(()=>{
-    const handle=playFeatureIntroEnter({
-      scrim:scrimRef.current,card:cardRef.current,reduced,bus
-    });
-    return ()=>handle.cancel();
-  },[intro,reduced,bus]);
+    let current=null;
+    const start=()=>{
+      current?.cancel();
+      current=playFeatureIntroEnter({
+        scrim:scrimRef.current,card:cardRef.current,reduced,bus
+      });
+    };
+    if(introStartRef)introStartRef.current=start;
+    // The level effect settles first, then calls start. A later mount on a
+    // level that already settled starts here, with no settle left to kill it.
+    if(levelReadyRef?.current===levelId)start();
+    return ()=>{
+      if(introStartRef?.current===start)introStartRef.current=null;
+      current?.cancel();
+      current=null;
+    };
+  },[intro,reduced,bus,levelId,introStartRef,levelReadyRef]);
   useEffect(()=>{playRef.current?.focus?.();},[intro]);
   if(!intro)return null;
   return createElement('div',{

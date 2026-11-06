@@ -55,6 +55,8 @@ export default function SimplifiedGame(){
   const [introGate,setIntroGate]=useState(openingRef.current.gate);
   const [introCard,setIntroCard]=useState(openingRef.current.intro);
   const introGateRef=useRef(openingRef.current.gate);
+  const introStartRef=useRef(null);
+  const levelReadyRef=useRef(null);
   const [view,setView]=useState(()=>displayOf(round));
   const [shownGold,setShownGold]=useState(round.game.deal.T);
   const [animating,setAnimating]=useState(false);
@@ -117,6 +119,8 @@ export default function SimplifiedGame(){
   useEffect(()=>{
     fxRef.current.settle();
     event('level_start',{level:round.levelId});
+    levelReadyRef.current=round.levelId;
+    introStartRef.current?.();
   },[round.levelId]);
   useEffect(()=>{
     const reduced=typeof window!=='undefined'&&
@@ -548,7 +552,8 @@ export default function SimplifiedGame(){
         <li>0 keeps the Pot. Snap empties it.</li>
       </ul>}
       {introGate&&introCard&&<FeatureIntroOverlay intro={introCard}
-        reduced={prefersReducedMotion()} bus={fxRef.current} onDismiss={dismissIntro}/>}
+        reduced={prefersReducedMotion()} bus={fxRef.current} onDismiss={dismissIntro}
+        levelId={round.levelId} introStartRef={introStartRef} levelReadyRef={levelReadyRef}/>}
       {startOpen&&!introGate&&!finished&&!animating&&<LevelStartScreen levelId={level.id} target={level.target}
         onDismiss={()=>{
           const opening=dismissLevelScreen('start','cta');

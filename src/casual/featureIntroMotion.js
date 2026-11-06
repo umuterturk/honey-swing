@@ -46,9 +46,26 @@ export function playFeatureIntroEnter({scrim,card,reduced=false,bus=null}={}){
       }
     },
     INTRO_MOTION.card.start);
+  // settle() kills the timeline in place. A kill must land on the visible end
+  // instead of freezing the opacity-0 entry frame.
+  const nativeKill=timeline.kill.bind(timeline);
+  let finishing=false;
+  timeline.kill=function(...args){
+    if(!finishing&&timeline.progress()<1){
+      finishing=true;
+      try{timeline.progress(1);}catch{/* the explicit paint still shows the end */}
+    }
+    showFinal(scrim,card);
+    try{return nativeKill.apply(timeline,args);}finally{finishing=false;}
+  };
   bus?.register(timeline);
   return {
     motion:true,timeline,
-    cancel(){try{timeline.kill();}catch{/* already settled */}}
+    cancel(){try{timeline.kill();}catch{showFinal(scrim,card);}}
   };
+}
+
+function showFinal(scrim,card){
+  paint(scrim,{opacity:INTRO_MOTION.scrim.to});
+  paint(card,{opacity:1,transform:'translate(0, 0)',scale:1});
 }
