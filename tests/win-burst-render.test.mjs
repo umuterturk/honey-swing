@@ -193,7 +193,7 @@ test('praise tiers and the tally beat the end-card paragraph rule',async()=>{
   assert.equal(divineStyle.fontSize,'36px');
   assert.equal(divineStyle.fontWeight,'900');
   assert.ok(sameColor(divineStyle.color,'#ffe08a'),divineStyle.color);
-  assert.equal(tallyStyle.fontSize,'40px');
+  assert.equal(tallyStyle.fontSize,'64px');
   assert.equal(tallyStyle.fontWeight,'900');
   assert.ok(sameColor(tallyStyle.color,'#f0c14a'),tallyStyle.color);
   assert.match(String(tallyStyle.fontVariantNumeric),/tabular-nums/);

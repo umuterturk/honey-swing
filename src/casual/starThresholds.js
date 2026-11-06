@@ -1,7 +1,7 @@
 // Honey intensity thresholds. Secured is deal.T. Nothing here writes a score.
 // honey2 = star2 and honey3 = star3. The field names stay so this numeric
 // source does not need a rename. Nothing in the win or fail UI reads them as stars.
-// Appendix A, with Appendix B locked: L11/L18 honey3 = 32/30, L1/L2/L5 auto Divine.
+// Appendix A, with Appendix B locked: L11/L18 honey3 = 32/30, L1/L2/L5 auto Hiveful.
 export const STAR_THRESHOLDS=Object.freeze({
   1:Object.freeze({target:5,star2:5,star3:5,auto3:true}),
   2:Object.freeze({target:6,star2:6,star3:6,auto3:true}),
@@ -27,12 +27,12 @@ export const STAR_THRESHOLDS=Object.freeze({
 
 const PRAISE=Object.freeze([
   null,
-  Object.freeze({tier:1,text:'Sweet!',sound:'praise.h1'}),
-  Object.freeze({tier:2,text:'Tasty!',sound:'praise.h2'}),
-  Object.freeze({tier:3,text:'Divine!',sound:'praise.h3'})
+  Object.freeze({tier:1,text:'Nectar!',sound:'praise.nectar'}),
+  Object.freeze({tier:2,text:'Amber!',sound:'praise.amber'}),
+  Object.freeze({tier:3,text:'Hiveful!',sound:'praise.hiveful'})
 ]);
-const BURST=Object.freeze([0,12,18,24]);
-const BURST_RADIUS=Object.freeze([0,48,64,80]);
+const BURST=Object.freeze([0,16,20,24]);
+const BURST_RADIUS=Object.freeze([0,56,72,88]);
 const FLIGHT=Object.freeze([0,8,12,16]);
 const FLIGHT_SIZE=Object.freeze([0,16,18,20]);
 // PM override: the count-up is a fixed 0.600s, not the digit-based 40/80/120ms.
@@ -49,7 +49,7 @@ function tierCount(table,tier){
 }
 
 // Highest qualifying honey intensity, H3 then H2 then H1. Equal thresholds grant H3.
-// L1, L2, and L5 are Divine on any win.
+// L1, L2, and L5 are Hiveful on any win.
 export function honeyTier(levelId,secured){
   const row=STAR_THRESHOLDS[levelId];
   if(!row)throw new RangeError('Unknown level '+levelId);

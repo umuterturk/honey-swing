@@ -142,6 +142,50 @@ function timelineOf(node){
   return tween?tween.parent:null;
 }
 
+function assertComputedFill(node,label){
+  node.style.height='';
+  node.style.opacity='';
+  const computed=win.getComputedStyle(node);
+  const height=String(computed.height);
+  const pixels=parseFloat(height);
+  assert.equal(computed.opacity,'1',label+' opacity');
+  assert.notEqual(height,'0%',label+' height');
+  assert.notEqual(height,'0px',label+' height');
+  assert.ok(height==='78%'||pixels>0,label+' computed height '+height);
+}
+
+function parseLen(value,base){
+  if(!value||value==='auto'||value==='none')return null;
+  if(String(value).endsWith('%'))return parseFloat(value)/100*(base||0);
+  const number=parseFloat(value);
+  return Number.isFinite(number)?number:null;
+}
+function layoutRect(node,seen=new Set()){
+  if(!node||seen.has(node))return {left:0,top:0,width:0,height:0};
+  seen.add(node);
+  const style=win.getComputedStyle(node);
+  const parent=node.offsetParent||node.parentElement;
+  const parentRect=parent&&parent!==document.body&&parent!==document.documentElement
+    ?layoutRect(parent,seen):{left:0,top:0,width:0,height:0};
+  const width=parseLen(style.width,parentRect.width)||0;
+  const height=parseLen(style.height,parentRect.height)||0;
+  const positioned=style.position==='absolute'||style.position==='fixed'||style.position==='relative';
+  let left=parseLen(style.left,parentRect.width);
+  let top=parseLen(style.top,parentRect.height);
+  if(left==null)left=0;
+  if(top==null)top=0;
+  const shift=String(style.transform||'').match(/translateX\((-?[\d.]+)%\)/);
+  if(shift)left+=parseFloat(shift[1])/100*width;
+  const originLeft=positioned?parentRect.left:0;
+  const originTop=positioned?parentRect.top:0;
+  return {
+    left:originLeft+left,top:originTop+top,width,height,
+    right:originLeft+left+width,bottom:originTop+top+height,
+    x:originLeft+left,y:originTop+top
+  };
+}
+win.HTMLElement.prototype.getBoundingClientRect=function(){return layoutRect(this);};
+
 function opacityOf(node){
   const value=Number(gsap.getProperty(node,'opacity'));
   return Number.isFinite(value)?value:1;
@@ -219,13 +263,13 @@ test('star thresholds match Appendix A for all 20 levels',()=>{
 });
 
 test('praise and bursts follow the star tier and never change the engine score',()=>{
-  assert.deepEqual(praiseFor(1),{tier:1,text:'Sweet!',sound:'praise.h1'});
-  assert.deepEqual(praiseFor(2),{tier:2,text:'Tasty!',sound:'praise.h2'});
-  assert.deepEqual(praiseFor(3),{tier:3,text:'Divine!',sound:'praise.h3'});
+  assert.deepEqual(praiseFor(1),{tier:1,text:'Nectar!',sound:'praise.nectar'});
+  assert.deepEqual(praiseFor(2),{tier:2,text:'Amber!',sound:'praise.amber'});
+  assert.deepEqual(praiseFor(3),{tier:3,text:'Hiveful!',sound:'praise.hiveful'});
   assert.equal(praiseFor(0),null);
   assert.equal(burstParticles(0),0);
-  assert.equal(burstParticles(1),12);
-  assert.equal(burstParticles(2),18);
+  assert.equal(burstParticles(1),16);
+  assert.equal(burstParticles(2),20);
   assert.equal(burstParticles(3),24);
   assert.ok(burstParticles(3)<=24);
   let round=newOnboardingRound(1);
@@ -235,23 +279,23 @@ test('praise and bursts follow the star tier and never change the engine score',
   const secured=round.game.deal.T;
   assert.ok(secured>=onboardingLevel(1).target);
   assert.equal(honeyTier(1,secured),3);
-  assert.equal(praiseFor(honeyTier(1,secured)).text,'Divine!');
+  assert.equal(praiseFor(honeyTier(1,secured)).text,'Hiveful!');
   assert.equal(round.game.deal.T,secured);
   const sweet=successPlan({victory:true,levelId:4,secured:11});
   assert.equal(sweet.tier,1);
   assert.equal(sweet.flight.size,16);
-  assert.equal(sweet.praise.text,'Sweet!');
-  assert.equal(sweet.burst.particles,12);
+  assert.equal(sweet.praise.text,'Nectar!');
+  assert.equal(sweet.burst.particles,16);
   assert.equal(sweet.count.to,11);
   const tasty=successPlan({victory:true,levelId:4,secured:18});
   assert.equal(tasty.tier,2);
   assert.equal(tasty.flight.size,18);
-  assert.equal(tasty.praise.text,'Tasty!');
-  assert.equal(tasty.burst.particles,18);
+  assert.equal(tasty.praise.text,'Amber!');
+  assert.equal(tasty.burst.particles,20);
   const divine=successPlan({victory:true,levelId:11,secured:32});
   assert.equal(divine.tier,3);
   assert.equal(divine.flight.size,20);
-  assert.equal(divine.praise.text,'Divine!');
+  assert.equal(divine.praise.text,'Hiveful!');
   assert.equal(divine.count.to,32);
   assert.equal(divine.burst.particles,24);
   assert.equal(divine.ctaAt,0);
@@ -269,7 +313,7 @@ test('praise and bursts follow the star tier and never change the engine score',
   assert.equal(reduced.particles,0);
   assert.equal(reduced.tier,3);
   assert.equal(reduced.flight.count,0);
-  assert.equal(reduced.praise.text,'Divine!');
+  assert.equal(reduced.praise.text,'Hiveful!');
   assert.equal(reduced.count.to,8);
 });
 
@@ -293,7 +337,7 @@ test('the count-up duration follows the digit cap and ends on the engine integer
 test('skip and settle land on the exact secured score, a full jar, and 0 particles',()=>{
   const secured=32;
   const stage=makeStage();
-  stage.praise.textContent='Divine!';
+  stage.praise.textContent='Hiveful!';
   const sounds=[];
   const bus=createFxBus({
     reducedMotion:()=>false,
@@ -314,13 +358,13 @@ test('skip and settle land on the exact secured score, a full jar, and 0 particl
   assert.ok(opacityOf(stage.praise)>0);
   handle.timeline.time(0.5);
   assert.equal(stage.tally.textContent,'28');
-  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(stage.liquid.style.height,'78%');
   handle.timeline.time(0.8);
   assert.equal(stage.tally.textContent,String(secured));
   handle.timeline.time(0.9);
   assert.equal(bus.liveParticles(),24);
-  assert.ok(sounds.includes('praise.h3'));
-  assert.ok(sounds.includes('win.burst'));
+  assert.ok(sounds.includes('praise.hiveful'));
+  assert.ok(sounds.includes('fx.confetti'));
   const speeds=bus.pool.live().map(particle=>Math.hypot(particle.vx,particle.vy));
   assert.ok(speeds.every(speed=>speed>0));
   assert.ok(new Set(speeds.map(speed=>speed.toFixed(3))).size>1);
@@ -329,7 +373,7 @@ test('skip and settle land on the exact secured score, a full jar, and 0 particl
   assert.equal(bus.liveParticles(),0);
   assert.equal(stage.tally.textContent,String(secured));
   assert.equal(stage.praise.style.opacity,'1');
-  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(stage.liquid.style.height,'78%');
   assert.equal(stage.subline.style.opacity,'0.9');
   assert.equal(gsap.getTweensOf(stage.praise).length,0);
   assert.equal(stage.cta.disabled,false);
@@ -338,7 +382,7 @@ test('skip and settle land on the exact secured score, a full jar, and 0 particl
 
 test('a killed tween at the hidden frame still shows the final card',()=>{
   const stage=makeStage();
-  stage.praise.textContent='Divine!';
+  stage.praise.textContent='Hiveful!';
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=playWinCelebration({
     victory:true,secured:8,target:5,tier:3,praise:stage.praise,liquid:stage.liquid,
@@ -352,14 +396,14 @@ test('a killed tween at the hidden frame still shows the final card',()=>{
   assert.equal(bus.liveParticles(),0);
   assert.equal(stage.tally.textContent,'8');
   assert.equal(stage.praise.style.opacity,'1');
-  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(stage.liquid.style.height,'78%');
   assert.doesNotMatch(stage.praise.style.transform||'',/scale\(0/);
   stage.remove();
 });
 
 test('reduced motion shows the final card and emits 0 particles',()=>{
   const stage=makeStage();
-  stage.praise.textContent='Tasty!';
+  stage.praise.textContent='Amber!';
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=playWinCelebration({
     victory:true,secured:18,target:11,tier:2,praise:stage.praise,liquid:stage.liquid,
@@ -372,7 +416,7 @@ test('reduced motion shows the final card and emits 0 particles',()=>{
   assert.equal(gsap.getTweensOf(stage.praise).length,0);
   assert.equal(stage.tally.textContent,'18');
   assert.equal(stage.praise.style.opacity,'1');
-  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(stage.liquid.style.height,'78%');
   stage.remove();
 });
 
@@ -400,13 +444,15 @@ test('a fail plays no praise, stars, count-up, or particles',()=>{
   assert.doesNotMatch(lose,/sgv-win-praise|sgv-win-star|sgv-win-tally|Sweet!|Tasty!|Divine!/);
   const card=renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:true,score:32,target:9,label:'NEXT',
-    praise:{tier:3,text:'Divine!'}
+    praise:{tier:3,text:'Hiveful!'}
   }));
-  assert.match(card,/Divine!/);
+  assert.match(card,/Hiveful!/);
+  assert.doesNotMatch(card,/Sweet!|Tasty!|Divine!/);
   assert.match(card,/32 \/ 9/);
   assert.match(card,/>NEXT</);
   assert.equal((card.match(/sgv-win-star|data-star|★/g)||[]).length,0);
-  assert.match(card,/sgv-honey-jar/);
+  assert.match(card,/sgv-chest-body/);
+  assert.match(card,/sgv-fluid-surface/);
   assert.match(card,/sgv-win-tally/);
 });
 
@@ -464,7 +510,7 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     const view=await mount();
     const host=view.host;
     const praise=host.querySelector('.sgv-win-praise');
-    const liquid=host.querySelector('.sgv-honey-liquid');
+    const liquid=host.querySelector('.sgv-fluid-fill');
     const tally=host.querySelector('.sgv-win-tally');
     const subline=host.querySelector('.sgv-honey-subline');
     const cta=host.querySelector('.sgv-end-cta');
@@ -472,14 +518,19 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     const bus=host.querySelector('.sgv-fx-layer').__fxBus;
     assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.ok(liquid);
-    assert.equal(praise.textContent,'Divine!');
+    assert.equal(praise.textContent,'Hiveful!');
     assert.equal(subline.textContent,secured+' / 5');
     assert.equal(cta.disabled,false);
     assert.equal(cta.textContent,'NEXT');
-    const reset=host.querySelector('.sgv-honey-win .sgv-end-reset');
+    const reset=host.querySelector('.sgv-honey-reset');
     const resetStyle=win.getComputedStyle(reset);
     assert.equal(resetStyle.width,'44px');
     assert.equal(resetStyle.minWidth,'44px');
+    assert.equal(reset.getAttribute('aria-label'),'Reset progress');
+    assert.equal(reset.textContent,'↻');
+    assert.equal(resetStyle.overflow,'visible');
+    assert.equal(resetStyle.borderTopWidth,'0px');
+    assert.equal(resetStyle.fontSize,'22px');
     const timeline=timelineOf(praise);
     assert.ok(timeline,'the win card plays a celebration timeline');
     timeline.pause();
@@ -496,9 +547,9 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     assert.ok(host.querySelector('.sgv-end-overlay'),'backdrop settles and stays on the card');
     assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
     assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
-    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Divine!');
+    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Hiveful!');
     assert.equal(host.querySelector('.sgv-win-star'),null);
-    assert.match(host.querySelector('.sgv-honey-liquid').style.transform,/scaleY\(1\)/);
+    assert.equal(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill').style.height,'78%');
     const shownPraise=host.querySelector('.sgv-win-praise');
     assert.equal(shownPraise.style.opacity,'1');
     assert.equal(win.getComputedStyle(shownPraise).opacity,'1');
@@ -508,6 +559,9 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     assert.equal(bus.liveParticles(),0);
     assert.equal(host.querySelector('.sgv-end-cta').textContent,'NEXT');
     assert.equal(host.querySelector('.sgv-end-cta').disabled,false);
+    assert.ok(host.querySelector('.sgv-honey-final'));
+    assert.ok(host.querySelector('.sgv-success-settled'));
+    assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'skip-settled');
     const expected=assertStylesheetTransform(goal);
     assert.match(String(expected),/-50%/);
     await view.unmount();
@@ -561,6 +615,21 @@ test('a mounted loss shows the quiet end card',async()=>{
   });
 });
 
+test('the settled timeline keeps a computed full jar',async()=>{
+  await withStylesheet(async()=>{
+    resetStorage();
+    saveRound(bankedLevel1());
+    const view=await mount();
+    const host=view.host;
+    const timeline=timelineOf(host.querySelector('.sgv-win-praise'));
+    assert.ok(timeline);
+    await act(async()=>{timeline.time(1.3);});
+    assert.ok(host.querySelector('.sgv-success-settled'));
+    assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'settled');
+    await view.unmount();
+  });
+});
+
 test('reduced motion mounts the static final card with 0 particles',async()=>{
   await withStylesheet(async()=>{
     resetStorage();
@@ -571,16 +640,61 @@ test('reduced motion mounts the static final card with 0 particles',async()=>{
     const view=await mount();
     const host=view.host;
     const bus=host.querySelector('.sgv-fx-layer').__fxBus;
-    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Divine!');
+    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Hiveful!');
     assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
     assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
-    assert.match(host.querySelector('.sgv-honey-liquid').style.transform,/scaleY\(1\)/);
+    assert.equal(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill').style.height,'78%');
+    assert.ok(host.querySelector('.sgv-win-static'));
+    assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'reduced-motion');
     assert.equal(bus.liveParticles(),0);
     assert.equal(bus.tweenCount(),0);
     assert.equal(gsap.getTweensOf(host.querySelector('.sgv-win-praise')).length,0);
     assert.equal(host.querySelector('.sgv-end-cta').textContent,'NEXT');
     await view.unmount();
+  });
+});
+
+test('confetti starts at the laid-out lip on 320, 430, and a safe-area phone',async()=>{
+  await withStylesheet(async()=>{
+    const cases=[
+      {width:320,height:568,top:0,right:0,bottom:0,left:0},
+      {width:430,height:932,top:0,right:0,bottom:0,left:0},
+      {width:320,height:568,top:44,right:0,bottom:34,left:0}
+    ];
+    for(const box of cases){
+      resetStorage();
+      saveRound(bankedLevel1());
+      const sizer=document.createElement('style');
+      sizer.textContent=[
+        '.sgv-phone{width:'+box.width+'px !important;height:'+box.height+'px !important;',
+        '--safe-top:'+box.top+'px;--safe-right:'+box.right+'px;',
+        '--safe-bottom:'+box.bottom+'px;--safe-left:'+box.left+'px}'
+      ].join('');
+      document.head.appendChild(sizer);
+      const view=await mount();
+      const host=view.host.querySelector('.sgv-phone');
+      const layer=host.querySelector('.sgv-fx-layer');
+      const mouth=host.querySelector('.sgv-honey-mouth');
+      const timeline=timelineOf(host.querySelector('.sgv-win-praise'));
+      assert.ok(timeline,box.width+' timeline');
+      timeline.pause();
+      timeline.time(0.8);
+      const particle=layer.__fxBus.pool.live().find(entry=>entry.key==='burst-0');
+      const layerBox=layoutRect(layer);
+      const lip=layoutRect(mouth);
+      const origin={
+        x:lip.left+lip.width/2-layerBox.left,
+        y:lip.top+lip.height/2-layerBox.top
+      };
+      assert.ok(particle,box.width+' confetti');
+      assert.ok(Math.abs(particle.x-origin.x)<=1,box.width+' x '+particle.x+' vs '+origin.x);
+      assert.ok(Math.abs(particle.y-origin.y)<=1,box.width+' y '+particle.y+' vs '+origin.y);
+      if(box.width===430)assert.ok(origin.x>200,'430 lip is not the 320 fallback');
+      if(box.top===44)assert.ok(origin.y>140,'inset lip is below the zero-inset fallback');
+      await view.unmount();
+      sizer.remove();
+    }
   });
 });
 

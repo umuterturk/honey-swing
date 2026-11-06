@@ -1,10 +1,11 @@
-import React,{useEffect,useRef,useState} from 'react';
+import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {overswingPayout,signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
 import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour} from './minimalMotion.js';
 import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
+import {applyHoneyLayout} from './honeyWin.js';
 import {playWinCelebration} from './winMotion.js';
 import {playLevelStart} from './levelStartMotion.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
@@ -140,7 +141,7 @@ export default function SimplifiedGame(){
       praise:root.querySelector('.sgv-win-praise'),
       tally:root.querySelector('.sgv-win-tally'),
       subline:root.querySelector('.sgv-honey-subline'),
-      liquid:root.querySelector('.sgv-honey-liquid'),
+      liquid:root.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),
       overflow:root.querySelector('.sgv-honey-overflow'),
       scrim:root.querySelector('.sgv-honey-scrim'),
       mouth:root.querySelector('.sgv-honey-mouth'),
@@ -159,17 +160,34 @@ export default function SimplifiedGame(){
       handle.cancel();
     };
   },[finished,victory,round.levelId,deal.T]);
-  useEffect(()=>{
+  useLayoutEffect(()=>{
     const phone=rootRef.current;
     if(!phone)return;
     const apply=()=>{
-      const height=phone.getBoundingClientRect?.().height||phone.clientHeight||0;
-      if(!(height>0))return;
+      const box=phone.getBoundingClientRect?.();
+      const height=box?.height||phone.clientHeight||0;
+      const width=box?.width||phone.clientWidth||0;
+      if(!(height>0)||!(width>0))return;
       const style=getComputedStyle(phone);
       const top=parseFloat(style.getPropertyValue('--safe-top'))||0;
+      const right=parseFloat(style.getPropertyValue('--safe-right'))||0;
       const bottom=parseFloat(style.getPropertyValue('--safe-bottom'))||0;
+      const left=parseFloat(style.getPropertyValue('--safe-left'))||0;
       phone.classList.toggle('sgv-honey-short',height-top-bottom<520);
+      applyHoneyLayout(phone.querySelector('.sgv-honey-win'),width,height,{top,right,bottom,left});
     };
+    const nodes=[...phone.querySelectorAll(
+      ':scope > .sgv-hud, :scope > .sgv-middle, :scope > .sgv-controls'
+    )];
+    for(const node of nodes){
+      if(finished&&victory){
+        node.setAttribute('aria-hidden','true');
+        node.setAttribute('inert','');
+      }else{
+        node.removeAttribute('aria-hidden');
+        node.removeAttribute('inert');
+      }
+    }
     apply();
     window.addEventListener('resize',apply);
     return ()=>window.removeEventListener('resize',apply);
@@ -469,6 +487,7 @@ export default function SimplifiedGame(){
   }
   return <main className="sgv-page">
     <div ref={rootRef}
+      data-honey-win={finished&&victory?'true':undefined}
       className={'sgv-phone sgv-onboarding sgv-onboarding-'+level.id+
         (level.garden===2?' sgv-orchard':'')+' sgv-event-'+(feedback||round.event.type)+
         (arriving?' sgv-level-arrival':'')}

@@ -44,6 +44,46 @@ function resetButton(onReset){
   },'RESET PROGRESS');
 }
 
+function winReset(onReset){
+  if(!onReset)return null;
+  return createElement('button',{
+    type:'button',className:'sgv-honey-reset','aria-label':'Reset progress',
+    onPointerDown:event=>event.stopPropagation(),
+    onClick:onReset
+  },'↻');
+}
+
+function heroJar(marks){
+  return createElement('div',{
+    className:'sgv-chest-art sgv-honey-hero-art','aria-hidden':'true'
+  },
+  createElement('div',{className:'sgv-chest-platform'}),
+  createElement('div',{className:'sgv-chest-body'},
+    createElement('div',{className:'sgv-chest-inner'},
+      createElement('div',{className:'sgv-fluid-fill'},
+        createElement('span',{className:'sgv-fluid-surface'}),
+        createElement('span',{className:'sgv-fluid-bubble sgv-fluid-bubble-a'}),
+        createElement('span',{className:'sgv-fluid-bubble sgv-fluid-bubble-b'}),
+        createElement('span',{className:'sgv-fluid-bubble sgv-fluid-bubble-c'})
+      )
+    ),
+    createElement('span',{className:'sgv-honey-gleam-sweep','aria-hidden':'true'}),
+    createElement('span',{className:'sgv-glass-highlight sgv-glass-highlight-left'}),
+    createElement('span',{className:'sgv-glass-highlight sgv-glass-highlight-right'}),
+    createElement('span',{className:'sgv-glass-spark sgv-honey-gleam sgv-glass-spark-a'}),
+    createElement('span',{className:'sgv-glass-spark sgv-honey-gleam sgv-glass-spark-b'})
+  ),
+  createElement('div',{className:'sgv-chest-rim'}),
+  createElement('span',{className:'sgv-chest-mouth sgv-honey-mouth'}),
+  marks.length?createElement('div',{className:'sgv-honey-overflow','aria-hidden':'true'},
+    marks.map(mark=>createElement('span',{
+      key:mark.key,className:'sgv-honey-mark sgv-honey-'+mark.kind,
+      style:{left:mark.x,width:mark.w+'px',height:mark.h+'px'}
+    }))
+  ):null
+  );
+}
+
 function quietLoss({score,target,label,onPrimary,onBackdrop,onReset}){
   return createElement('div',{
     className:'sgv-end-overlay sgv-level-end',role:'dialog','aria-modal':'true',
@@ -73,6 +113,7 @@ export function LevelEndScreen({
   const announcement=(praise?praise.text+' ':'')+score+' honey secured. Target '+target+'.';
   return createElement('div',{
     className:'sgv-end-overlay sgv-level-end sgv-honey-win'+
+      (staticCard?' sgv-honey-final':'')+
       (settled?' sgv-success-settled':'')+(reduced?' sgv-win-static':''),
     role:'dialog','aria-modal':'true','aria-labelledby':'sgv-honey-status',
     onPointerDown:event=>{
@@ -90,22 +131,7 @@ export function LevelEndScreen({
       },praise.text)
     ):null,
     createElement('div',{className:'sgv-honey-stage'},
-      createElement('div',{
-        className:'sgv-honey-jar','aria-hidden':'true','data-honey-tier':String(tier)
-      },
-      createElement('div',{className:'sgv-honey-jar-body'},
-        createElement('div',{className:'sgv-honey-cavity'},
-          createElement('div',{className:'sgv-honey-liquid'})
-        ),
-        createElement('div',{className:'sgv-honey-glass'}),
-        createElement('span',{className:'sgv-honey-mouth'}),
-        marks.length?createElement('div',{className:'sgv-honey-overflow','aria-hidden':'true'},
-          marks.map(mark=>createElement('span',{
-            key:mark.key,className:'sgv-honey-mark sgv-honey-'+mark.kind,
-            style:{left:mark.x,width:mark.w+'px',height:mark.h+'px'}
-          }))
-        ):null
-      )),
+      heroJar(marks),
       createElement('div',{className:'sgv-honey-count-slot'},
         createElement('p',{className:'sgv-win-tally','aria-hidden':'true'},
           staticCard?String(score):'0')
@@ -113,6 +139,6 @@ export function LevelEndScreen({
       createElement('p',{className:'sgv-honey-subline','aria-hidden':'true'},score+' / '+target)
     ),
     createElement('button',{type:'button',className:'sgv-end-cta',onClick:onPrimary},label),
-    resetButton(onReset)
+    winReset(onReset)
   ));
 }

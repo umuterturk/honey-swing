@@ -62,8 +62,9 @@ test('the header reset renders without a dev gate and restarts Level 1',async()=
   const html=renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:true,score:5,target:5,label:'NEXT',onPrimary(){},onReset(){}
   }));
-  assert.match(html,/sgv-end-reset/);
-  assert.match(html,/RESET PROGRESS/);
+  assert.match(html,/sgv-honey-reset/);
+  assert.match(html,/aria-label="Reset progress"/);
+  assert.doesNotMatch(html,/RESET PROGRESS/);
 });
 
 test('level start and win and lose screens render and can be dismissed',()=>{
@@ -85,7 +86,8 @@ test('level start and win and lose screens render and can be dismissed',()=>{
   assert.match(win,/sgv-end-overlay/);
   assert.match(win,/Level complete!/);
   assert.match(win,/11 \/ 8/);
-  assert.match(win,/sgv-honey-jar/);
+  assert.match(win,/sgv-chest-body/);
+  assert.match(win,/sgv-fluid-surface/);
   assert.doesNotMatch(win,/sgv-win-star|★/);
   assert.match(win,/>NEXT</);
   const lose=renderToStaticMarkup(createElement(LevelEndScreen,{

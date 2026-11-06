@@ -2,11 +2,11 @@ import {burstParticles,burstRadius as burstTravel,flightDropletSize,flightDrople
 
 // Presentation geometry for the honey-jar win. Nothing here writes a score.
 // PM overrides: count D is 0.600s (0.200→0.800, power2.out), flight droplets are
-// 16/18/20 px, lip burst is 0.850s, subline 1.000→1.180, settle 1.300, CTA 1.700.
+// 16/18/20 px, confetti replaces the lip burst at 0.800, settle 1.300, CTA 1.700.
 export const HONEY_MOTION=Object.freeze({
   cap:2.5,
   settled:1.3,
-  scrim:Object.freeze({start:0,end:0.12,opacity:0.72}),
+  scrim:Object.freeze({start:0,end:0,opacity:1}),
   praise:Object.freeze({
     start:0,peakEnd:0.14,end:0.22,opacityEnd:0.1,
     fromScale:0.55,peakScale:1.14,toScale:1
@@ -16,7 +16,7 @@ export const HONEY_MOTION=Object.freeze({
     fadeIn:0.04,hold:0.2,fadeOut:0.08,lift:48
   }),
   count:Object.freeze({start:0.2,duration:0.6,end:0.8,ease:'power2.out'}),
-  burst:Object.freeze({start:0.85,life:0.38}),
+  burst:Object.freeze({start:0.8,life:0.55}),
   subline:Object.freeze({start:1,end:1.18,opacity:0.9}),
   cta:Object.freeze({start:1.3,end:1.7,from:0.35,to:1,leg:0.2})
 });
@@ -24,9 +24,9 @@ export const HONEY_MOTION=Object.freeze({
 // Overlay aliases. Component CSS mirrors these custom properties.
 export const HONEY_TOKENS=Object.freeze({
   scrim:'#1a0f12',
-  scrimOpacity:0.72,
-  backing:'#1a0f12',
-  backingOpacity:0.08,
+  scrimOpacity:1,
+  backing:'transparent',
+  backingOpacity:0,
   praise:Object.freeze({
     1:Object.freeze({fill:'#fff0cf',outline:'#704b69'}),
     2:Object.freeze({fill:'#f0c14a',outline:'#5a3a12'}),
@@ -40,13 +40,14 @@ export const HONEY_TOKENS=Object.freeze({
   subline:'#fff0cf',
   flight:'#f0c14a',
   flightEdge:'#c47a0a',
-  burst:Object.freeze(['#fff0cf','#f0c14a']),
+  burst:Object.freeze(['#fff0cf','#f0c14a','#ffe08a','#e8a317']),
   glassRim:'#acd7f7',
   easeOut:'cubic-bezier(.2,.8,.2,1)',
   easeBack:'cubic-bezier(.34,1.56,.64,1)'
 });
 
 const BURST_DIAMETER=Object.freeze([8,10,12]);
+const CONFETTI_SHAPE=Object.freeze(['circle','rect','drop']);
 const OVERFLOW=Object.freeze({
   1:Object.freeze([
     Object.freeze({kind:'bead',x:'65%',w:8,h:10}),
@@ -126,7 +127,9 @@ function composite(top,alpha,bottom){
 export function compositeBacking(board=[255,255,255]){
   const ink=hexChannels(HONEY_TOKENS.scrim);
   const scrim=composite(ink,HONEY_TOKENS.scrimOpacity,board);
-  const text=composite(ink,HONEY_TOKENS.backingOpacity,scrim);
+  const text=HONEY_TOKENS.backingOpacity>0
+    ?composite(ink,HONEY_TOKENS.backingOpacity,scrim)
+    :scrim;
   return {text,scrim};
 }
 
@@ -147,6 +150,10 @@ export function contrastRatio(hex,background){
   return (lighter+0.05)/(darker+0.05);
 }
 
+const FILL_MAX=78;
+const HUD_PAD=10;
+const HUD_H=54;
+
 export function honeyLayout(width,height,insets={}){
   const top=Number(insets.top)||0;
   const right=Number(insets.right)||0;
@@ -155,39 +162,75 @@ export function honeyLayout(width,height,insets={}){
   const safeW=width-left-right;
   const safeH=height-top-bottom;
   const short=safeH<520;
-  const jarW=Math.min(200,0.58*safeW);
-  const jarH=jarW*1.25;
-  const numberH=short?48:64;
-  const subH=short?20:24;
-  const jarGap=short?8:10;
-  const subGap=short?4:8;
-  const stageTop=top+(short?80:84);
-  const stageBottom=height-bottom-(short?88:96);
-  const cluster=jarH+jarGap+numberH+subGap+subH;
-  const lead=Math.max(0,(stageBottom-stageTop-cluster)/2);
-  const jarY=stageTop+lead;
-  const numberY=jarY+jarH+jarGap;
-  const subY=numberY+numberH+subGap;
+  const hud={x:left,y:top+HUD_PAD,w:safeW,h:HUD_H,bottom:top+HUD_PAD+HUD_H};
+  const praiseH=58;
+  const praiseY=top+24;
+  const praiseX=left+16;
+  const reset={x:width-right-16-44,y:top+16,w:44,h:44};
+  let praiseW=safeW-32;
+  if(praiseY<reset.y+reset.h&&praiseX+praiseW>reset.x)
+    praiseW=Math.max(120,reset.x-8-praiseX);
+  const jarW=Math.min(220,0.62*safeW);
+  const naturalH=jarW*1.25;
+  const numberH=80;
+  const subH=24;
+  const jarGap=10;
+  const subGap=8;
+  const stageTop=praiseY+praiseH+12;
+  const ctaH=56;
+  const ctaY=height-bottom-16-ctaH;
+  const limit=ctaY-16;
+  let jarH=naturalH;
+  if(short)jarH=Math.min(jarH,Math.max(96,safeH-328));
+  const maxBody=limit-stageTop-jarGap-numberH-subGap-subH;
+  if(maxBody>96)jarH=Math.min(jarH,maxBody);
   const contentX=left+16;
   const contentW=safeW-32;
+  const jarX=left+(safeW-jarW)/2;
+  const numberY=stageTop+jarH+jarGap;
+  const subY=numberY+numberH+subGap;
   return {
-    safeW,safeH,short,
+    safeW,safeH,short,hud,
     praise:{
-      x:contentX,y:top+14,w:contentW,h:58,
+      x:praiseX,y:praiseY,w:praiseW,h:praiseH,
       font:Math.min(44,Math.max(36,36+(safeW-320)*8/70))
     },
-    jar:{x:left+(safeW-jarW)/2,y:jarY,w:jarW,h:jarH},
+    jar:{x:jarX,y:stageTop,w:jarW,h:jarH},
     number:{
       x:contentX,y:numberY,w:contentW,h:numberH,
-      font:Math.min(56,Math.max(40,0.12*safeW))
+      font:Math.min(80,Math.max(64,0.2*safeW))
     },
-    subline:{
-      x:contentX,y:subY,w:contentW,h:subH,
-      font:Math.min(18,Math.max(15,0.042*safeW))
-    },
-    cta:{x:contentX,y:height-bottom-16-56,w:contentW,h:56},
-    reset:{x:left+8,y:top+109,w:44,h:44}
+    subline:{x:contentX,y:subY,w:contentW,h:subH,font:18},
+    cta:{x:contentX,y:ctaY,w:contentW,h:ctaH},
+    reset
   };
+}
+
+export function fillHeightPercent(tally,target){
+  return FILL_MAX*fillFraction(tally,target);
+}
+
+export function applyHoneyLayout(node,width,height,insets){
+  if(!node||!(width>0)||!(height>0))return null;
+  const layout=honeyLayout(width,height,insets);
+  const set=(name,value)=>node.style.setProperty(name,value);
+  set('--honey-praise-top',layout.praise.y+'px');
+  set('--honey-praise-left',layout.praise.x+'px');
+  set('--honey-praise-width',layout.praise.w+'px');
+  set('--honey-praise-height',layout.praise.h+'px');
+  set('--honey-praise-font',layout.praise.font+'px');
+  set('--honey-jar-top',layout.jar.y+'px');
+  set('--honey-jar-left',layout.jar.x+'px');
+  set('--honey-jar-width',layout.jar.w+'px');
+  set('--honey-jar-height',layout.jar.h+'px');
+  set('--honey-count-top',layout.number.y+'px');
+  set('--honey-count-height',layout.number.h+'px');
+  set('--honey-count-font',layout.number.font+'px');
+  set('--honey-sub-top',layout.subline.y+'px');
+  set('--honey-sub-font',layout.subline.font+'px');
+  set('--honey-reset-top',layout.reset.y+'px');
+  set('--honey-reset-right',(width-layout.reset.x-layout.reset.w)+'px');
+  return layout;
 }
 
 export function fillFraction(tally,target){
@@ -323,9 +366,13 @@ export function honeyParticles({t,tier=1,scale=1,source,mouth,flightCount=0,flig
       color:HONEY_TOKENS.flight,edge:HONEY_TOKENS.flightEdge
     });
   }
+  // Flight is finished by 0.480 (last emit 0.160 + life 0.320). Confetti starts
+  // at 0.800, so the two never share the pool. H3 peaks at 24, under the cap
+  // of 40, and confetti is not dropped to make room. Pieces stop at settle
+  // (1.300) so a 0.550s life cannot leave pieces past the settled card.
   const age=t-HONEY_MOTION.burst.start;
   const bursts=Math.floor(burstTotal*factor);
-  if(age>=0&&age<HONEY_MOTION.burst.life){
+  if(t<HONEY_MOTION.settled&&age>=0&&age<HONEY_MOTION.burst.life){
     const progress=age/HONEY_MOTION.burst.life;
     for(let index=0;index<bursts;index++){
       const pose=burstOffset(index,burstTotal,progress,travel);
@@ -336,6 +383,7 @@ export function honeyParticles({t,tier=1,scale=1,source,mouth,flightCount=0,flig
         x:mouth.x+pose.x,y:mouth.y+pose.y,opacity:pose.opacity,
         vx:velocity.vx,vy:velocity.vy,
         diameter,radius:diameter/2,
+        shape:CONFETTI_SHAPE[index%CONFETTI_SHAPE.length],
         color:HONEY_TOKENS.burst[index%HONEY_TOKENS.burst.length]
       });
     }
