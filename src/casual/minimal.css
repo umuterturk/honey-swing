@@ -36,6 +36,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-meter-track{position:absolute;inset:8px 0 auto;height:42px;border-radius:22px;border:5px solid #f9e4b3;background:linear-gradient(90deg,#ec6e89 0%,#d598c0 22%,#dec7f2 40%,#fff0cf 50%,#dec7f2 60%,#d598c0 78%,#ec6e89 100%);box-shadow:0 6px 0 #9b6e94,0 9px 15px #65599868,inset 0 3px 3px #ffffff91,inset 0 -4px #a4698c63}
 .sgv-meter-centerline{position:absolute;z-index:1;left:50%;top:-8px;width:9px;height:53px;border-radius:5px;background:linear-gradient(#ff8b8b,#e52c51);border:2px solid #ffe2cf;box-shadow:0 0 8px #f134597c,0 1px 3px #aa5362;transform:translateX(-50%)}
 .sgv-meter-marker{position:absolute;z-index:3;top:50%;transform:translate(-50%,-50%);height:42px;min-width:43px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:left .32s cubic-bezier(.17,.72,.31,1.22);pointer-events:none}
+.sgv-meter-marker.sgv-marker-gsap{transition:none}
 .sgv-meter-arrow{position:absolute;left:50%;top:0;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:12px solid #e8498b;filter:drop-shadow(0 3px #f5c7bc) drop-shadow(0 0 3px #fffbcd)}
 .sgv-meter-number{position:absolute;bottom:43px;left:50%;transform:translateX(-50%);min-width:43px;padding:3px 5px 4px;border-radius:13px;border:3px solid #fff7dc;box-shadow:0 3px 0 #d7aa79;background:linear-gradient(#fffcdf,#ffe6bb);text-align:center;color:#b16067;font-size:16px;font-weight:1000;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
 /* Identical inset and percentage scale for the marker and each in-track number.
@@ -127,6 +128,18 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 @keyframes sgv-target-fly{0%{opacity:0;transform:translate(-50%,-140%) scale(.5)}16%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}25%,70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-185%) scale(.3)}}
 .sgv-skip-surface{position:absolute;inset:0;z-index:28;margin:0;padding:0;border:0;background:transparent;cursor:pointer}
 .sgv-bank-live{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.sgv-success{position:absolute;z-index:30;inset:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:8px;padding:0 16px 28px;background:linear-gradient(transparent 42%,#496d7240);pointer-events:none}
+.sgv-success button,.sgv-success-score{pointer-events:auto}
+.sgv-success-score{margin:0;color:#fffaf0;font-weight:900;text-shadow:0 2px #3d4a46}
+.sgv-success button{min-width:70%;border:4px solid white;border-radius:22px;padding:15px;color:#fff;background:linear-gradient(#a6e594,#58c178);box-shadow:0 5px 0 #348f67;font-weight:1000;font-size:19px;cursor:pointer}
+.sgv-success-star{position:absolute;left:50%;top:34%;font-size:65px;color:#ffca4c;text-shadow:0 5px #cc9134;animation:sgv-success-star .3s linear .52s both}
+@keyframes sgv-success-star{0%{opacity:0;transform:translate(-50%,-50%) scale(.75)}33%{opacity:1}53%{transform:translate(-50%,-50%) scale(1.1)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.sgv-success-settled .sgv-success-star{animation:none;opacity:1;transform:translate(-50%,-50%) scale(1)}
+.sgv-success-pour .sgv-pending-pot{animation:sgv-success-pour .65s ease both}
+@keyframes sgv-success-pour{0%{transform:none}28%{transform:translate(28px,-24px) rotate(42deg)}71%{transform:translate(28px,-24px) rotate(42deg)}100%{transform:none}}
+.sgv-success-settled .sgv-pending-pot{animation:none}
+.sgv-orchard-hook{position:absolute;left:50%;top:22%;width:46px;height:46px;border-radius:50%;background:#ef9a45;animation:sgv-orchard-hook .24s linear .82s both}
+@keyframes sgv-orchard-hook{from{opacity:0;transform:translateX(-50%) scale(.96)}to{opacity:1;transform:translateX(-50%) scale(1)}}
 .sgv-end-overlay{position:absolute;z-index:30;inset:0;display:grid;place-items:center;background:#496d728f;backdrop-filter:blur(5px)}
 .sgv-end-card{width:min(85%,360px);padding:24px 20px 28px;text-align:center;border:6px solid #fffbea;border-radius:30px;background:linear-gradient(#fffbea,#ffdeb0);box-shadow:0 8px 0 #d6a06a,0 18px 30px #55556f7a}
 .sgv-end-symbol{font-size:65px;color:#ffca4c;text-shadow:0 5px #cc9134}
@@ -1179,9 +1192,17 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 }
 
 @keyframes sgv-dock-in{
-  from{opacity:0;transform:translateY(-12px) scale(.82)}
-  to{opacity:1;transform:none}
+  0%{opacity:0;transform:translateY(-12px) scale(.82)}
+  15%{opacity:1}
+  37.5%{transform:none}
+  100%{opacity:1;transform:none}
 }
+.sgv-arrive .sgv-level{animation:sgv-arrive-badge .12s cubic-bezier(.22,1,.36,1) both}
+@keyframes sgv-arrive-badge{from{transform:scale(.98)}to{transform:scale(1)}}
+.sgv-arrive .sgv-goal-progress{animation:sgv-arrive-target .24s linear .06s both}
+@keyframes sgv-arrive-target{0%{outline:2px solid transparent}50%{outline:2px solid #ffe7a6b3}100%{outline:2px solid transparent}}
+.sgv-arrive .sgv-card-shelf{animation:sgv-arrive-hand .14s linear .16s both}
+@keyframes sgv-arrive-hand{0%{box-shadow:inset 0 0 0 transparent}50%{box-shadow:inset 0 0 16px #fff6}100%{box-shadow:inset 0 0 0 transparent}}
 .sgv-dock,.sgv-onboarding .sgv-flip[data-dock="true"]{
   animation:sgv-dock-in .8s cubic-bezier(.16,1.25,.4,1) both;
 }
@@ -1214,9 +1235,12 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
   to{opacity:1;transform:none}
 }
 @media(prefers-reduced-motion:reduce){
-  .sgv-dock,.sgv-onboarding .sgv-flip[data-dock="true"],.sgv-glossary li{
+  .sgv-dock,.sgv-onboarding .sgv-flip[data-dock="true"],.sgv-glossary li,
+  .sgv-arrive .sgv-level,.sgv-arrive .sgv-goal-progress,.sgv-arrive .sgv-card-shelf,
+  .sgv-success-star,.sgv-success-pour .sgv-pending-pot,.sgv-orchard-hook{
     animation:none;opacity:1;transform:none;
   }
+  .sgv-success-star{transform:translate(-50%,-50%) scale(1)}
 }
 
 /* The modal covers the header; provide the same reset on its completion screen. */

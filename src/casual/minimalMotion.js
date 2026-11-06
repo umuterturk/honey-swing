@@ -1,8 +1,9 @@
 import {gsap} from 'gsap';
 import {bankPourAmounts} from './presentation.js';
 import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from './cardDirection.js';
+import {meterPercent} from './meterScale.js';
 import {
-  STATIC_OUTCOME_MS,cardMotionMarks,reducedBankSummary,reducedCardSummary
+  STATIC_OUTCOME_MS,cardMotionMarks,flyerOrigin,reducedBankSummary,reducedCardSummary
 } from './motionSchedule.js';
 
 // All motions are presentation only. The game transaction is calculated once
@@ -126,32 +127,46 @@ export function animateCardAction({
   }});
   clearStatic();
   const marks=cardMotionMarks({type:action.type,snap:!!view.snap,rewards:view.rewards||[]});
+  const limit=view.meterLimit||8;
+  const finalPercent=meterPercent(view.snap?0:view.to,limit);
+  const track=root.querySelector('.sgv-meter-track');
+  const marker=root.querySelector('.sgv-meter-marker');
+  const finalOrigin=track?flyerOrigin({
+    track:track.getBoundingClientRect(),root:root.getBoundingClientRect(),finalPercent
+  }):null;
+  if(marker){
+    marker.classList.add('sgv-marker-gsap');
+    const release=()=>marker.classList.remove('sgv-marker-gsap');
+    if(!view.snap){
+      const glide=gsap.fromTo(marker,{left:marker.style.left||'50%'},{
+        left:finalPercent+'%',duration:Math.max(0.001,marks.meterEnd-(marks.meterStart||0)),
+        delay:marks.meterStart||0,ease:'power2.out',overwrite:'auto'
+      });
+      animations.push(()=>{glide.kill();release();});
+    }else animations.push(release);
+  }
   source.style.opacity='.36';
   animations.push(gsap.fromTo(source,{scale:1},{
     scale:view.firstTap?1.12:.96,duration:view.firstTap?0.12:0.08,yoyo:true,repeat:1
   }));
   tl.to(clone,{x:centerX,y:centerY,scale:1.13,
     rotation:action.type==='flip'?160:-5,duration:.23,ease:'power2.out'},0);
-  tl.call(()=>{
+  if(action.type==='flip'&&marks.faceEnd!=null)tl.call(()=>{
     if(!alive)return;
-    if(action.type==='flip'){
-      clone.className='sgv-card sgv-flying-card sgv-card-'+cardDirection(view.signedCard);
-      clone.style.setProperty('--sgv-card-mix',cardAccentMix(view.signedCard));
-      clone.innerHTML='<svg class="sgv-card-arrow" viewBox="0 0 80 58" aria-hidden="true">'+
-        '<path d="'+CARD_ARROW_PATH+'"/></svg>'+
-        '<strong>'+Math.abs(view.signedCard)+'</strong>';
-    }
-    // A mystery Flip reveals its value before the meter moves.
-    // Known Steer cards move the meter immediately on tap.
-    onMeter(view.to);
-  },[],marks.reveal);
+    clone.className='sgv-card sgv-flying-card sgv-card-'+cardDirection(view.signedCard);
+    clone.style.setProperty('--sgv-card-mix',cardAccentMix(view.signedCard));
+    clone.innerHTML='<svg class="sgv-card-arrow" viewBox="0 0 80 58" aria-hidden="true">'+
+      '<path d="'+CARD_ARROW_PATH+'"/></svg>'+
+      '<strong>'+Math.abs(view.signedCard)+'</strong>';
+  },[],marks.faceEnd);
+  tl.call(()=>{if(alive)onMeter(view.to);},[],view.snap?marks.copyStart:marks.meterEnd);
   if(view.snap){
     // The attempted meter target is shown at the boundary before returning to 0.
     tl.to(clone,{x:centerX+(view.to>=0?130:-130),y:centerY-18,
       scale:.45,rotation:view.to>=0?35:-35,opacity:0,
       duration:.30,ease:'power3.in'},.24);
-    tl.call(()=>{if(alive){onSnap();onMeter(0);onPot(view.rawPotAfter);onFactors(view.factorsAfter);}},[],marks.snapAt);
-    tl.call(()=>{},[],marks.end);
+    tl.call(()=>{if(alive){onSnap();onPot(view.rawPotAfter);onFactors(view.factorsAfter);}},[],marks.snapAt);
+    tl.call(()=>{if(alive)onMeter(0);},[],marks.end);
   }else{
     const tier3=marks.rewards!=null;
     const flyAdd=startAt=>{
@@ -167,7 +182,7 @@ export function animateCardAction({
       tl.call(()=>{
         if(!alive)return;
         animations.push(flyMultiplierRewards({
-          root,rewards:view.rewards,firstFactorAwards
+          root,rewards:view.rewards,firstFactorAwards,origin:finalOrigin
         }));
       },[],marks.rewards);
       tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],marks.factors);
@@ -199,11 +214,12 @@ export function animateCardAction({
 
 const OBJECT_WORDS={swing:'CROSS',jackpot:'JACKPOT'};
 
-export function flyMultiplierRewards({root,rewards,firstFactorAwards=[]}){
+export function flyMultiplierRewards({root,rewards,firstFactorAwards=[],origin=null}){
   if(!root||!rewards?.length||reducedMotion())return ()=>{};
   const marker=root.querySelector('.sgv-meter-marker')||root.querySelector('.sgv-meter-track');
-  if(!marker)return ()=>{};
-  const start=point(marker,root),nodes=[],tweens=[];
+  const track=root.querySelector('.sgv-meter-track');
+  if(!origin&&!marker&&!track)return ()=>{};
+  const start=origin||point(marker||track,root),nodes=[],tweens=[];
   for(const [index,{kind,value}] of rewards.entries()){
     const target=root.querySelector('[data-factor="'+kind+'"]');
     if(!target)continue;

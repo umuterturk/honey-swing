@@ -2,34 +2,54 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
-  STATIC_OUTCOME_MS,cardMotionMarks,reducedBankSummary,reducedCardSummary
+  STATIC_OUTCOME_MS,cardMotionMarks,flyerOrigin,reducedBankSummary,reducedCardSummary
 } from '../src/casual/motionSchedule.js';
 
 const flipReward=[{kind:'flip',value:3}];
 const crossingFlip=[{kind:'swing',value:2},{kind:'flip',value:2}];
 
-test('first Flip× reveals the face and meter before the reward particle',()=>{
+test('first Flip× reveals the face, glides the meter, then launches the reward',()=>{
   const marks=cardMotionMarks({type:'flip',rewards:flipReward});
-  assert.equal(marks.reveal,0.22);
-  assert.equal(marks.rewards,0.30);
-  assert.ok(marks.reveal<marks.rewards);
-  assert.ok(marks.rewards<=marks.factors);
+  assert.equal(marks.faceEnd,0.140);
+  assert.equal(marks.meterStart,0.140);
+  assert.equal(marks.meterEnd,0.300);
+  assert.equal(marks.rewards,0.300);
+  assert.ok(marks.faceEnd<=marks.meterStart);
+  assert.ok(marks.meterEnd<=marks.rewards);
   assert.ok(marks.factors<marks.add);
 });
 
 test('a crossing Flip reveals before either reward particle',()=>{
   const marks=cardMotionMarks({type:'flip',rewards:crossingFlip});
-  assert.equal(marks.reveal,0.22);
-  assert.equal(marks.rewards,0.30);
-  assert.ok(marks.reveal<marks.rewards);
+  assert.equal(marks.faceEnd,0.140);
+  assert.equal(marks.meterEnd,0.300);
+  assert.equal(marks.rewards,0.300);
+  assert.ok(marks.meterEnd<=marks.rewards);
   assert.equal(marks.add,0.82);
 });
 
-test('a Steer cross still moves the meter before its reward',()=>{
+test('a Steer cross finishes the meter glide before its reward',()=>{
   const marks=cardMotionMarks({type:'steer',rewards:[{kind:'swing',value:2}]});
-  assert.equal(marks.reveal,0.08);
-  assert.equal(marks.rewards,0.16);
-  assert.ok(marks.reveal<marks.rewards);
+  assert.equal(marks.meterStart,0);
+  assert.equal(marks.meterEnd,0.180);
+  assert.equal(marks.rewards,0.180);
+  assert.ok(marks.meterEnd<=marks.rewards);
+});
+
+test('reward flyers use the final meter position, not a mid-glide marker',()=>{
+  const origin=flyerOrigin({
+    track:{left:100,top:40,width:200,height:20},
+    root:{left:10,top:5},
+    finalPercent:75
+  });
+  assert.equal(origin.x,100-10+150);
+  assert.equal(origin.y,40-5+10);
+  assert.equal(flyerOrigin({
+    track:{left:0,top:0,width:80,height:10},root:{left:0,top:0},finalPercent:0
+  }).x,0);
+  assert.equal(flyerOrigin({
+    track:{left:0,top:0,width:80,height:10},root:{left:0,top:0},finalPercent:100
+  }).x,80);
 });
 
 test('reduced motion keeps add and CROSS and does not shake Snap',()=>{

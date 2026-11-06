@@ -5,20 +5,38 @@ const thirds=n=>Math.round(n*1000)/1000;
 export const STATIC_OUTCOME_MS=1100;
 
 export function cardMotionMarks({type='steer',snap=false,rewards=[]}={}){
-  const reveal=type==='flip'?0.22:0.08;
   const swingHold=rewards.some(reward=>reward?.kind==='swing')?0.05:0;
-  if(snap)return {reveal,rewards:null,snapAt:0.53,end:0.91};
-  if(!rewards.length)return {reveal,rewards:null,add:0.24,pot:0.54,factors:0.55,end:0.62};
-  const rewardStart=type==='flip'?0.30:0.16;
+  const flip=type==='flip';
+  // §3: Flip face 0.000–0.140, meter glide 0.140–0.300, traces at the arrival.
+  // Steer traces start when its 0.180 glide ends. Snap's marker is home by 0.340.
+  const faceEnd=flip?0.140:null;
+  const meterStart=flip?0.140:0;
+  const meterEnd=snap?0.340:flip?0.300:(rewards.length?0.180:0.080);
+  const base={faceEnd,meterStart,meterEnd,reveal:meterEnd};
+  if(snap)return {...base,rewards:null,snapAt:0.280,copyStart:0.140,end:0.340};
+  if(!rewards.length){
+    return {...base,rewards:null,add:flip?0.300:0.24,pot:flip?0.500:0.54,
+      factors:flip?0.300:0.55,end:flip?0.500:0.62};
+  }
+  const rewardStart=meterEnd;
   const shift=rewardStart-0.16;
   return {
-    reveal,
+    ...base,
     rewards:rewardStart,
     factors:thirds(0.58+shift),
     add:thirds(0.63+swingHold+shift),
     travel:thirds(0.64+swingHold+shift),
     pot:thirds(0.96+swingHold+shift),
     end:thirds(1.08+swingHold+shift)
+  };
+}
+
+// Reward flyers use the committed meter percent, never the marker's live left.
+export function flyerOrigin({track,root,finalPercent}){
+  const percent=Math.max(0,Math.min(100,finalPercent));
+  return {
+    x:(track.left-root.left)+track.width*(percent/100),
+    y:(track.top-root.top)+track.height/2
   };
 }
 
