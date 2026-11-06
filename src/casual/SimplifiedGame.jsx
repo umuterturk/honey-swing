@@ -6,6 +6,7 @@ import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,ani
 import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
 import {clearWinMemo,idleHintAction} from './idleHint.js';
+import {bankAssistiveMessage,nextBankAnnouncement} from './bankStatus.js';
 import {focusTargetAfterSkip,isSkipKey,rememberFocus} from './skipFocus.js';
 import {ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress} from './onboardingProgress.js';
 import {
@@ -46,6 +47,8 @@ export default function SimplifiedGame(){
   const resetMotionRef=useRef(null),lossMotionRef=useRef(null),breakMotionRef=useRef(null);
   const seenFactorsRef=useRef(new Set());
   const priorFocusRef=useRef(null),skipFocusedRef=useRef(false);
+  const bankAnnounceRef=useRef(null);
+  const [bankLive,setBankLive]=useState('');
   const level=onboardingLevel(round.levelId);
   const {game}=round,deal=game.deal;
   const victory=onboardingVictory(round),finished=onboardingFinished(round);
@@ -61,6 +64,7 @@ export default function SimplifiedGame(){
   const remaining=deal.deck.length-deal.pos;
   const hearts=Math.max(0,level.maxSnaps-view.snaps);
   const shownHand=deal.hand.slice(0,level.visibleHandSlots);
+  const bankMessage=bankAssistiveMessage(round);
   const hint=pulse?idleHintAction(round):null;
   const bankPulse=hint?.type==='bank';
   const flipPulse=hint?.type==='flip';
@@ -110,6 +114,11 @@ export default function SimplifiedGame(){
     priorFocusRef.current=null;
     if(target&&target!==active)target.focus();
   },[animating]);
+  useEffect(()=>{
+    const result=nextBankAnnouncement(bankAnnounceRef.current,bankMessage);
+    bankAnnounceRef.current=result.previous;
+    if(result.text)setBankLive(result.text);
+  },[bankMessage]);
 
   function startLevel(id){
     clearWinMemo();
@@ -320,9 +329,10 @@ export default function SimplifiedGame(){
             className={'sgv-action sgv-bank sgv-bank-command'+(bankPulse?' sgv-attention':'')}
             disabled={!canBank}
             onClick={()=>play({type:'bank'},rootRef.current?.querySelector('.sgv-pending-pot'))}
-            aria-label={canBank?'Bank '+potDisplay+' pending drops':'Bank available after two cards'}>
+            aria-label={canBank?'Bank '+potDisplay+' pending drops':bankMessage}>
             <span className="sgv-action-text">BANK{canBank?' '+potDisplay:''}</span>
           </button>
+          <p className="sgv-bank-live" aria-live="polite" aria-atomic="true">{bankLive}</p>
           {level.showFlip&&remaining>0&&<button type="button"
             className="sgv-action sgv-flip"
             data-dock={docking&&level.dock==='flip'?true:undefined}
