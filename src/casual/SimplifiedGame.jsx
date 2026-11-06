@@ -5,6 +5,7 @@ import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.j
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour} from './minimalMotion.js';
 import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
+import {playLevelStart} from './levelStartMotion.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
 import {createFxBus} from './fx/fxBus.js';
 import {FxLayer} from './fx/FxLayer.jsx';
@@ -73,6 +74,7 @@ export default function SimplifiedGame(){
   const [arriving,setArriving]=useState(()=>openingRef.current.gate?false:levelStartPlan(round.levelId,{
     fresh:freshStart,reduced:prefersReducedMotion()
   }).motion);
+  const arrivalRef=useRef(null);
   const [devMenuOpen,setDevMenuOpen]=useState(false);
   const rootRef=useRef(null),cancelRef=useRef(null),presentationRef=useRef(null);
   const fxRef=useRef(null);
@@ -121,6 +123,8 @@ export default function SimplifiedGame(){
     event('level_start',{level:round.levelId});
     levelReadyRef.current=round.levelId;
     introStartRef.current?.();
+    if(introGateRef.current)return;
+    return beginArrival();
   },[round.levelId]);
   useEffect(()=>{
     const reduced=typeof window!=='undefined'&&
@@ -132,30 +136,24 @@ export default function SimplifiedGame(){
     return ()=>clearTimeout(timer);
   },[round.levelId,level.dock]);
   useEffect(()=>{
-    if(introGate){
-      setArriving(false);
-      return;
-    }
-    const fresh=round.turn===0&&!(round.game.deal.plays);
-    const plan=levelStartPlan(round.levelId,{fresh,reduced:prefersReducedMotion()});
-    setArriving(plan.motion);
-    if(!plan.motion)return;
-    const timer=setTimeout(()=>setArriving(false),plan.settled*1000);
-    return ()=>clearTimeout(timer);
-  },[round.levelId,introGate]);
+    if(introGate||!startOpen)return;
+    if(levelReadyRef.current!==round.levelId)return;
+    if(arrivalRef.current)return;
+    return beginArrival();
+  },[introGate,startOpen,round.levelId]);
   useEffect(()=>{
     if(!introGate||!introCard)return;
     event('feature_intro_shown',{feature:introCard.id,level:round.levelId});
   },[introGate,introCard,round.levelId]);
   useEffect(()=>{
     setPulse(false);
-    if(animating||finished||introGate)return;
+    if(animating||finished||introGate||startOpen)return;
     const timer=setTimeout(()=>{
       setPulse(true);
       event('hint_shown',{level:level.id,turn:round.turn});
     },3000);
     return ()=>clearTimeout(timer);
-  },[animating,round.turn,round.levelId,finished,level.id,introGate]);
+  },[animating,round.turn,round.levelId,finished,level.id,introGate,startOpen]);
   useEffect(()=>{
     const root=rootRef.current;
     if(!root)return;
@@ -194,8 +192,51 @@ export default function SimplifiedGame(){
     return ()=>clearTimeout(timer);
   },[ack]);
 
+  function stopArrival(){
+    const handle=arrivalRef.current;
+    arrivalRef.current=null;
+    try{handle?.cancel();}catch{/* a half-played arrival still has to show its end */}
+    try{fxRef.current.settle();}catch{/* settle must not block the tap */}
+    try{handle?.showFinal?.();}catch{/* the inline end state is enough */}
+    setArriving(false);
+  }
+  function beginArrival(){
+    const root=rootRef.current;
+    const fresh=round.turn===0&&!(round.game.deal.plays);
+    const reduced=prefersReducedMotion();
+    const plan=levelStartPlan(round.levelId,{fresh,reduced});
+    if(!root||!fresh||introGateRef.current){
+      setArriving(false);
+      return ()=>{};
+    }
+    try{arrivalRef.current?.cancel();}catch{/* the previous banner is already gone */}
+    arrivalRef.current=null;
+    const banner=document.createElement('div');
+    banner.className='sgv-level-banner';
+    banner.setAttribute('aria-hidden','true');
+    banner.textContent='Level '+round.levelId;
+    root.appendChild(banner);
+    let alive=true;
+    const handle=playLevelStart({
+      banner,
+      jar:root.querySelector('.sgv-chest-area'),
+      goal:root.querySelector('.sgv-goal-progress'),
+      board:[...root.querySelectorAll('.sgv-meter-section, .sgv-hand, .sgv-actions, .sgv-pending-pot')],
+      reduced,bus:fxRef.current,
+      onSettled(){if(alive)setArriving(false);}
+    });
+    arrivalRef.current=handle;
+    setArriving(plan.motion);
+    return ()=>{
+      alive=false;
+      if(arrivalRef.current===handle)arrivalRef.current=null;
+      handle.cancel();
+    };
+  }
   function startLevel(id){
     clearWinMemo();
+    try{arrivalRef.current?.cancel();}catch{/* the level change settles next */}
+    arrivalRef.current=null;
     fxRef.current.settle();
     presentationRef.current.abandon();
     cancelRef.current?.();resetMotionRef.current?.();
@@ -370,7 +411,7 @@ export default function SimplifiedGame(){
     <div ref={rootRef}
       className={'sgv-phone sgv-onboarding sgv-onboarding-'+level.id+
         (level.garden===2?' sgv-orchard':'')+' sgv-event-'+(feedback||round.event.type)+
-        (arriving?' sgv-arrive':'')}
+        (arriving?' sgv-level-arrival':'')}
       aria-busy={animating}
       data-intro-gate={introGate?true:undefined}
       onPointerDownCapture={event=>{
@@ -389,16 +430,16 @@ export default function SimplifiedGame(){
         if(startOpen&&!presenting){
           const opening=dismissLevelScreen('start','tap');
           if(opening.dismiss&&!opening.lock){
+            stopArrival();
             setStartOpen(false);
-            if(arriving)setArriving(false);
             if(docking)setDocking(false);
             event.preventDefault();
             event.stopPropagation();
             return;
           }
         }
-        const tap=startTap({action:presenting,arrival:arriving});
-        if(tap.finishArrival)setArriving(false);
+        const tap=startTap({action:presenting,arrival:arriving||!!arrivalRef.current});
+        if(tap.finishArrival)stopArrival();
         if(tap.consume){
           presentationRef.current.acceptPointerDown();
           event.preventDefault();
@@ -455,8 +496,8 @@ export default function SimplifiedGame(){
         if(opening.dismiss&&!opening.lock){
           event.preventDefault();
           event.stopPropagation();
+          stopArrival();
           setStartOpen(false);
-          if(arriving)setArriving(false);
         }
       }}>
       <GardenScene/>
@@ -557,7 +598,10 @@ export default function SimplifiedGame(){
       {startOpen&&!introGate&&!finished&&!animating&&<LevelStartScreen levelId={level.id} target={level.target}
         onDismiss={()=>{
           const opening=dismissLevelScreen('start','cta');
-          if(opening.dismiss&&!opening.lock)setStartOpen(false);
+          if(opening.dismiss&&!opening.lock){
+            stopArrival();
+            setStartOpen(false);
+          }
         }}/>}
       {finished&&<LevelEndScreen victory={victory} score={deal.T} target={level.target}
         label={victory?winLabel:'TRY AGAIN'} orchard={!!ending.orchard} settled={successSettled}
