@@ -8,7 +8,7 @@ import {Window} from 'happy-dom';
 import {LevelEndScreen} from '../src/casual/levelScreens.js';
 import {successPlan} from '../src/casual/presentationSequence.js';
 import {
-  STAR_THRESHOLDS,burstParticles,countUpDuration,displayedCount,praiseFor,winStars
+  STAR_THRESHOLDS,burstParticles,countUpDuration,displayedCount,flightDropletSize,flightDroplets,honeyTier,praiseFor
 } from '../src/casual/starThresholds.js';
 import {createFxBus} from '../src/casual/fx/fxBus.js';
 import {
@@ -147,26 +147,20 @@ function opacityOf(node){
   return Number.isFinite(value)?value:1;
 }
 
-function makeStage(stars=3){
+function makeStage(){
+  const card=document.createElement('div');
+  card.className='sgv-honey-win';
   const praise=document.createElement('p');
-  const row=document.createElement('div');
-  const starNodes=[];
-  for(let index=0;index<stars;index++){
-    const star=document.createElement('span');
-    star.className='sgv-win-star';
-    star.textContent='★';
-    row.appendChild(star);
-    starNodes.push(star);
-  }
+  const liquid=document.createElement('div');
+  const subline=document.createElement('p');
   const tally=document.createElement('p');
   tally.className='sgv-win-tally';
   const cta=document.createElement('button');
   cta.type='button';
   cta.textContent='NEXT';
-  document.body.append(praise,row,tally,cta);
-  return {praise,starNodes,tally,cta,remove(){
-    praise.remove();row.remove();tally.remove();cta.remove();
-  }};
+  card.append(praise,liquid,subline,tally,cta);
+  document.body.append(card);
+  return {card,praise,liquid,subline,tally,cta,remove(){card.remove();}};
 }
 
 after(()=>{
@@ -183,51 +177,51 @@ test('star thresholds match Appendix A for all 20 levels',()=>{
     assert.equal(stored.star2,row.star2,'L'+row.level+' star2');
     assert.equal(stored.star3,row.star3,'L'+row.level+' star3');
     assert.equal(stored.auto3,row.auto3,'L'+row.level+' auto3');
-    assert.equal(winStars(row.level,row.target-1),0,'below target is not a win');
-    const atTarget=winStars(row.level,row.target);
+    assert.equal(honeyTier(row.level,row.target-1),0,'below target is not a win');
+    const atTarget=honeyTier(row.level,row.target);
     if(row.auto3||row.target>=row.star3)assert.equal(atTarget,3,'L'+row.level+' target tier');
     else if(row.target>=row.star2)assert.equal(atTarget,2,'L'+row.level+' target tier');
     else assert.equal(atTarget,1,'L'+row.level+' target tier');
     if(row.star2>row.target&&row.star2<row.star3){
-      assert.equal(winStars(row.level,row.star2-1),1);
-      assert.equal(winStars(row.level,row.star2),2);
-      assert.equal(winStars(row.level,row.star3-1),2);
+      assert.equal(honeyTier(row.level,row.star2-1),1);
+      assert.equal(honeyTier(row.level,row.star2),2);
+      assert.equal(honeyTier(row.level,row.star3-1),2);
     }
     if(row.star2===row.star3){
       const below=row.star3-1;
       const expected=below>=row.target?(row.auto3?3:1):0;
-      assert.equal(winStars(row.level,below),expected,'equal thresholds skip 2★');
-      assert.notEqual(winStars(row.level,row.star2),2);
+      assert.equal(honeyTier(row.level,below),expected,'equal thresholds skip 2★');
+      assert.notEqual(honeyTier(row.level,row.star2),2);
     }
-    assert.equal(winStars(row.level,row.star3),3);
-    assert.equal(winStars(row.level,row.star3+25),3);
+    assert.equal(honeyTier(row.level,row.star3),3);
+    assert.equal(honeyTier(row.level,row.star3+25),3);
   }
   assert.equal(STAR_THRESHOLDS[11].star2,21);
   assert.equal(STAR_THRESHOLDS[11].star3,32);
   assert.equal(STAR_THRESHOLDS[18].star2,20);
   assert.equal(STAR_THRESHOLDS[18].star3,30);
-  assert.equal(winStars(1,5),3);
-  assert.equal(winStars(1,8),3);
-  assert.equal(winStars(2,6),3);
-  assert.equal(winStars(5,6),3);
-  assert.equal(winStars(11,20),1);
-  assert.equal(winStars(11,21),2);
-  assert.equal(winStars(11,31),2);
-  assert.equal(winStars(11,32),3);
-  assert.equal(winStars(11,87),3);
-  assert.equal(winStars(18,19),1);
-  assert.equal(winStars(18,20),2);
-  assert.equal(winStars(18,30),3);
-  assert.equal(winStars(20,6),1);
-  assert.equal(winStars(20,7),3);
-  assert.equal(winStars(9,16),1);
-  assert.equal(winStars(9,17),3);
+  assert.equal(honeyTier(1,5),3);
+  assert.equal(honeyTier(1,8),3);
+  assert.equal(honeyTier(2,6),3);
+  assert.equal(honeyTier(5,6),3);
+  assert.equal(honeyTier(11,20),1);
+  assert.equal(honeyTier(11,21),2);
+  assert.equal(honeyTier(11,31),2);
+  assert.equal(honeyTier(11,32),3);
+  assert.equal(honeyTier(11,87),3);
+  assert.equal(honeyTier(18,19),1);
+  assert.equal(honeyTier(18,20),2);
+  assert.equal(honeyTier(18,30),3);
+  assert.equal(honeyTier(20,6),1);
+  assert.equal(honeyTier(20,7),3);
+  assert.equal(honeyTier(9,16),1);
+  assert.equal(honeyTier(9,17),3);
 });
 
 test('praise and bursts follow the star tier and never change the engine score',()=>{
-  assert.deepEqual(praiseFor(1),{tier:1,text:'Sweet!',sound:'praise.sweet'});
-  assert.deepEqual(praiseFor(2),{tier:2,text:'Tasty!',sound:'praise.tasty'});
-  assert.deepEqual(praiseFor(3),{tier:3,text:'Divine!',sound:'praise.divine'});
+  assert.deepEqual(praiseFor(1),{tier:1,text:'Sweet!',sound:'praise.h1'});
+  assert.deepEqual(praiseFor(2),{tier:2,text:'Tasty!',sound:'praise.h2'});
+  assert.deepEqual(praiseFor(3),{tier:3,text:'Divine!',sound:'praise.h3'});
   assert.equal(praiseFor(0),null);
   assert.equal(burstParticles(0),0);
   assert.equal(burstParticles(1),12);
@@ -240,20 +234,23 @@ test('praise and bursts follow the star tier and never change the engine score',
   round=stepOnboarding(round,{type:'bank'});
   const secured=round.game.deal.T;
   assert.ok(secured>=onboardingLevel(1).target);
-  assert.equal(winStars(1,secured),3);
-  assert.equal(praiseFor(winStars(1,secured)).text,'Divine!');
+  assert.equal(honeyTier(1,secured),3);
+  assert.equal(praiseFor(honeyTier(1,secured)).text,'Divine!');
   assert.equal(round.game.deal.T,secured);
   const sweet=successPlan({victory:true,levelId:4,secured:11});
-  assert.equal(sweet.stars,1);
+  assert.equal(sweet.tier,1);
+  assert.equal(sweet.flight.size,16);
   assert.equal(sweet.praise.text,'Sweet!');
   assert.equal(sweet.burst.particles,12);
   assert.equal(sweet.count.to,11);
   const tasty=successPlan({victory:true,levelId:4,secured:18});
-  assert.equal(tasty.stars,2);
+  assert.equal(tasty.tier,2);
+  assert.equal(tasty.flight.size,18);
   assert.equal(tasty.praise.text,'Tasty!');
   assert.equal(tasty.burst.particles,18);
   const divine=successPlan({victory:true,levelId:11,secured:32});
-  assert.equal(divine.stars,3);
+  assert.equal(divine.tier,3);
+  assert.equal(divine.flight.size,20);
   assert.equal(divine.praise.text,'Divine!');
   assert.equal(divine.count.to,32);
   assert.equal(divine.burst.particles,24);
@@ -261,7 +258,8 @@ test('praise and bursts follow the star tier and never change the engine score',
   assert.equal(divine.scoreAt,0);
   const lost=successPlan({victory:false,levelId:11,secured:32,bank:true});
   assert.equal(lost.effects,false);
-  assert.equal(lost.stars,0);
+  assert.equal(lost.tier,0);
+  assert.equal(lost.star,null);
   assert.equal(lost.praise,null);
   assert.equal(lost.particles,0);
   assert.equal(lost.burst,null);
@@ -269,17 +267,17 @@ test('praise and bursts follow the star tier and never change the engine score',
   const reduced=successPlan({victory:true,levelId:1,secured:8,reduced:true});
   assert.equal(reduced.motion,false);
   assert.equal(reduced.particles,0);
-  assert.equal(reduced.stars,3);
+  assert.equal(reduced.tier,3);
+  assert.equal(reduced.flight.count,0);
   assert.equal(reduced.praise.text,'Divine!');
   assert.equal(reduced.count.to,8);
 });
 
 test('the count-up duration follows the digit cap and ends on the engine integer',()=>{
-  assert.ok(Math.abs(countUpDuration(5)-0.04)<1e-10);
-  assert.ok(Math.abs(countUpDuration(32)-0.08)<1e-10);
-  assert.ok(Math.abs(countUpDuration(100)-0.12)<1e-10);
-  assert.ok(countUpDuration(10**21)<=0.700);
-  assert.equal(countUpDuration(10**21),0.700);
+  assert.equal(countUpDuration(5),0.6);
+  assert.equal(countUpDuration(32),0.6);
+  assert.equal(countUpDuration(100),0.6);
+  assert.equal(displayedCount(0.5,5),2);
   for(const value of [1,5,6,7,8,9,11,13,17,24,30,32,41,56,87]){
     assert.equal(displayedCount(0,value),0);
     assert.equal(displayedCount(1,value),value);
@@ -292,9 +290,9 @@ test('the count-up duration follows the digit cap and ends on the engine integer
   }
 });
 
-test('skip and settle land on the exact secured score, earned stars, and 0 particles',()=>{
+test('skip and settle land on the exact secured score, a full jar, and 0 particles',()=>{
   const secured=32;
-  const stage=makeStage(3);
+  const stage=makeStage();
   stage.praise.textContent='Divine!';
   const sounds=[];
   const bus=createFxBus({
@@ -302,91 +300,70 @@ test('skip and settle land on the exact secured score, earned stars, and 0 parti
     audio:{play(id){sounds.push(id);return true;}}
   });
   const handle=playWinCelebration({
-    victory:true,secured,tier:3,praise:stage.praise,stars:stage.starNodes,
-    tally:stage.tally,cta:stage.cta,reduced:false,bus
+    victory:true,secured,target:9,tier:3,praise:stage.praise,liquid:stage.liquid,
+    subline:stage.subline,tally:stage.tally,cta:stage.cta,card:stage.card,
+    reduced:false,bus
   });
   assert.equal(handle.motion,true);
-  assert.ok(handle.timeline.totalDuration()>=1.2);
-  assert.ok(handle.timeline.totalDuration()<=1.5);
+  assert.equal(handle.timeline.totalDuration(),2.5);
   handle.timeline.pause();
   handle.timeline.time(0);
   assert.equal(stage.cta.disabled,false);
   assert.equal(stage.tally.textContent,'0');
   handle.timeline.time(0.10);
   assert.ok(opacityOf(stage.praise)>0);
-  assert.equal(stage.starNodes[1].style.opacity,'0');
-  handle.timeline.time(0.30);
-  assert.ok(opacityOf(stage.starNodes[0])>0.5);
-  assert.equal(opacityOf(stage.starNodes[1]),0);
-  handle.timeline.time(0.50);
-  assert.ok(opacityOf(stage.starNodes[1])>0.5);
-  assert.equal(opacityOf(stage.starNodes[2]),0);
-  handle.timeline.time(0.72);
-  assert.ok(opacityOf(stage.starNodes[2])>0.5);
-  let sawFinal=false;
-  for(let step=0;step<=90;step++){
-    handle.timeline.time(step/100);
-    const shown=Number(stage.tally.textContent);
-    assert.equal(Number.isInteger(shown),true,stage.tally.textContent);
-    assert.ok(shown>=0&&shown<=secured);
-    if(shown===secured)sawFinal=true;
-  }
-  handle.timeline.time(0.200+countUpDuration(secured));
+  handle.timeline.time(0.5);
+  assert.equal(stage.tally.textContent,'28');
+  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  handle.timeline.time(0.8);
   assert.equal(stage.tally.textContent,String(secured));
-  assert.equal(sawFinal,true);
-  handle.timeline.time(0.90);
-  assert.equal(stage.tally.textContent,String(secured));
+  handle.timeline.time(0.9);
   assert.equal(bus.liveParticles(),24);
-  assert.ok(sounds.includes('praise.divine'));
+  assert.ok(sounds.includes('praise.h3'));
   assert.ok(sounds.includes('win.burst'));
+  const speeds=bus.pool.live().map(particle=>Math.hypot(particle.vx,particle.vy));
+  assert.ok(speeds.every(speed=>speed>0));
+  assert.ok(new Set(speeds.map(speed=>speed.toFixed(3))).size>1);
   bus.settle();
   assert.equal(bus.tweenCount(),0);
   assert.equal(bus.liveParticles(),0);
   assert.equal(stage.tally.textContent,String(secured));
-  assert.equal(stage.praise.textContent,'Divine!');
   assert.equal(stage.praise.style.opacity,'1');
-  assert.doesNotMatch(stage.praise.style.transform||'',/scale\(0/);
-  for(const star of stage.starNodes){
-    assert.equal(star.style.opacity,'1');
-    assert.doesNotMatch(star.style.transform||'',/scale\(0/);
-    assert.equal(gsap.getTweensOf(star).length,0);
-  }
+  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  assert.equal(stage.subline.style.opacity,'0.9');
   assert.equal(gsap.getTweensOf(stage.praise).length,0);
   assert.equal(stage.cta.disabled,false);
   stage.remove();
 });
 
 test('a killed tween at the hidden frame still shows the final card',()=>{
-  const stage=makeStage(3);
+  const stage=makeStage();
   stage.praise.textContent='Divine!';
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=playWinCelebration({
-    victory:true,secured:8,tier:3,praise:stage.praise,stars:stage.starNodes,
-    tally:stage.tally,cta:stage.cta,reduced:false,bus
+    victory:true,secured:8,target:5,tier:3,praise:stage.praise,liquid:stage.liquid,
+    subline:stage.subline,tally:stage.tally,cta:stage.cta,card:stage.card,reduced:false,bus
   });
   handle.timeline.pause();
   handle.timeline.time(0.05);
-  assert.notEqual(stage.starNodes[0].style.opacity,'1');
   assert.notEqual(stage.tally.textContent,'8');
   bus.settle();
   assert.equal(bus.tweenCount(),0);
   assert.equal(bus.liveParticles(),0);
   assert.equal(stage.tally.textContent,'8');
   assert.equal(stage.praise.style.opacity,'1');
-  for(const star of stage.starNodes){
-    assert.equal(star.style.opacity,'1');
-    assert.doesNotMatch(star.style.transform||'',/scale\(0/);
-  }
+  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
+  assert.doesNotMatch(stage.praise.style.transform||'',/scale\(0/);
   stage.remove();
 });
 
 test('reduced motion shows the final card and emits 0 particles',()=>{
-  const stage=makeStage(2);
+  const stage=makeStage();
   stage.praise.textContent='Tasty!';
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=playWinCelebration({
-    victory:true,secured:18,tier:2,praise:stage.praise,stars:stage.starNodes,
-    tally:stage.tally,cta:stage.cta,reduced:true,bus
+    victory:true,secured:18,target:11,tier:2,praise:stage.praise,liquid:stage.liquid,
+    subline:stage.subline,tally:stage.tally,cta:stage.cta,card:stage.card,reduced:true,bus
   });
   assert.equal(handle.motion,false);
   assert.equal(handle.timeline,null);
@@ -395,10 +372,7 @@ test('reduced motion shows the final card and emits 0 particles',()=>{
   assert.equal(gsap.getTweensOf(stage.praise).length,0);
   assert.equal(stage.tally.textContent,'18');
   assert.equal(stage.praise.style.opacity,'1');
-  for(const star of stage.starNodes){
-    assert.equal(star.style.opacity,'1');
-    assert.equal(gsap.getTweensOf(star).length,0);
-  }
+  assert.match(stage.liquid.style.transform,/scaleY\(1\)/);
   stage.remove();
 });
 
@@ -406,7 +380,7 @@ test('a fail plays no praise, stars, count-up, or particles',()=>{
   const stage=makeStage(3);
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=playWinCelebration({
-    victory:false,secured:21,tier:2,praise:stage.praise,stars:stage.starNodes,
+    victory:false,secured:21,target:11,tier:2,praise:stage.praise,liquid:stage.liquid,
     tally:stage.tally,cta:stage.cta,reduced:false,bus
   });
   assert.equal(handle.motion,false);
@@ -426,13 +400,13 @@ test('a fail plays no praise, stars, count-up, or particles',()=>{
   assert.doesNotMatch(lose,/sgv-win-praise|sgv-win-star|sgv-win-tally|Sweet!|Tasty!|Divine!/);
   const card=renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:true,score:32,target:9,label:'NEXT',
-    praise:{tier:3,text:'Divine!'},stars:3
+    praise:{tier:3,text:'Divine!'}
   }));
   assert.match(card,/Divine!/);
-  assert.match(card,/Drops secured: 32 \/ 9/);
+  assert.match(card,/32 \/ 9/);
   assert.match(card,/>NEXT</);
-  assert.equal((card.match(/data-star=/g)||[]).length,3);
-  assert.match(card,/sgv-end-score/);
+  assert.equal((card.match(/sgv-win-star|data-star|★/g)||[]).length,0);
+  assert.match(card,/sgv-honey-jar/);
   assert.match(card,/sgv-win-tally/);
 });
 
@@ -451,11 +425,11 @@ test('the win card keeps the end screen, the reset, and the Bank pour',async()=>
   assert.doesNotMatch(source,/landing_band|sgv-flip-band|FlipLandingBand/);
   assert.doesNotMatch(motion,/external\/engines|landing_band|sgv-flip-band/);
   assert.doesNotMatch(engines,/winStars|Sweet!|starThresholds/);
-  assert.match(css,/\.sgv-win-praise-1\{[^}]*background:#fff0cf/);
-  assert.match(css,/\.sgv-win-praise-1\{[^}]*color:#704b69/);
-  assert.match(css,/\.sgv-win-praise-2\{[^}]*color:#f0c14a/);
-  assert.match(css,/\.sgv-win-praise-3\{[^}]*color:#e8a23a/);
-  assert.match(css,/\.sgv-win-tally\{[^}]*tabular-nums/);
+  assert.match(css,/\.sgv-end-card \.sgv-win-praise-1\{[^}]*color:var\(--honey-praise-h1\)/);
+  assert.match(css,/\.sgv-end-card \.sgv-win-praise-2\{[^}]*color:var\(--honey-praise-h2\)/);
+  assert.match(css,/\.sgv-end-card \.sgv-win-praise-3\{[^}]*color:var\(--honey-praise-h3\)/);
+  assert.match(css,/\.sgv-end-card \.sgv-win-tally\{[^}]*tabular-nums/);
+  assert.doesNotMatch(css,/\.sgv-win-star/);
 });
 
 function assertStylesheetTransform(node){
@@ -485,29 +459,30 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     const round=bankedLevel1();
     const secured=round.game.deal.T;
     assert.ok(secured>=5);
-    assert.equal(winStars(1,secured),3);
+    assert.equal(honeyTier(1,secured),3);
     saveRound(round);
     const view=await mount();
     const host=view.host;
     const praise=host.querySelector('.sgv-win-praise');
-    const stars=[...host.querySelectorAll('.sgv-win-star')];
+    const liquid=host.querySelector('.sgv-honey-liquid');
     const tally=host.querySelector('.sgv-win-tally');
-    const score=host.querySelector('.sgv-end-score');
+    const subline=host.querySelector('.sgv-honey-subline');
     const cta=host.querySelector('.sgv-end-cta');
     const goal=host.querySelector('.sgv-goal-progress');
     const bus=host.querySelector('.sgv-fx-layer').__fxBus;
-    assert.equal(stars.length,3);
+    assert.equal(host.querySelector('.sgv-win-star'),null);
+    assert.ok(liquid);
     assert.equal(praise.textContent,'Divine!');
-    assert.equal(score.textContent,'Drops secured: '+secured+' / 5');
+    assert.equal(subline.textContent,secured+' / 5');
     assert.equal(cta.disabled,false);
     assert.equal(cta.textContent,'NEXT');
-    const timeline=timelineOf(praise)||timelineOf(stars[0]);
+    const timeline=timelineOf(praise);
     assert.ok(timeline,'the win card plays a celebration timeline');
     timeline.pause();
     timeline.time(0.90);
     assert.equal(tally.textContent,String(secured));
     assert.equal(bus.liveParticles(),24);
-    assert.equal(score.textContent,'Drops secured: '+secured+' / 5');
+    assert.equal(subline.textContent,secured+' / 5');
     const overlay=host.querySelector('.sgv-end-overlay');
     await act(async()=>{
       overlay.dispatchEvent(new win.PointerEvent('pointerdown',{
@@ -516,16 +491,10 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     });
     assert.ok(host.querySelector('.sgv-end-overlay'),'backdrop settles and stays on the card');
     assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
-    assert.equal(host.querySelector('.sgv-end-score').textContent,
-      'Drops secured: '+secured+' / 5');
+    assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
     assert.equal(host.querySelector('.sgv-win-praise').textContent,'Divine!');
-    assert.equal(host.querySelectorAll('.sgv-win-star').length,3);
-    for(const star of host.querySelectorAll('.sgv-win-star')){
-      assert.equal(star.style.opacity,'1');
-      assert.doesNotMatch(star.style.transform||'',/scale\(0/);
-      assert.equal(win.getComputedStyle(star).opacity,'1');
-      assert.equal(gsap.getTweensOf(star).length,0);
-    }
+    assert.equal(host.querySelector('.sgv-win-star'),null);
+    assert.match(host.querySelector('.sgv-honey-liquid').style.transform,/scaleY\(1\)/);
     const shownPraise=host.querySelector('.sgv-win-praise');
     assert.equal(shownPraise.style.opacity,'1');
     assert.equal(win.getComputedStyle(shownPraise).opacity,'1');
@@ -593,17 +562,13 @@ test('reduced motion mounts the static final card with 0 particles',async()=>{
     const host=view.host;
     const bus=host.querySelector('.sgv-fx-layer').__fxBus;
     assert.equal(host.querySelector('.sgv-win-praise').textContent,'Divine!');
-    assert.equal(host.querySelectorAll('.sgv-win-star').length,3);
+    assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
-    assert.equal(host.querySelector('.sgv-end-score').textContent,
-      'Drops secured: '+secured+' / 5');
+    assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
+    assert.match(host.querySelector('.sgv-honey-liquid').style.transform,/scaleY\(1\)/);
     assert.equal(bus.liveParticles(),0);
     assert.equal(bus.tweenCount(),0);
     assert.equal(gsap.getTweensOf(host.querySelector('.sgv-win-praise')).length,0);
-    for(const star of host.querySelectorAll('.sgv-win-star')){
-      assert.equal(gsap.getTweensOf(star).length,0);
-      assert.equal(win.getComputedStyle(star).opacity,'1');
-    }
     assert.equal(host.querySelector('.sgv-end-cta').textContent,'NEXT');
     await view.unmount();
   });

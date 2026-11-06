@@ -1,4 +1,5 @@
-import {burstParticles,countUpDuration,praiseFor,winStars} from './starThresholds.js';
+import {HONEY_MOTION} from './honeyWin.js';
+import {burstParticles,countUpDuration,flightDropletSize,flightDroplets,honeyTier,praiseFor} from './starThresholds.js';
 
 // Level arrival. Times are seconds from a fresh level becoming the current
 // screen (after NEW!, when that card showed). The tap-to-start screen stays
@@ -54,30 +55,17 @@ export function startTap({action=false,arrival=false}={}){
   return {consume:false,finishArrival:false,pass:true};
 }
 
-// B3. t=0 is the committed win. Praise, stars, and the tally are presentation.
-// The fail screen has none of these effects. The secured line stays deal.T.
-export const WIN=Object.freeze({
-  settled:1.200,
-  praise:Object.freeze({start:0,end:0.200,fromScale:0.7,peakScale:1.08,toScale:1}),
-  stars:Object.freeze([
-    Object.freeze({start:0.220,end:0.420}),
-    Object.freeze({start:0.420,end:0.620}),
-    Object.freeze({start:0.620,end:0.820})
-  ]),
-  star:Object.freeze({fromScale:0,peakScale:1.15,toScale:1}),
-  count:Object.freeze({start:0.200,hold:0.900}),
-  burst:Object.freeze({start:0.820,end:1.200,life:0.380})
-});
-
+// J3b. t=0 is the committed win. Praise, the honey jar, and the tally are presentation.
+// The fail screen has none of these effects. The secured total stays deal.T.
 export function successPlan({victory=false,levelId=1,bank=false,secured=null,reduced=false}={}){
   if(!victory)return {
     effects:false,motion:false,scoreAt:0,ctaAt:0,cta:'TRY AGAIN',pour:null,star:null,
-    stars:0,praise:null,praiseMotion:null,count:null,burst:null,particles:0,
-    orchard:null,settled:0
+    tier:0,praise:null,praiseMotion:null,count:null,burst:null,flight:null,particles:0,
+    subline:null,orchard:null,settled:0,cap:HONEY_MOTION.cap
   };
-  const earned=secured==null?null:winStars(levelId,secured);
-  const praise=earned?praiseFor(earned):null;
-  const particles=!reduced&&earned?burstParticles(earned):0;
+  const tier=secured==null?null:honeyTier(levelId,secured);
+  const praise=tier?praiseFor(tier):null;
+  const particles=!reduced&&tier?burstParticles(tier):0;
   return {
     effects:true,
     motion:!reduced,
@@ -85,23 +73,31 @@ export function successPlan({victory=false,levelId=1,bank=false,secured=null,red
     ctaAt:0,
     cta:levelId===12?'LOWER ORCHARD':'NEXT',
     pour:bank?{start:0,approachEnd:0.180,liquidEnd:0.460,end:0.650,tip:42}:null,
-    star:reduced?null:{
-      start:WIN.stars[0].start,end:WIN.stars[2].end,
-      fromScale:WIN.star.fromScale,peakScale:WIN.star.peakScale,toScale:WIN.star.toScale
-    },
-    stars:earned,
+    star:null,
+    tier,
     praise,
-    praiseMotion:WIN.praise,
+    praiseMotion:HONEY_MOTION.praise,
     count:{
-      start:WIN.count.start,hold:WIN.count.hold,
+      start:HONEY_MOTION.count.start,end:HONEY_MOTION.count.end,
       duration:secured==null?null:countUpDuration(secured),
+      ease:HONEY_MOTION.count.ease,
       from:0,to:secured==null?null:Math.trunc(Number(secured))
     },
-    burst:{...WIN.burst,particles},
+    flight:{
+      ...HONEY_MOTION.flight,
+      count:!reduced&&tier?flightDroplets(tier):0,
+      size:tier?flightDropletSize(tier):0
+    },
+    burst:{
+      start:HONEY_MOTION.burst.start,life:HONEY_MOTION.burst.life,
+      end:HONEY_MOTION.burst.start+HONEY_MOTION.burst.life,particles
+    },
     particles,
-    ctaEmphasis:{start:WIN.settled,end:1.480},
-    orchard:levelId===12?{start:0.820,fadeEnd:1.060,end:1.500,fromScale:0.96}:null,
-    settled:reduced?0:WIN.settled
+    subline:HONEY_MOTION.subline,
+    ctaEmphasis:HONEY_MOTION.cta,
+    cap:HONEY_MOTION.cap,
+    orchard:null,
+    settled:reduced?0:HONEY_MOTION.settled
   };
 }
 

@@ -1,144 +1,244 @@
 import {gsap} from 'gsap';
-import {WIN} from './presentationSequence.js';
-import {burstParticles,countUpDuration,displayedCount,praiseFor} from './starThresholds.js';
+import {honeyEaseBack,honeyEaseOut,honeyParticles,overflowReveal,fillFraction} from './honeyWin.js';
+import {
+  burstParticles,burstRadius,displayedCount,flightDropletSize,flightDroplets,praiseFor
+} from './starThresholds.js';
 
-const TRANSFORM_PROPS='transform,x,y,scale,xPercent,yPercent,rotation';
+const PEAK=1.14;
 
-function showNode(node){
-  if(!node)return;
-  try{gsap.killTweensOf(node);}catch{/* a dead tween still needs the visible end */}
-  try{gsap.set(node,{clearProps:TRANSFORM_PROPS});}catch{/* drop the inline transform below */}
-  if(node.style){
-    node.style.removeProperty('transform');
-    node.style.opacity='1';
-  }
+function centerOf(node){
+  const rect=node?.getBoundingClientRect?.();
+  if(!rect||!(rect.width||rect.height||rect.x||rect.y))return null;
+  return {x:rect.left+rect.width/2,y:rect.top+rect.height/2};
 }
 
-function clampScale(node,max){
-  const scale=Number(gsap.getProperty(node,'scale'));
-  if(scale>max)gsap.set(node,{scale:max});
+function scaleOf(fraction){
+  if(fraction>=1)return 'scaleY(1)';
+  if(fraction<=0)return 'scaleY(0)';
+  return 'scaleY('+fraction+')';
 }
 
-// Praise, stars, and the tally. Settle kills the timeline wherever it is, so the
-// card must land on the visible end instead of a scale-0 or opacity-0 frame.
+// Praise, the hero jar, and the secured total. A killed tween still paints the
+// final card: the jar is full, the praise is visible, and the number is deal.T.
 export function playWinCelebration({
-  victory=true,secured=0,tier=0,praise=null,stars=[],tally=null,cta=null,
-  reduced=false,bus=null,onSettled
+  victory=true,secured=0,target=0,tier=0,praise=null,tally=null,subline=null,
+  liquid=null,overflow=null,scrim=null,cta=null,card=null,
+  source=null,pot=null,mouth=null,sourcePoint=null,mouthPoint=null,
+  reduced=false,bus=null,onSettled,schedule=null,clearSchedule=null,doc=null
 }={}){
-  const earned=(Array.isArray(stars)?stars:[stars]).filter(Boolean);
-  const starsEarned=Math.max(0,Math.min(3,tier||earned.length));
   const score=Math.trunc(Number(secured));
   const safe=Number.isFinite(score)?score:0;
-  const showFinal=()=>{
-    showNode(praise);
-    for(const star of earned)showNode(star);
+  const goal=Number(target);
+  const intensity=tier|0;
+  const paintFinal=()=>{
+    card?.classList?.add('sgv-honey-final');
+    if(scrim?.style)scrim.style.opacity='0.72';
+    if(praise?.style){
+      praise.style.opacity='1';
+      praise.style.transform='none';
+    }
+    try{gsap.set(praise,{opacity:1,scale:1});}catch{/* the inline opacity is the end state */}
     if(tally)tally.textContent=String(safe);
+    if(subline?.style)subline.style.opacity='0.9';
+    if(liquid?.style){
+      liquid.style.transformOrigin='center bottom';
+      liquid.style.transform='scaleY(1)';
+    }
+    if(overflow?.style){
+      overflow.style.opacity='1';
+      overflow.style.transform='none';
+    }
     if(cta){
       cta.disabled=false;
       if(cta.style){
         cta.style.opacity='1';
         cta.style.removeProperty('transform');
+        cta.style.removeProperty('--honey-cta-outline');
       }
     }
+    releaseOwned();
   };
+  function releaseOwned(){
+    const pool=bus?.pool;
+    if(!pool?.live||!pool.release)return;
+    for(const particle of pool.live()){
+      if(particle.owner==='honey-win')pool.release(particle);
+    }
+  }
   if(!victory)return {motion:false,timeline:null,particles:0,showFinal(){},cancel(){}};
   if(reduced){
-    showFinal();
-    return {motion:false,timeline:null,particles:0,showFinal,cancel(){showFinal();}};
+    paintFinal();
+    return {motion:false,timeline:null,particles:0,showFinal:paintFinal,cancel(){paintFinal();}};
+  }
+
+  const from=sourcePoint||centerOf(source)||centerOf(pot)||{x:160,y:84};
+  const to=mouthPoint||centerOf(mouth)||{x:from.x,y:from.y+140};
+  const paintCount=eased=>{
+    const progress=eased>=1?1:Math.max(0,eased||0);
+    const shown=displayedCount(progress,safe);
+    if(tally)tally.textContent=String(shown);
+    const raw=progress>=1?safe:safe*progress;
+    if(liquid?.style){
+      liquid.style.transformOrigin='center bottom';
+      liquid.style.transform=scaleOf(fillFraction(raw,goal));
+    }
+    if(overflow?.style){
+      const reveal=overflowReveal(progress,safe,goal);
+      overflow.style.opacity=String(reveal);
+      overflow.style.transform='translateY('+((1-reveal)*-8)+'px)';
+    }
+  };
+  function sync(time){
+    const pool=bus?.pool;
+    if(!pool?.spawn)return;
+    const factor=bus.budget?.scale?.()??1;
+    const desired=honeyParticles({
+      t:time,tier:intensity,scale:factor,source:from,mouth:to,
+      flightCount:flightDroplets(intensity),
+      flightSize:flightDropletSize(intensity),
+      burstCount:burstParticles(intensity),
+      burstRadius:burstRadius(intensity)
+    });
+    const owned=pool.live().filter(particle=>particle.owner==='honey-win');
+    const byKey=new Map(owned.map(particle=>[particle.key,particle]));
+    const keep=new Set();
+    for(const spec of desired){
+      keep.add(spec.key);
+      const existing=byKey.get(spec.key);
+      if(existing)Object.assign(existing,spec,{alive:true});
+      else pool.spawn(spec);
+    }
+    for(const particle of owned){
+      if(!keep.has(particle.key)&&pool.release)pool.release(particle);
+    }
+    try{bus.touch?.();}catch{/* a view must not block the celebration */}
+  }
+
+  if(tally)tally.textContent='0';
+  if(liquid?.style){
+    liquid.style.transformOrigin='center bottom';
+    liquid.style.transform='scaleY(0)';
+  }
+  if(subline?.style)subline.style.opacity='0';
+  if(scrim?.style)scrim.style.opacity='0';
+  if(overflow?.style){
+    overflow.style.opacity='0';
+    overflow.style.transform='translateY(-8px)';
   }
 
   const timeline=gsap.timeline({paused:true});
   let stopped=false;
-  let finishing=false;
-  let bursted=false;
-  const proxy={p:0};
-  const duration=countUpDuration(safe);
-  if(tally)tally.textContent='0';
-  if(praise){
-    timeline.fromTo(praise,
-      {opacity:0,scale:WIN.praise.fromScale,transformOrigin:'50% 50%'},
-      {
-        opacity:1,scale:WIN.praise.peakScale,duration:WIN.praise.end/2,
-        ease:'back.out(1.2)',overwrite:'auto',
-        onUpdate(){clampScale(praise,WIN.praise.peakScale);}
-      },
-      WIN.praise.start);
-    timeline.to(praise,{
-      scale:WIN.praise.toScale,duration:WIN.praise.end/2,ease:'sine.out',overwrite:'auto'
-    },WIN.praise.start+WIN.praise.end/2);
-    timeline.call(()=>bus?.emit({
-      id:'praise',sound:praiseFor(starsEarned)?.sound||'praise.sweet'
-    }),null,WIN.praise.start);
+  let inKill=false;
+  const listen=doc||globalThis.document;
+  let capId=0;
+  const clear=clearSchedule||clearTimeout;
+  function onHide(){
+    if(listen?.visibilityState==='hidden')cancel();
   }
-  earned.forEach((star,index)=>{
-    const window=WIN.stars[index];
-    if(!window)return;
-    const half=(window.end-window.start)/2;
-    timeline.set(star,{opacity:0,scale:WIN.star.fromScale,transformOrigin:'50% 50%'},0);
-    timeline.to(star,{
-      opacity:1,scale:WIN.star.peakScale,duration:half,ease:'back.out(1.2)',overwrite:'auto',
-      onUpdate(){clampScale(star,WIN.star.peakScale);}
-    },window.start);
-    timeline.to(star,{
-      scale:WIN.star.toScale,duration:half,ease:'sine.out',overwrite:'auto'
-    },window.start+half);
-    timeline.call(()=>bus?.emit({id:'star',sound:'star.tick',haptic:'light'}),null,window.start);
-  });
-  timeline.to(proxy,{
-    p:1,duration,ease:'none',overwrite:'auto',
-    onUpdate(){if(tally)tally.textContent=String(displayedCount(proxy.p,safe));},
-    onComplete(){if(tally)tally.textContent=String(safe);}
-  },WIN.count.start);
-  const countEnd=WIN.count.start+duration;
-  for(let at=WIN.count.start;at<countEnd-1e-6;at+=0.080){
-    const when=at;
-    timeline.call(()=>bus?.emit({id:'score-tick',sound:'score.tick'}),null,when);
-  }
-  const particles=burstParticles(starsEarned);
-  if(particles>0){
-    const burstMark={fired:0};
-    timeline.to(burstMark,{
-      fired:1,duration:WIN.burst.life,ease:'none',overwrite:'auto',
-      onStart(){
-        if(bursted||stopped)return;
-        bursted=true;
-        bus?.emit({
-          id:'win-burst',particles,sound:'win.burst',
-          haptic:starsEarned>=2?'medium':'light'
-        });
-      }
-    },WIN.burst.start);
-  }
-  timeline.add(()=>{},WIN.settled);
-  timeline.eventCallback('onComplete',()=>{
-    if(stopped)return;
-    showFinal();
-    try{bus?.pool?.drain();}catch{/* the burst has already lived its 0.380s */}
-    cta?.classList?.add('sgv-win-cta-pulse');
-    onSettled?.();
-  });
-
   const nativeKill=timeline.kill.bind(timeline);
+  function finish(fromKill){
+    if(!stopped){
+      stopped=true;
+      try{clear(capId);}catch{/* already cleared */}
+      try{listen?.removeEventListener?.('visibilitychange',onHide);}catch{/* already removed */}
+    }
+    paintFinal();
+    if(!fromKill){
+      inKill=true;
+      try{nativeKill();}catch{/* already dead */}
+      inKill=false;
+    }
+    try{bus?.settle();}catch{/* settle must not block the tap */}
+  }
   timeline.kill=function(...args){
-    if(finishing)return nativeKill.apply(timeline,args);
-    finishing=true;
-    stopped=true;
+    if(inKill){
+      try{return nativeKill(...args);}catch{return undefined;}
+    }
+    inKill=true;
     let result;
-    try{result=nativeKill.apply(timeline,args);}catch{result=undefined;}
-    showFinal();
-    finishing=false;
+    try{result=nativeKill(...args);}catch{result=undefined;}
+    finish(true);
+    inKill=false;
     return result;
   };
+  function cancel(){finish(false);}
+
+  const clock={t:0};
+  timeline.to(clock,{
+    t:2.5,duration:2.5,ease:'none',overwrite:'auto',
+    onUpdate(){sync(clock.t);}
+  },0);
+  if(scrim){
+    timeline.fromTo(scrim,{opacity:0},{
+      opacity:0.72,duration:0.12,ease:'power2.out',overwrite:'auto',
+      onComplete(){scrim.style.opacity='0.72';}
+    },0);
+  }
+  if(praise){
+    gsap.set(praise,{transformOrigin:'50% 50%'});
+    timeline.fromTo(praise,{opacity:0},{
+      opacity:1,duration:0.1,ease:honeyEaseOut,overwrite:false
+    },0);
+    timeline.fromTo(praise,{scale:0.55},{
+      scale:PEAK,duration:0.14,ease:honeyEaseBack,overwrite:false,
+      onUpdate(){
+        const scale=Number(gsap.getProperty(praise,'scale'));
+        if(scale>PEAK)gsap.set(praise,{scale:PEAK});
+      }
+    },0);
+    timeline.to(praise,{scale:1,duration:0.08,ease:honeyEaseOut,overwrite:false},0.14);
+    timeline.call(()=>bus?.emit({
+      id:'praise',sound:praiseFor(intensity)?.sound||'praise.h1',
+      haptic:intensity>=2?'light':undefined,particles:0
+    }),null,0);
+  }
+  timeline.call(()=>bus?.emit({
+    id:'honey-flight',sound:'honey.whoosh',
+    haptic:intensity>=2?'light':undefined,particles:0
+  }),null,0.12);
+  const proxy={p:0};
+  timeline.to(proxy,{
+    p:1,duration:0.6,ease:'power2.out',overwrite:'auto',
+    onUpdate(){paintCount(proxy.p);},
+    onComplete(){
+      paintCount(1);
+      if(tally)tally.textContent=String(safe);
+    }
+  },0.2);
+  for(let at=0.2;at<0.8-1e-9;at+=0.08){
+    const when=at;
+    timeline.call(()=>bus?.emit({id:'score-tick',sound:'score.tick',particles:0}),null,when);
+  }
+  timeline.call(()=>bus?.emit({
+    id:'win-burst',sound:'win.burst',
+    haptic:intensity>=3?'medium':intensity===2?'light':undefined,
+    particles:0
+  }),null,0.85);
+  if(subline){
+    timeline.to(subline,{
+      opacity:0.9,duration:0.18,ease:honeyEaseOut,overwrite:'auto',
+      onComplete(){subline.style.opacity='0.9';}
+    },1);
+  }
+  if(cta){
+    const pulse={o:0.35};
+    const apply=()=>cta.style?.setProperty('--honey-cta-outline',String(pulse.o));
+    timeline.to(pulse,{o:1,duration:0.2,ease:'power2.out',onUpdate:apply},1.3);
+    timeline.to(pulse,{o:0.35,duration:0.2,ease:'power2.out',onUpdate:apply},1.5);
+  }
+  timeline.call(()=>{if(!stopped)onSettled?.();},null,1.3);
+
+  try{listen?.addEventListener?.('visibilitychange',onHide);}catch{/* no document in this runtime */}
+  try{
+    if(typeof schedule==='function')capId=schedule(()=>cancel(),2500);
+    else{
+      capId=setTimeout(()=>cancel(),2500);
+      capId?.unref?.();
+    }
+  }catch{capId=0;}
   bus?.register(timeline);
   timeline.play();
   return {
-    motion:true,timeline,particles,showFinal,
-    cancel(){
-      if(stopped){
-        showFinal();
-        return;
-      }
-      try{timeline.kill();}catch{showFinal();}
-    }
+    motion:true,timeline,particles:burstParticles(intensity),showFinal:paintFinal,cancel
   };
 }

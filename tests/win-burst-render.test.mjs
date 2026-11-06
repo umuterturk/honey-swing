@@ -8,6 +8,7 @@ import {createRoot} from 'react-dom/client';
 import {act} from 'react';
 import {createFxBus} from '../src/casual/fx/fxBus.js';
 import {PARTICLE_CAP} from '../src/casual/fx/particlePool.js';
+import {canvasBufferSize,createParticleCanvas} from '../src/casual/fx/particleCanvas.js';
 
 register('./jsx-loader.mjs',import.meta.url);
 const {FxLayer}=await import('../src/casual/fx/FxLayer.jsx');
@@ -183,23 +184,104 @@ test('praise tiers and the tally beat the end-card paragraph rule',async()=>{
   const divineStyle=win.getComputedStyle(divine);
   const tallyStyle=win.getComputedStyle(tally);
   const scoreStyle=win.getComputedStyle(score);
-  assert.equal(sweetStyle.fontSize,'28px');
+  assert.equal(sweetStyle.fontSize,'36px');
   assert.equal(sweetStyle.fontWeight,'900');
-  assert.ok(sameColor(sweetStyle.color,'#704b69'),sweetStyle.color);
-  assert.ok(sameColor(sweetStyle.backgroundColor,'#fff0cf'),sweetStyle.backgroundColor);
-  assert.equal(tastyStyle.fontSize,'28px');
+  assert.ok(sameColor(sweetStyle.color,'#fff0cf'),sweetStyle.color);
+  assert.equal(tastyStyle.fontSize,'36px');
   assert.equal(tastyStyle.fontWeight,'900');
   assert.ok(sameColor(tastyStyle.color,'#f0c14a'),tastyStyle.color);
-  assert.equal(divineStyle.fontSize,'28px');
+  assert.equal(divineStyle.fontSize,'36px');
   assert.equal(divineStyle.fontWeight,'900');
-  assert.ok(sameColor(divineStyle.color,'#e8a23a'),divineStyle.color);
-  assert.equal(tallyStyle.fontSize,'32px');
+  assert.ok(sameColor(divineStyle.color,'#ffe08a'),divineStyle.color);
+  assert.equal(tallyStyle.fontSize,'40px');
   assert.equal(tallyStyle.fontWeight,'900');
-  assert.ok(sameColor(tallyStyle.color,'#8b633b'),tallyStyle.color);
+  assert.ok(sameColor(tallyStyle.color,'#f0c14a'),tallyStyle.color);
   assert.match(String(tallyStyle.fontVariantNumeric),/tabular-nums/);
   assert.equal(scoreStyle.fontSize,'18px');
   assert.equal(scoreStyle.fontWeight,'800');
   assert.ok(sameColor(scoreStyle.color,'#8b6954'),scoreStyle.color);
   card.remove();
   style.remove();
+});
+
+test('a burst has a real radial spread instead of one dot',async()=>{
+  installFrames();
+  const ctx=mockContext();
+  installContext(ctx);
+  const bus=createFxBus({reducedMotion:()=>false});
+  const view=await mountLayer(bus);
+  bus.emit({id:'win-burst',particles:12});
+  assert.equal(flushFrame(16),true);
+  const live=bus.pool.live();
+  assert.equal(live.length,12);
+  const velocities=live.map(particle=>particle.vx.toFixed(4)+','+particle.vy.toFixed(4));
+  const places=live.map(particle=>particle.x.toFixed(3)+','+particle.y.toFixed(3));
+  assert.equal(new Set(velocities).size,live.length);
+  assert.equal(new Set(places).size,live.length);
+  for(const particle of live)assert.ok(Math.hypot(particle.vx,particle.vy)>1);
+  await view.unmount();
+  restoreContext?.();
+});
+
+test('the fx canvas buffer tracks css size times devicePixelRatio, including resize',()=>{
+  assert.deepEqual(canvasBufferSize(320,568,2),{width:640,height:1136,ratio:2});
+  assert.equal(canvasBufferSize(390,844,1.5).width,Math.round(390*1.5));
+  const canvas=document.createElement('canvas');
+  const pool={
+    live:()=>[],
+    liveCount:()=>0,
+    cap:40
+  };
+  let box={cssWidth:320,cssHeight:568,dpr:2};
+  let frame=null;
+  const view=createParticleCanvas({
+    canvas,pool,reduced:()=>false,size:()=>box,
+    requestFrame(fn){frame=fn;return 1;},
+    cancelFrame(){}
+  });
+  view.resize();
+  assert.equal(canvas.width,640);
+  assert.equal(canvas.height,1136);
+  box={cssWidth:430,cssHeight:932,dpr:3};
+  view.resize();
+  assert.equal(canvas.width,1290);
+  assert.equal(canvas.height,2796);
+  const ctx=mockContext();
+  canvas.getContext=()=>ctx;
+  pool.live=()=>[{
+    alive:true,absolute:true,x:16,y:20,radius:8,opacity:1,color:'#f0c14a'
+  }];
+  pool.liveCount=()=>1;
+  view.kick();
+  assert.equal(typeof frame,'function');
+  frame(16);
+  const arc=ctx.calls.find(call=>call[0]==='arc');
+  assert.ok(arc,'an absolute droplet is drawn');
+  assert.equal(arc[1],16*3);
+  assert.equal(arc[2],20*3);
+  assert.equal(arc[3],8*3);
+});
+
+test('a mounted fx layer resizes its buffer with the layer and the device pixel ratio',async()=>{
+  const bus=createFxBus({reducedMotion:()=>false});
+  const view=await mountLayer(bus);
+  const layer=view.host.querySelector('.sgv-fx-layer');
+  const canvas=layer.querySelector('canvas');
+  let width=320;
+  let height=568;
+  Object.defineProperty(layer,'clientWidth',{configurable:true,get(){return width;}});
+  Object.defineProperty(layer,'clientHeight',{configurable:true,get(){return height;}});
+  win.devicePixelRatio=2;
+  window.dispatchEvent(new win.Event('resize'));
+  assert.equal(canvas.width,640);
+  assert.equal(canvas.height,1136);
+  width=200;
+  height=100;
+  win.devicePixelRatio=2;
+  window.dispatchEvent(new win.Event('resize'));
+  assert.equal(canvas.width,400);
+  assert.equal(canvas.height,200);
+  assert.notEqual(canvas.width,300);
+  assert.notEqual(canvas.height,150);
+  await view.unmount();
 });

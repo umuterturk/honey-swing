@@ -18,14 +18,26 @@ export function FxLayer({bus}){
     if(import.meta.env?.MODE!=='production'&&node)node.__fxBus=bus||null;
     let view=null;
     let unsubscribe=()=>{};
+    let observer=null;
+    const onResize=()=>view?.resize();
     if(bus&&canvas){
-      view=createParticleCanvas({canvas,pool:bus.pool,reduced:prefersReducedMotion});
+      view=createParticleCanvas({
+        canvas,pool:bus.pool,reduced:prefersReducedMotion,budget:bus.budget
+      });
+      view.resize();
       unsubscribe=bus.subscribe(()=>{
         if(prefersReducedMotion()||bus.liveParticles()<=0)view.stop();
         else view.kick();
       });
+      if(typeof ResizeObserver==='function'&&node){
+        observer=new ResizeObserver(onResize);
+        observer.observe(node);
+      }
+      window.addEventListener('resize',onResize);
     }
     return ()=>{
+      observer?.disconnect();
+      window.removeEventListener('resize',onResize);
       unsubscribe();
       view?.stop();
       bus?.settle();

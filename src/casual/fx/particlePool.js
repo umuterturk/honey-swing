@@ -14,6 +14,12 @@ export function createParticlePool({cap=PARTICLE_CAP}={}){
     live.push(particle);
     return particle;
   }
+  function release(particle){
+    const index=live.indexOf(particle);
+    if(index<0)return;
+    particle.alive=false;
+    live.splice(index,1);
+  }
   function drain(){
     for(const particle of live)particle.alive=false;
     live.length=0;
@@ -21,6 +27,7 @@ export function createParticlePool({cap=PARTICLE_CAP}={}){
   return {
     cap,
     spawn,
+    release,
     liveCount:()=>live.length,
     live:()=>live.slice(),
     drain

@@ -1,4 +1,5 @@
 import {gsap} from 'gsap';
+import {createFrameBudget} from './frameBudget.js';
 import {createParticlePool} from './particlePool.js';
 import {play as playSound} from '../services/audio.js';
 import {pulse as pulseHaptic} from '../services/haptics.js';
@@ -35,7 +36,8 @@ export function createFxBus({
   reducedMotion=prefersReducedMotion,
   audio={play:playSound},
   haptics={pulse:pulseHaptic},
-  maxTweens=FX_TWEEN_CAP
+  maxTweens=FX_TWEEN_CAP,
+  budget=createFrameBudget()
 }={}){
   const queue=[];
   const tweens=[];
@@ -136,6 +138,7 @@ export function createFxBus({
     if(!devBuild())return quiet;
     return emit(event);
   }
+  function touch(){notify();}
   function settle(){
     for(const owned of tweens){
       try{owned?.tween?.kill();}catch{/* already dead */}
@@ -149,7 +152,7 @@ export function createFxBus({
     notify();
   }
   return {
-    attach,emit,emitDev,register,settle,subscribe,pool,
+    attach,emit,emitDev,register,settle,subscribe,touch,pool,budget,
     liveParticles:()=>pool.liveCount(),
     tweenCount:()=>tweens.length,
     queued:()=>queue.length

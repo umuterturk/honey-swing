@@ -1,0 +1,344 @@
+import {burstParticles,burstRadius as burstTravel,flightDropletSize,flightDroplets} from './starThresholds.js';
+
+// Presentation geometry for the honey-jar win. Nothing here writes a score.
+// PM overrides: count D is 0.600s (0.200→0.800, power2.out), flight droplets are
+// 16/18/20 px, lip burst is 0.850s, subline 1.000→1.180, settle 1.300, CTA 1.700.
+export const HONEY_MOTION=Object.freeze({
+  cap:2.5,
+  settled:1.3,
+  scrim:Object.freeze({start:0,end:0.12,opacity:0.72}),
+  praise:Object.freeze({
+    start:0,peakEnd:0.14,end:0.22,opacityEnd:0.1,
+    fromScale:0.55,peakScale:1.14,toScale:1
+  }),
+  flight:Object.freeze({
+    emitStart:0.1,emitEnd:0.16,life:0.32,
+    fadeIn:0.04,hold:0.2,fadeOut:0.08,lift:48
+  }),
+  count:Object.freeze({start:0.2,duration:0.6,end:0.8,ease:'power2.out'}),
+  burst:Object.freeze({start:0.85,life:0.38}),
+  subline:Object.freeze({start:1,end:1.18,opacity:0.9}),
+  cta:Object.freeze({start:1.3,end:1.7,from:0.35,to:1,leg:0.2})
+});
+
+// Overlay aliases. Component CSS mirrors these custom properties.
+export const HONEY_TOKENS=Object.freeze({
+  scrim:'#1a0f12',
+  scrimOpacity:0.72,
+  backing:'#1a0f12',
+  backingOpacity:0.08,
+  praise:Object.freeze({
+    1:Object.freeze({fill:'#fff0cf',outline:'#704b69'}),
+    2:Object.freeze({fill:'#f0c14a',outline:'#5a3a12'}),
+    3:Object.freeze({fill:'#ffe08a',outline:'#5a3a12',glow:'0 0 18px #f0c14a88'})
+  }),
+  honeyBody:'#e8a317',
+  honeyDepth:'#c47a0a',
+  honeySurface:'#ffe08a',
+  count:'#f0c14a',
+  countOutline:'#3b2410',
+  subline:'#fff0cf',
+  flight:'#f0c14a',
+  flightEdge:'#c47a0a',
+  burst:Object.freeze(['#fff0cf','#f0c14a']),
+  glassRim:'#acd7f7',
+  easeOut:'cubic-bezier(.2,.8,.2,1)',
+  easeBack:'cubic-bezier(.34,1.56,.64,1)'
+});
+
+const BURST_DIAMETER=Object.freeze([8,10,12]);
+const OVERFLOW=Object.freeze({
+  1:Object.freeze([
+    Object.freeze({kind:'bead',x:'65%',w:8,h:10}),
+    Object.freeze({kind:'drip',x:'65%',w:4,h:16})
+  ]),
+  2:Object.freeze([
+    Object.freeze({kind:'bead',x:'35%',w:10,h:10}),
+    Object.freeze({kind:'bead',x:'65%',w:10,h:10}),
+    Object.freeze({kind:'drip',x:'35%',w:4,h:20}),
+    Object.freeze({kind:'drip',x:'65%',w:4,h:20})
+  ]),
+  3:Object.freeze([
+    Object.freeze({kind:'bead',x:'30%',w:12,h:10}),
+    Object.freeze({kind:'bead',x:'50%',w:12,h:10}),
+    Object.freeze({kind:'bead',x:'70%',w:12,h:10}),
+    Object.freeze({kind:'drip',x:'30%',w:5,h:24}),
+    Object.freeze({kind:'drip',x:'50%',w:5,h:24}),
+    Object.freeze({kind:'drip',x:'70%',w:5,h:24})
+  ])
+});
+
+function clamp01(value){
+  const number=Number(value);
+  if(!Number.isFinite(number)||number<=0)return 0;
+  if(number>=1)return 1;
+  return number;
+}
+
+function cubicBezier(x1,y1,x2,y2){
+  const cx=3*x1;
+  const bx=3*(x2-x1)-cx;
+  const ax=1-cx-bx;
+  const cy=3*y1;
+  const by=3*(y2-y1)-cy;
+  const ay=1-cy-by;
+  function sampleX(t){return ((ax*t+bx)*t+cx)*t;}
+  function sampleY(t){return ((ay*t+by)*t+cy)*t;}
+  function sampleDX(t){return (3*ax*t+2*bx)*t+cx;}
+  return function ease(x){
+    if(x<=0)return 0;
+    if(x>=1)return 1;
+    let t=x;
+    for(let i=0;i<8;i++){
+      const slope=sampleDX(t);
+      if(Math.abs(slope)<1e-6)break;
+      t-=(sampleX(t)-x)/slope;
+      if(t<0)t=0;
+      else if(t>1)t=1;
+    }
+    return sampleY(t);
+  };
+}
+
+export const honeyEaseOut=cubicBezier(.2,.8,.2,1);
+export const honeyEaseBack=cubicBezier(.34,1.56,.64,1);
+
+// GSAP power2.out is 1-(1-p)^3 (Power2 follows Cubic in the GSAP ease table).
+export function power2Out(t){
+  const p=clamp01(t);
+  return 1-Math.pow(1-p,3);
+}
+
+export function invertPower2Out(y){
+  const eased=clamp01(y);
+  return 1-Math.cbrt(Math.max(0,1-eased));
+}
+
+function hexChannels(hex){
+  const value=parseInt(String(hex).replace('#',''),16);
+  return [(value>>16)&255,(value>>8)&255,value&255];
+}
+
+function composite(top,alpha,bottom){
+  return top.map((channel,index)=>channel*alpha+bottom[index]*(1-alpha));
+}
+
+export function compositeBacking(board=[255,255,255]){
+  const ink=hexChannels(HONEY_TOKENS.scrim);
+  const scrim=composite(ink,HONEY_TOKENS.scrimOpacity,board);
+  const text=composite(ink,HONEY_TOKENS.backingOpacity,scrim);
+  return {text,scrim};
+}
+
+function linearize(channel){
+  const value=channel/255;
+  return value<=0.04045?value/12.92:((value+0.055)/1.055)**2.4;
+}
+
+function luminance(rgb){
+  return 0.2126*linearize(rgb[0])+0.7152*linearize(rgb[1])+0.0722*linearize(rgb[2]);
+}
+
+export function contrastRatio(hex,background){
+  const fg=hexChannels(hex);
+  const bg=Array.isArray(background)?background:background.text;
+  const lighter=Math.max(luminance(fg),luminance(bg));
+  const darker=Math.min(luminance(fg),luminance(bg));
+  return (lighter+0.05)/(darker+0.05);
+}
+
+export function honeyLayout(width,height,insets={}){
+  const top=Number(insets.top)||0;
+  const right=Number(insets.right)||0;
+  const bottom=Number(insets.bottom)||0;
+  const left=Number(insets.left)||0;
+  const safeW=width-left-right;
+  const safeH=height-top-bottom;
+  const short=safeH<520;
+  const jarW=Math.min(200,0.58*safeW);
+  const jarH=jarW*1.25;
+  const numberH=short?48:64;
+  const subH=short?20:24;
+  const jarGap=short?8:10;
+  const subGap=short?4:8;
+  const stageTop=top+(short?80:84);
+  const stageBottom=height-bottom-(short?88:96);
+  const cluster=jarH+jarGap+numberH+subGap+subH;
+  const lead=Math.max(0,(stageBottom-stageTop-cluster)/2);
+  const jarY=stageTop+lead;
+  const numberY=jarY+jarH+jarGap;
+  const subY=numberY+numberH+subGap;
+  const contentX=left+16;
+  const contentW=safeW-32;
+  return {
+    safeW,safeH,short,
+    praise:{
+      x:contentX,y:top+14,w:contentW,h:58,
+      font:Math.min(44,Math.max(36,36+(safeW-320)*8/70))
+    },
+    jar:{x:left+(safeW-jarW)/2,y:jarY,w:jarW,h:jarH},
+    number:{
+      x:contentX,y:numberY,w:contentW,h:numberH,
+      font:Math.min(56,Math.max(40,0.12*safeW))
+    },
+    subline:{
+      x:contentX,y:subY,w:contentW,h:subH,
+      font:Math.min(18,Math.max(15,0.042*safeW))
+    },
+    cta:{x:contentX,y:height-bottom-16-56,w:contentW,h:56},
+    reset:{x:left+8,y:top+109,w:44,h:44}
+  };
+}
+
+export function fillFraction(tally,target){
+  const goal=Number(target);
+  if(!(goal>0))return 1;
+  const value=Number(tally);
+  if(!Number.isFinite(value)||value<=0)return 0;
+  return Math.min(1,value/goal);
+}
+
+export function overflowReveal(eased,secured,target){
+  const score=Math.trunc(Number(secured));
+  const goal=Number(target);
+  if(!Number.isFinite(score)||!(score>goal)||!(goal>0))return 0;
+  const progress=clamp01(eased);
+  const cross=goal/score;
+  if(progress<cross)return 0;
+  const elapsed=(invertPower2Out(progress)-invertPower2Out(cross))*HONEY_MOTION.count.duration;
+  return Math.min(1,Math.max(0,elapsed/0.18));
+}
+
+export function countFrame(time,secured,target){
+  const score=Math.trunc(Number(secured));
+  const safe=Number.isFinite(score)?Math.max(0,score):0;
+  const start=HONEY_MOTION.count.start;
+  const duration=HONEY_MOTION.count.duration;
+  let linear=0;
+  if(time>=start+duration)linear=1;
+  else if(time>start)linear=(time-start)/duration;
+  const eased=power2Out(linear);
+  const tally=safe*eased;
+  const shown=linear>=1?safe:Math.floor(tally);
+  return {
+    linear,eased,tally,
+    shown:Number.isFinite(shown)?Math.min(safe,Math.max(0,shown)):0,
+    fraction:fillFraction(tally,target),
+    overflow:overflowReveal(eased,safe,target)
+  };
+}
+
+export function overflowMarks(tier,secured,target){
+  const score=Number(secured);
+  const goal=Number(target);
+  if(!(score>goal))return [];
+  const marks=OVERFLOW[tier]||[];
+  return marks.map((mark,index)=>({...mark,key:mark.kind+'-'+index}));
+}
+
+export function flightEmitTime(index,count){
+  const {emitStart,emitEnd}=HONEY_MOTION.flight;
+  const total=count|0;
+  if(total<=1)return emitStart;
+  const slot=Math.min(Math.max(0,index|0),total-1);
+  return emitStart+(emitEnd-emitStart)*slot/(total-1);
+}
+
+export function flightOpacity(age){
+  const {fadeIn,hold,fadeOut,life}=HONEY_MOTION.flight;
+  if(!(age>0)||age>=life)return 0;
+  if(age<fadeIn)return age/fadeIn;
+  if(age<fadeIn+hold)return 1;
+  return Math.max(0,1-(age-fadeIn-hold)/fadeOut);
+}
+
+export function flightPosition(progress,source,mouth){
+  const p=honeyEaseOut(progress);
+  const control={
+    x:(source.x+mouth.x)/2,
+    y:Math.min(source.y,mouth.y)-HONEY_MOTION.flight.lift
+  };
+  const u=1-p;
+  return {
+    x:u*u*source.x+2*u*p*control.x+p*p*mouth.x,
+    y:u*u*source.y+2*u*p*control.y+p*p*mouth.y,
+    control
+  };
+}
+
+export function burstDiameter(index){
+  return BURST_DIAMETER[Math.abs(index|0)%BURST_DIAMETER.length];
+}
+
+export function burstOffset(index,count,progress,radius){
+  const total=Math.max(count|0,1);
+  const p=clamp01(progress);
+  const theta=Math.PI*((index|0)+0.5)/total;
+  const travel=Number(radius)||0;
+  return {
+    x:Math.cos(theta)*travel*p,
+    y:-Math.sin(theta)*travel*4*p*(1-p)+24*p,
+    opacity:p<=0.5?1:(1-p)/0.5
+  };
+}
+
+// CSS px per second. At mid-life every droplet still has its own non-zero velocity.
+export function burstVelocity(index,count,progress,radius,life=HONEY_MOTION.burst.life){
+  const total=Math.max(count|0,1);
+  const p=clamp01(progress);
+  const theta=Math.PI*((index|0)+0.5)/total;
+  const span=Number(radius)||0;
+  const rate=life>0?1/life:0;
+  return {
+    vx:Math.cos(theta)*span*rate,
+    vy:(-Math.sin(theta)*span*4*(1-2*p)+24)*rate
+  };
+}
+
+function scaleFactor(scale){
+  const value=Number(scale);
+  if(!(value>0))return 0;
+  if(value<1)return 0.5;
+  return 1;
+}
+
+export function honeyParticles({t,tier=1,scale=1,source,mouth,flightCount=0,flightSize=0,burstCount=0,burstRadius=0}={}){
+  const factor=scaleFactor(scale);
+  const life=HONEY_MOTION.flight.life;
+  const flightTotal=flightCount>0?flightCount:flightDroplets(tier);
+  const droplet=flightSize>0?flightSize:flightDropletSize(tier);
+  const burstTotal=burstCount>0?burstCount:burstParticles(tier);
+  const travel=burstRadius>0?burstRadius:burstTravel(tier);
+  const list=[];
+  const flights=Math.floor(flightTotal*factor);
+  for(let index=0;index<flights;index++){
+    const emit=flightEmitTime(index,flightTotal);
+    const age=t-emit;
+    if(age<0||age>=life)continue;
+    const pose=flightPosition(age/life,source,mouth);
+    list.push({
+      key:'flight-'+index,owner:'honey-win',absolute:true,event:'honey-flight',
+      x:pose.x,y:pose.y,opacity:flightOpacity(age),
+      diameter:droplet,radius:droplet/2,
+      color:HONEY_TOKENS.flight,edge:HONEY_TOKENS.flightEdge
+    });
+  }
+  const age=t-HONEY_MOTION.burst.start;
+  const bursts=Math.floor(burstTotal*factor);
+  if(age>=0&&age<HONEY_MOTION.burst.life){
+    const progress=age/HONEY_MOTION.burst.life;
+    for(let index=0;index<bursts;index++){
+      const pose=burstOffset(index,burstTotal,progress,travel);
+      const velocity=burstVelocity(index,burstTotal,progress,travel);
+      const diameter=burstDiameter(index);
+      list.push({
+        key:'burst-'+index,owner:'honey-win',absolute:true,event:'win-burst',
+        x:mouth.x+pose.x,y:mouth.y+pose.y,opacity:pose.opacity,
+        vx:velocity.vx,vy:velocity.vy,
+        diameter,radius:diameter/2,
+        color:HONEY_TOKENS.burst[index%HONEY_TOKENS.burst.length]
+      });
+    }
+  }
+  return list;
+}

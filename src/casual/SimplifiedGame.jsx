@@ -136,11 +136,18 @@ export default function SimplifiedGame(){
     const plan=successPlan({victory:true,levelId:round.levelId,secured:deal.T,reduced});
     let alive=true;
     const handle=playWinCelebration({
-      victory:true,secured:deal.T,tier:plan.stars||0,
+      victory:true,secured:deal.T,target:level.target,tier:plan.tier||0,
       praise:root.querySelector('.sgv-win-praise'),
-      stars:[...root.querySelectorAll('.sgv-win-star')],
       tally:root.querySelector('.sgv-win-tally'),
+      subline:root.querySelector('.sgv-honey-subline'),
+      liquid:root.querySelector('.sgv-honey-liquid'),
+      overflow:root.querySelector('.sgv-honey-overflow'),
+      scrim:root.querySelector('.sgv-honey-scrim'),
+      mouth:root.querySelector('.sgv-honey-mouth'),
+      source:root.querySelector('.sgv-gold-counter'),
+      pot:root.querySelector('.sgv-pending-pot'),
       cta:root.querySelector('.sgv-end-cta'),
+      card:root.querySelector('.sgv-honey-win'),
       reduced,bus:fxRef.current,
       onSettled(){if(alive)setSuccessSettled(true);}
     });
@@ -151,6 +158,21 @@ export default function SimplifiedGame(){
       handle.cancel();
     };
   },[finished,victory,round.levelId,deal.T]);
+  useEffect(()=>{
+    const phone=rootRef.current;
+    if(!phone)return;
+    const apply=()=>{
+      const height=phone.getBoundingClientRect?.().height||phone.clientHeight||0;
+      if(!(height>0))return;
+      const style=getComputedStyle(phone);
+      const top=parseFloat(style.getPropertyValue('--safe-top'))||0;
+      const bottom=parseFloat(style.getPropertyValue('--safe-bottom'))||0;
+      phone.classList.toggle('sgv-honey-short',height-top-bottom<520);
+    };
+    apply();
+    window.addEventListener('resize',apply);
+    return ()=>window.removeEventListener('resize',apply);
+  },[finished,victory]);
   useEffect(()=>{
     const reduced=typeof window!=='undefined'&&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -521,12 +543,11 @@ export default function SimplifiedGame(){
           return;
         }
         if(finished){
-          if(victory)stopWin();
-          const decision=dismissLevelScreen(victory?'win':'lose','skip');
-          if(!decision.dismiss||decision.lock)return;
+          if(event.target?.closest?.('button'))return;
           event.preventDefault();
           event.stopPropagation();
-          applyEndDecision(decision);
+          if(victory)stopWin();
+          applyEndDecision(dismissLevelScreen(victory?'win':'lose','backdrop'));
           return;
         }
         if(!startOpen)return;
@@ -643,7 +664,7 @@ export default function SimplifiedGame(){
         }}/>}
       {finished&&<LevelEndScreen victory={victory} score={deal.T} target={level.target}
         label={victory?winLabel:'TRY AGAIN'} orchard={!!ending.orchard} settled={successSettled}
-        praise={ending.praise} stars={ending.stars||0} reduced={victory&&!ending.motion}
+        praise={ending.praise} reduced={victory&&!ending.motion}
         onPrimary={()=>{
           if(victory)stopWin();
           applyEndDecision(dismissLevelScreen(victory?'win':'lose','cta'));
