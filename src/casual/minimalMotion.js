@@ -1,6 +1,9 @@
 import {gsap} from 'gsap';
 import {bankPourAmounts} from './presentation.js';
 import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from './cardDirection.js';
+import {
+  STATIC_OUTCOME_MS,cardMotionMarks,reducedBankSummary,reducedCardSummary
+} from './motionSchedule.js';
 
 // All motions are presentation only. The game transaction is calculated once
 // before this module is called; interrupting an animation never changes rules.
@@ -12,6 +15,55 @@ const point=(node,root)=>{
   return {x:a.left-b.left+a.width/2,y:a.top-b.top+a.height/2};
 };
 const removeNodes=nodes=>nodes.forEach(node=>node?.remove());
+let clearStatic=()=>{};
+function replaceStatic(clear){
+  clearStatic();
+  const cancel=()=>{
+    clear();
+    if(clearStatic===cancel)clearStatic=()=>{};
+  };
+  clearStatic=cancel;
+  return cancel;
+}
+function placeStatic(root,className,text,origin){
+  const node=document.createElement('span');
+  node.className=className+' sgv-static-outcome';
+  node.textContent=text;
+  node.setAttribute('aria-hidden','true');
+  Object.assign(node.style,{left:origin.x+'px',top:origin.y+'px'});
+  root.appendChild(node);
+  return node;
+}
+function showReducedCard(root,view){
+  const summary=reducedCardSummary(view);
+  if(!root)return ()=>{};
+  const nodes=[];
+  if(summary.add){
+    const pot=root.querySelector('.sgv-pending-pot');
+    const origin=pot?point(pot,root):{x:root.clientWidth*.25,y:root.clientHeight*.63};
+    nodes.push(placeStatic(root,'sgv-pot-fly',summary.add,origin));
+  }
+  if(summary.cross){
+    const pill=root.querySelector('[data-factor="swing"]');
+    const origin=pill?point(pill,root):{x:root.clientWidth/2,y:root.clientHeight*.4};
+    nodes.push(placeStatic(root,'sgv-factor-tip',summary.cross,{x:origin.x,y:origin.y+28}));
+  }
+  const clear=()=>removeNodes(nodes);
+  const cancel=replaceStatic(clear);
+  const timer=setTimeout(cancel,STATIC_OUTCOME_MS);
+  return ()=>{clearTimeout(timer);cancel();};
+}
+function showReducedBank(root,fromScore,toScore){
+  const summary=reducedBankSummary(fromScore,toScore);
+  if(!root||!summary.gain)return ()=>{};
+  const mouth=root.querySelector('.sgv-chest-mouth')||root.querySelector('.sgv-chest-body');
+  const origin=mouth?point(mouth,root):{x:root.clientWidth*.7,y:root.clientHeight*.55};
+  const node=placeStatic(root,'sgv-bank-score-fly',summary.gain,origin);
+  const clear=()=>node.remove();
+  const cancel=replaceStatic(clear);
+  const timer=setTimeout(cancel,STATIC_OUTCOME_MS);
+  return ()=>{clearTimeout(timer);cancel();};
+}
 
 function flyingCard(source,root,isFlip){
   const r=source.getBoundingClientRect(),b=root.getBoundingClientRect();
@@ -44,11 +96,13 @@ export function animateCardAction({
   root,source,action,view,onMeter,onPot,onFactors,onSnap,onComplete,firstFactorAwards=[]
 }){
   if(!root||!source||reducedMotion()){
-    if(view.snap){onMeter(view.to);onSnap();onMeter(0);}
-    else {onMeter(view.to);onPot(view.rawPotAfter);}
-    onFactors(view.factorsAfter);
+    const summary=reducedCardSummary(view);
+    if(view.snap){onSnap();onMeter(summary.position);onPot(summary.rawPot);}
+    else {onMeter(summary.position);onPot(summary.rawPot);}
+    onFactors(summary.factors);
+    const clear=root&&reducedMotion()?showReducedCard(root,view):()=>{};
     onComplete();
-    return ()=>{};
+    return clear;
   }
   const {clone,start}=flyingCard(source,root,action.type==='flip');
   const centerNode=root.querySelector('.sgv-flight-center');
@@ -70,6 +124,8 @@ export function animateCardAction({
     clean();
     onComplete();
   }});
+  clearStatic();
+  const marks=cardMotionMarks({type:action.type,snap:!!view.snap,rewards:view.rewards||[]});
   source.style.opacity='.36';
   animations.push(gsap.fromTo(source,{scale:1},{
     scale:view.firstTap?1.12:.96,duration:view.firstTap?0.12:0.08,yoyo:true,repeat:1
@@ -88,18 +144,16 @@ export function animateCardAction({
     // A mystery Flip reveals its value before the meter moves.
     // Known Steer cards move the meter immediately on tap.
     onMeter(view.to);
-  },[],action.type==='flip'?.22:.08);
+  },[],marks.reveal);
   if(view.snap){
     // The attempted meter target is shown at the boundary before returning to 0.
     tl.to(clone,{x:centerX+(view.to>=0?130:-130),y:centerY-18,
       scale:.45,rotation:view.to>=0?35:-35,opacity:0,
       duration:.30,ease:'power3.in'},.24);
-    tl.call(()=>{if(alive){onSnap();onMeter(0);onPot(view.rawPotAfter);onFactors(view.factorsAfter);}},[],.53);
-    tl.call(()=>{},[],.91);
+    tl.call(()=>{if(alive){onSnap();onMeter(0);onPot(view.rawPotAfter);onFactors(view.factorsAfter);}},[],marks.snapAt);
+    tl.call(()=>{},[],marks.end);
   }else{
-    const tier3=view.rewards.length>0;
-    // A strict cross holds a beat so the pill ticks before the multiplied add.
-    const hold=view.rewards.some(reward=>reward.kind==='swing')?.05:0;
+    const tier3=marks.rewards!=null;
     const flyAdd=startAt=>{
       if(view.addedToPot<=0)return;
       const coin=potChip(root,center,view.addedToPot);
@@ -115,22 +169,22 @@ export function animateCardAction({
         animations.push(flyMultiplierRewards({
           root,rewards:view.rewards,firstFactorAwards
         }));
-      },[],.16);
-      tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],.58);
-      flyAdd(.63+hold);
+      },[],marks.rewards);
+      tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],marks.factors);
+      flyAdd(marks.add);
       tl.to(clone,{x:tray.x-start.x,y:tray.y-start.y,
         scale:.12,rotation:action.type==='flip'?330:5,opacity:0,
-        duration:.34,ease:'power2.in'},.64+hold);
-      tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],.96+hold);
-      tl.call(()=>{},[],1.08+hold);
+        duration:.34,ease:'power2.in'},marks.travel);
+      tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],marks.pot);
+      tl.call(()=>{},[],marks.end);
     }else{
-      flyAdd(.24);
+      flyAdd(marks.add);
       tl.to(clone,{x:tray.x-start.x,y:tray.y-start.y,
         scale:.12,rotation:action.type==='flip'?330:5,opacity:0,
         duration:.34,ease:'power2.in'},.25);
-      tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],.54);
-      tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],.55);
-      tl.call(()=>{},[],.62);
+      tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],marks.pot);
+      tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],marks.factors);
+      tl.call(()=>{},[],marks.end);
     }
   }
   return ()=>{
@@ -291,8 +345,10 @@ export function animateBankPour({
     onCount(toScore);
     onComplete();
   };
+  clearStatic();
   if(!root||!source||reducedMotion()||toScore<=fromScore){
-    settle();return ()=>{};
+    settle();
+    return root&&reducedMotion()?showReducedBank(root,fromScore,toScore):()=>{};
   }
   const bank=root.querySelector('.sgv-chest-body');
   const mouth=root.querySelector('.sgv-chest-mouth');
