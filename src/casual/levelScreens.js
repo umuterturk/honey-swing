@@ -1,4 +1,5 @@
 import {createElement} from 'react';
+import {VictoryJarArt} from './VictoryJarArt.js';
 
 // Screens are visual. They never take the presentation lock, so a card, Bank,
 // or Snap skip from the first frame still settles in that same tap.
@@ -123,45 +124,13 @@ function frontFoliage(){
   ];
 }
 
-function idleStars(){
-  return createElement('div',{className:'sgv-honey-idle-stars','aria-hidden':'true'},
-    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-a'},'✦'),
-    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-b'},'✦'),
-    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-c'},'✦'),
-    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-d'},'✦'),
-    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-e'},'✦'),
-    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-f'},'✦')
-  );
-}
-
 function heroJar(){
-  return createElement('div',{
-    className:'sgv-chest-art sgv-honey-hero-art','aria-hidden':'true'
-  },
-  createElement('img',{
-    className:'sgv-jar-layer sgv-jar-back',
-    src:'/empty-complete-jar.png',alt:'',draggable:'false'
-  }),
-  createElement('div',{className:'sgv-jar-mask sgv-jar-honey-layer'},
-    createElement('div',{className:'sgv-fluid-fill'},
-      createElement('span',{className:'sgv-fluid-surface'}),
-      createElement('span',{className:'sgv-fluid-bubble sgv-fluid-bubble-a'}),
-      createElement('span',{className:'sgv-fluid-bubble sgv-fluid-bubble-b'}),
-      createElement('span',{className:'sgv-fluid-bubble sgv-fluid-bubble-c'})
-    )
-  ),
-  createElement('div',{className:'sgv-jar-mask sgv-jar-lights','aria-hidden':'true'},
-    createElement('span',{className:'sgv-honey-internal-light'}),
-    createElement('span',{className:'sgv-honey-reflection'}),
-    createElement('span',{className:'sgv-honey-gleam-sweep'})
-  ),
-  createElement('img',{
-    className:'sgv-jar-layer sgv-jar-front',
-    src:'/empty-front-jar.png',alt:'',draggable:'false'
-  }),
-  idleStars(),
-  createElement('span',{className:'sgv-chest-mouth sgv-honey-mouth'})
-  );
+  return createElement(VictoryJarArt,{
+    fillPercent:0,
+    className:'sgv-honey-hero-art',
+    showIdleStars:true,
+    mouthClassName:'sgv-chest-mouth sgv-honey-mouth'
+  });
 }
 
 function scoreboard(score,target,staticCard){

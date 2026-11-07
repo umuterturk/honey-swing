@@ -627,7 +627,7 @@ test('honey styles are scoped under the end card and FX stays between the card a
   assert.match(css,/sgv-fluid-surface/);
   assert.match(css,/mask-position:\s*50% 50%/);
   assert.match(css,/-webkit-mask-position:\s*50% 50%/);
-  assert.match(css,/\.sgv-honey-win \.sgv-jar-mask\{/);
+  assert.match(css,/\.sgv-jar-mask\{/);
   assert.match(css,/transform-origin:\s*50% 50%/);
   assert.match(css,/transform:\s*translateY\(7%\) scale\(0\.82\)/);
   assert.match(css,/linear-gradient\(180deg,\s*#fff8c8 0%,\s*#ffe08a 14%,\s*#ffc83d 36%,\s*#ff9d0a 62%,\s*#f07800 100%\)/);
@@ -637,7 +637,7 @@ test('honey styles are scoped under the end card and FX stays between the card a
   assert.match(css,/#fffdf0/);
   assert.match(css,/#f49a00/);
   assert.match(css,/0 0 18px #ffd56acc/);
-  assert.match(css,/\.sgv-honey-win \.sgv-jar-front\{[^}]*opacity:\s*\.78/);
+  assert.match(css,/\.sgv-jar-front\{[^}]*opacity:\s*\.78/);
   assert.match(css,/rotate\(-14deg\)/);
   assert.match(css,/\.sgv-honey-reflection\{[^}]*width:\s*18%/);
   assert.match(css,/\.sgv-honey-gleam-sweep\{[^}]*width:\s*28%/s);

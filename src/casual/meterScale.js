@@ -1,9 +1,13 @@
+// End caps reserved for snap-danger wasps past ±limit. Marker + ticks share this band.
+export const METER_DANGER_EDGE_PCT=11;
+
 // The marker and every tick must use exactly the same geometric scale.
 export function meterPercent(value,limit){
   if(!Number.isFinite(value)||!Number.isFinite(limit)||limit<=0){
     throw new RangeError('Meter position and limit must be finite; limit must be positive');
   }
-  return Math.max(0,Math.min(100,50+(value/limit)*50));
+  const half=50-METER_DANGER_EDGE_PCT;
+  return Math.max(METER_DANGER_EDGE_PCT,Math.min(100-METER_DANGER_EDGE_PCT,50+(value/limit)*half));
 }
 
 // Eight intervals for divisible-by-four limits; otherwise five broadly spaced ticks.

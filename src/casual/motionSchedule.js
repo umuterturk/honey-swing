@@ -7,27 +7,40 @@ export const STATIC_OUTCOME_MS=1100;
 export function cardMotionMarks({type='steer',snap=false,rewards=[]}={}){
   const swingHold=rewards.some(reward=>reward?.kind==='swing')?0.05:0;
   const flip=type==='flip';
-  // §3: Flip face 0.000–0.140, meter glide 0.140–0.300, traces at the arrival.
-  // Steer traces start when its 0.180 glide ends. Snap's marker is home by 0.340.
+  // Part 1: fly to center and grow. Part 2: dive to the current needle and fade.
+  // Needle glides only after that landing. Flip still reveals its face in part 1.
   const faceEnd=flip?0.140:null;
-  const meterStart=flip?0.140:0;
-  const meterEnd=snap?0.340:flip?0.300:(rewards.length?0.180:0.080);
-  const base={faceEnd,meterStart,meterEnd,reveal:meterEnd};
-  if(snap)return {...base,rewards:null,snapAt:0.280,copyStart:0.140,end:0.340};
+  const centerAt=flip?0.280:0.220;
+  const cardArrive=flip?0.480:0.420;
+  const meterStart=cardArrive;
+  const meterEnd=thirds(cardArrive+(snap?0.180:0.200));
+  const base={faceEnd,centerAt,meterStart,meterEnd,reveal:meterEnd,cardArrive};
+  // Card arrives → needle settles → tap pours into Pot (or Snap C-arc path).
+  if(snap){
+    const snapAt=meterEnd;
+    return {
+      ...base,rewards:null,copyStart:cardArrive,snapAt,waspHit:snapAt,
+      heartFly:thirds(snapAt+0.060),heartHit:thirds(snapAt+0.720),
+      needleHome:thirds(snapAt+0.900),end:thirds(snapAt+1.370)
+    };
+  }
+  const pourStart=meterEnd;
+  const pourEnd=thirds(pourStart+0.72);
   if(!rewards.length){
-    return {...base,rewards:null,add:flip?0.300:0.24,pot:flip?0.500:0.54,
-      factors:flip?0.300:0.55,end:flip?0.500:0.62};
+    return {...base,rewards:null,pourStart,pourEnd,add:pourStart,pot:pourEnd,
+      factors:thirds(meterEnd+0.02),end:thirds(pourEnd+0.08)};
   }
   const rewardStart=meterEnd;
   const shift=rewardStart-0.16;
   return {
     ...base,
     rewards:rewardStart,
+    pourStart,pourEnd,
     factors:thirds(0.58+shift),
-    add:thirds(0.63+swingHold+shift),
+    add:pourStart,
     travel:thirds(0.64+swingHold+shift),
-    pot:thirds(0.96+swingHold+shift),
-    end:thirds(1.08+swingHold+shift)
+    pot:pourEnd,
+    end:thirds(Math.max(1.08+swingHold+shift,pourEnd+0.08))
   };
 }
 

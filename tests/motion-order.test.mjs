@@ -8,32 +8,90 @@ import {
 const flipReward=[{kind:'flip',value:3}];
 const crossingFlip=[{kind:'swing',value:2},{kind:'flip',value:2}];
 
-test('first Flip× reveals the face, glides the meter, then launches the reward',()=>{
+test('first Flip× reveals the face, centers, then arrives at the needle before rewards',()=>{
   const marks=cardMotionMarks({type:'flip',rewards:flipReward});
   assert.equal(marks.faceEnd,0.140);
-  assert.equal(marks.meterStart,0.140);
-  assert.equal(marks.meterEnd,0.300);
-  assert.equal(marks.rewards,0.300);
-  assert.ok(marks.faceEnd<=marks.meterStart);
+  assert.equal(marks.centerAt,0.280);
+  assert.equal(marks.cardArrive,0.480);
+  assert.equal(marks.meterStart,0.480);
+  assert.equal(marks.meterEnd,0.680);
+  assert.equal(marks.rewards,0.680);
+  assert.equal(marks.pourStart,0.680);
+  assert.equal(marks.pourEnd,1.400);
+  assert.ok(marks.faceEnd<=marks.centerAt);
+  assert.ok(marks.centerAt<=marks.cardArrive);
+  assert.ok(marks.cardArrive<=marks.meterStart);
   assert.ok(marks.meterEnd<=marks.rewards);
-  assert.ok(marks.factors<marks.add);
+  assert.ok(marks.pourStart<=marks.pourEnd);
+  assert.ok(marks.pourEnd<=marks.end);
 });
 
 test('a crossing Flip reveals before either reward particle',()=>{
   const marks=cardMotionMarks({type:'flip',rewards:crossingFlip});
   assert.equal(marks.faceEnd,0.140);
-  assert.equal(marks.meterEnd,0.300);
-  assert.equal(marks.rewards,0.300);
+  assert.equal(marks.meterEnd,0.680);
+  assert.equal(marks.rewards,0.680);
   assert.ok(marks.meterEnd<=marks.rewards);
-  assert.equal(marks.add,0.82);
+  assert.equal(marks.pourStart,0.680);
+  assert.equal(marks.add,0.680);
 });
 
-test('a Steer cross finishes the meter glide before its reward',()=>{
+test('a Steer cross finishes the meter glide before its reward and tap pour',()=>{
   const marks=cardMotionMarks({type:'steer',rewards:[{kind:'swing',value:2}]});
-  assert.equal(marks.meterStart,0);
-  assert.equal(marks.meterEnd,0.180);
-  assert.equal(marks.rewards,0.180);
+  assert.equal(marks.centerAt,0.220);
+  assert.equal(marks.cardArrive,0.420);
+  assert.equal(marks.meterStart,0.420);
+  assert.equal(marks.meterEnd,0.620);
+  assert.equal(marks.rewards,0.620);
+  assert.equal(marks.pourStart,0.620);
+  assert.equal(marks.pourEnd,1.340);
+  assert.ok(marks.centerAt<=marks.cardArrive);
   assert.ok(marks.meterEnd<=marks.rewards);
+  assert.ok(marks.meterEnd<=marks.pourStart);
+  assert.ok(marks.pourEnd<=marks.end);
+});
+
+test('Snap schedule moves the needle only after the card arrives',()=>{
+  const marks=cardMotionMarks({type:'steer',snap:true});
+  assert.equal(marks.centerAt,0.220);
+  assert.equal(marks.cardArrive,0.420);
+  assert.equal(marks.meterStart,0.420);
+  assert.equal(marks.copyStart,0.420);
+  assert.equal(marks.meterEnd,0.600);
+  assert.equal(marks.snapAt,0.600);
+  assert.equal(marks.waspHit,0.600);
+  assert.equal(marks.heartFly,0.660);
+  assert.equal(marks.heartHit,1.320);
+  assert.equal(marks.needleHome,1.500);
+  assert.equal(marks.end,1.970);
+  assert.ok(marks.centerAt<=marks.cardArrive);
+  assert.ok(marks.cardArrive<=marks.meterStart);
+  assert.ok(marks.copyStart<=marks.snapAt);
+  assert.ok(marks.snapAt<=marks.heartFly);
+  assert.ok(marks.heartFly<=marks.heartHit);
+  assert.ok(marks.heartHit<=marks.needleHome);
+  assert.ok(marks.needleHome<=marks.end);
+});
+
+test('ordinary plays center first, then land on the needle before it moves',()=>{
+  const steer=cardMotionMarks({type:'steer'});
+  assert.equal(steer.centerAt,0.220);
+  assert.equal(steer.cardArrive,0.420);
+  assert.equal(steer.meterStart,0.420);
+  assert.equal(steer.pourStart,0.620);
+  assert.equal(steer.pourEnd,1.340);
+  assert.ok(steer.centerAt<=steer.cardArrive);
+  assert.ok(steer.meterStart<=steer.meterEnd);
+  assert.ok(steer.meterEnd<=steer.pourStart);
+  assert.ok(steer.pourEnd<=steer.end);
+  const flip=cardMotionMarks({type:'flip'});
+  assert.equal(flip.faceEnd,0.140);
+  assert.equal(flip.centerAt,0.280);
+  assert.equal(flip.cardArrive,0.480);
+  assert.equal(flip.meterStart,0.480);
+  assert.ok(flip.faceEnd<=flip.centerAt);
+  assert.ok(flip.centerAt<=flip.meterStart);
+  assert.ok(flip.meterEnd<=flip.pourStart);
 });
 
 test('reward flyers use the final meter position, not a mid-glide marker',()=>{

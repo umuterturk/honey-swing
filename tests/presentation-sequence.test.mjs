@@ -102,12 +102,12 @@ test('a win shows the committed score and CTA at t=0, and a loss does not',()=>{
 });
 
 test('first outcomes use the audit copy once, with no Jackpot and no L8 pill',()=>{
-  assert.equal(introCopy('bank',17),'BANK 17');
+  assert.equal(introCopy('bank',17),'SAVE 17');
   assert.equal(introCopy('cross'),'CROSS');
   assert.equal(introCopy('flip'),'FLIP');
   assert.equal(introCopy('flipFactor',3),'×3');
   assert.equal(introCopy('zero'),'Pot safe.');
-  assert.equal(introCopy('snap'),'Pot lost. Bank safe.');
+  assert.equal(introCopy('snap'),'Pot lost. Savings safe.');
   assert.equal(introCopy('jackpot',2),null);
   const seen=new Set();
   assert.equal(takeFirstOutcome(seen,'flip').kind,'flip');

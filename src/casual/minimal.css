@@ -24,25 +24,35 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-lives{display:flex;align-items:center;gap:2px;min-width:72px;height:40px;justify-content:center;padding:4px 6px;background:#fff5e3d9;border:3px solid #fff7f1;border-radius:23px;box-shadow:0 4px 0 #d8c3b2;color:#f66391}
 .sgv-heart{font-size:26px;line-height:1;text-shadow:0 2px #ca4771;filter:drop-shadow(0 1px #fff)}
 .sgv-heart-empty{color:#cfcad5;text-shadow:0 1px #bcb3c2}
+.sgv-wasp-flyer{
+ position:absolute;z-index:40;height:42px;width:auto;margin-left:-21px;margin-top:-21px;
+ pointer-events:none;user-select:none;-webkit-user-select:none;will-change:transform,opacity;
+ filter:drop-shadow(0 3px 4px #5a204088);display:block;
+}
+.sgv-heart-pop{
+ position:absolute;z-index:41;margin-left:-0.5em;margin-top:-0.55em;font-size:28px;line-height:1;
+ color:#f66391;text-shadow:0 2px #ca4771;filter:drop-shadow(0 2px 3px #5a204066);
+ pointer-events:none;user-select:none;-webkit-user-select:none;will-change:transform,opacity;
+}
 
 /* Middle is a stable flex column; no popup/button text can alter meter width. */
 .sgv-middle{position:relative;min-width:0;width:100%;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:0}
 .sgv-mini-hint{flex:none;align-self:center;display:flex;align-items:center;justify-content:center;width:min(96%,375px);min-height:26px;height:26px;margin-top:4px;color:#76537f;font-size:clamp(12px,3vw,14px);line-height:1.2;font-weight:900;text-align:center;text-shadow:0 2px #fffee7;white-space:nowrap;overflow:hidden}
-.sgv-meter-section{position:relative;z-index:2;flex:none;width:min(100%,508.5px);min-width:0;max-width:100%;height:auto;min-height:clamp(118px,18dvh,168px);padding:4px clamp(14px,4.4vw,22px) 0;display:flex;flex-direction:column;justify-content:flex-end;overflow:visible}
+.sgv-meter-section{position:relative;z-index:2;flex:none;width:min(100%,540px);min-width:0;max-width:100%;height:auto;min-height:clamp(126px,19dvh,178px);padding:4px clamp(6px,2vw,12px) 0;display:flex;flex-direction:column;justify-content:flex-end;overflow:visible}
 .sgv-meter-caption{display:none}
 .sgv-meter-name{font-size:clamp(13px,3.5vw,17px);color:#7853aa;text-shadow:0 2px #fff7e5}
 .sgv-meter-current b{color:#e14d8d;font-variant-numeric:tabular-nums;font-size:17px}
 /* margin-top reserves crown room (scales with meter width); honeycomb pulls back into it. */
-.sgv-meter{position:relative;width:100%;min-width:0;height:135px;flex:none;overflow:visible;margin-top:calc(90% * 347 / 1758)}
-.sgv-meter-track{position:absolute;inset:4px 0 auto;height:52.5px;border-radius:30px;border:7px solid #f7b536;background:linear-gradient(90deg,#ec6e89 0%,#d598c0 22%,#dec7f2 40%,#fff0cf 50%,#dec7f2 60%,#d598c0 78%,#ec6e89 100%);box-shadow:0 6px 0 #9b6e94,0 9px 15px #65599868,inset 0 3px 3px #ffffff91,inset 0 -4px #a4698c63}
+.sgv-meter{position:relative;width:100%;min-width:0;height:148px;flex:none;overflow:visible;margin-top:calc(90% * 347 / 1758)}
+.sgv-meter-track{position:absolute;inset:4px 0 auto;height:60px;border-radius:18px;border:7px solid #f7b536;background:linear-gradient(90deg,#ec6e89 0%,#d598c0 22%,#dec7f2 40%,#fff0cf 50%,#dec7f2 60%,#d598c0 78%,#ec6e89 100%);box-shadow:0 6px 0 #9b6e94,0 9px 15px #65599868,inset 0 3px 3px #ffffff91,inset 0 -4px #a4698c63}
 /* Honeycomb at 0.9× meter width; bottom 117 native px overlap the track (scaled). Crown = 464-117. */
 .sgv-honeycomb{position:absolute;z-index:3;left:5%;top:4px;width:90%;height:auto;margin-top:calc(-90% * 347 / 1758);display:block;pointer-events:none;user-select:none;-webkit-user-select:none}
 /* Tap at 1/5 asset size (274→54.8); top ~1.6px overlap (8/5) seats it on the track. */
-.sgv-honey-tap{position:absolute;z-index:4;left:50%;top:54.9px;height:54.8px;width:auto;max-width:none;transform:translateX(-50%);pointer-events:none;user-select:none;-webkit-user-select:none;display:block}
+.sgv-honey-tap{position:absolute;z-index:4;left:50%;top:60.5px;height:54.8px;width:auto;max-width:none;transform:translateX(-50%);pointer-events:none;user-select:none;-webkit-user-select:none;display:block}
 .sgv-meter-centerline{position:absolute;z-index:1;left:50%;top:-8px;width:9px;height:53px;border-radius:5px;background:linear-gradient(#ff8b8b,#e52c51);border:2px solid #ffe2cf;box-shadow:0 0 8px #f134597c,0 1px 3px #aa5362;transform:translateX(-50%)}
-/* Marker rail shares the tick scale inset; z above honeycomb/tap/multipliers. */
-.sgv-meter-marker-rail{position:absolute;z-index:8;left:12px;right:12px;top:4px;height:52.5px;pointer-events:none}
-.sgv-meter-marker{position:absolute;top:50%;transform:translate(-50%,-50%);height:48px;width:44.8px;display:flex;align-items:center;justify-content:center;transition:left .32s cubic-bezier(.17,.72,.31,1.22);pointer-events:none}
+/* Marker rail shares the tick scale inset; z above honeycomb/tap/multipliers, under wasps. */
+.sgv-meter-marker-rail{position:absolute;z-index:8;left:12px;right:12px;top:4px;height:60px;pointer-events:none}
+.sgv-meter-marker{position:absolute;top:50%;transform:translate(-50%,-50%);height:52px;width:48px;display:flex;align-items:center;justify-content:center;transition:left .32s cubic-bezier(.17,.72,.31,1.22);pointer-events:none}
 .sgv-meter-marker.sgv-marker-gsap{transition:none}
 /* Identical inset and percentage scale for the marker and each in-track number.
    Horizontal inset must stay in sync with METER_SCALE_INSET_X (motionSchedule.js / flyerOrigin).
@@ -56,13 +66,23 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
  text-shadow:0 1px 2px #fffce5,0 0 3px #fffce5;
 }
 .sgv-meter-tick-zero{color:#fffef1;text-shadow:0 1px 2px #a12f51,0 0 2px #a12f51}
-/* Three engine factors, presented as small numeric charms hung from the meter. */
-.sgv-multipliers{position:absolute;z-index:5;left:9%;right:9%;top:68.5px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;justify-items:center;gap:3px}
-.sgv-multiplier-pill{position:relative;display:grid;place-items:center;min-width:clamp(48px,13vw,59px);height:31px;padding:2px 7px 3px;border-radius:18px;border:3px solid #fff8e9;box-shadow:0 4px 0 var(--pill-rim),0 6px 8px #776a8040,inset 0 2px #ffffffa1;background:linear-gradient(#fff5e0,var(--pill-color));font-size:clamp(16px,4.3vw,21px);font-weight:1000;color:var(--pill-text);text-shadow:0 1px #fff9;font-variant-numeric:tabular-nums;white-space:nowrap;transform-origin:50% 0%}
+.sgv-meter-wasp{
+ position:absolute;z-index:9;top:10px;height:42px;width:auto;
+ pointer-events:none;user-select:none;-webkit-user-select:none;
+ display:block;filter:drop-shadow(0 2px 3px #5a204088);
+}
+.sgv-meter-wasp-left{left:2px;transform:scaleX(-1)}
+.sgv-meter-wasp-right{right:2px;left:auto}
+/* Engine factors as small charms under the meter. Flip sits on the right. */
+.sgv-multipliers{position:absolute;z-index:5;left:9%;right:9%;top:76px;display:flex;align-items:flex-start;justify-content:flex-start;gap:clamp(6px,2vw,12px)}
+.sgv-multiplier-pill{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:clamp(48px,13vw,59px);height:31px;padding:2px 7px 3px;border-radius:18px;border:3px solid #fff8e9;box-shadow:0 4px 0 var(--pill-rim),0 6px 8px #776a8040,inset 0 2px #ffffffa1;background:linear-gradient(#fff5e0,var(--pill-color));font-size:clamp(16px,4.3vw,21px);font-weight:1000;color:var(--pill-text);text-shadow:0 1px #fff9;font-variant-numeric:tabular-nums;white-space:nowrap;transform-origin:50% 0%}
 .sgv-multiplier-pill::before{content:"";position:absolute;z-index:-1;left:50%;top:-19px;width:3px;height:19px;border-radius:2px;background:#f2e0cbd9;box-shadow:0 0 2px #8e6179;transform:translateX(-50%)}
-.sgv-multiplier-swing{--pill-color:#efc4ee;--pill-rim:#b688c3;--pill-text:#744c9b}
-.sgv-multiplier-flip{--pill-color:#c9eaff;--pill-rim:#7eb8db;--pill-text:#3f73a9}
+.sgv-multiplier-swing{--pill-color:#efc4ee;--pill-rim:#b688c3;--pill-text:#744c9b;min-width:clamp(58px,16vw,72px);padding-left:8px;padding-right:4px}
+.sgv-multiplier-flip{--pill-color:#c9eaff;--pill-rim:#7eb8db;--pill-text:#3f73a9;margin-left:auto;min-width:clamp(58px,16vw,72px);padding-left:8px;padding-right:4px}
 .sgv-multiplier-jackpot{--pill-color:#ffe29a;--pill-rim:#d9ac59;--pill-text:#a46a35}
+.sgv-multiplier-icon{display:block;width:22px;height:22px;object-fit:contain;flex:none;pointer-events:none;user-select:none;-webkit-user-select:none}
+.sgv-multiplier-bee{transform:scaleX(-1)}
+.sgv-multiplier-value{position:relative;z-index:1;line-height:1}
 .sgv-bonus-flyer{position:absolute;z-index:25;display:grid;place-items:center;min-width:43px;height:32px;border-radius:17px;padding:3px 7px 4px;border:3px solid #fff8cd;background:linear-gradient(#fff6bb,#ffd35f);box-shadow:0 3px 0 #d69b42,0 5px 10px #a8764d70;color:#885326;font-size:18px;font-weight:1000;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap;pointer-events:none;transform-origin:center;will-change:transform,opacity}
 .sgv-event-snap .sgv-meter-track{animation:sgv-meter-shake .4s ease}
 @keyframes sgv-meter-shake{0%,100%{translate:0 0}20%,60%{translate:-7px 0}40%,80%{translate:7px 0}}
@@ -736,21 +756,24 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
    destination. No separate Bank button and no duplicated secured HUD. */
 .sgv-bottle-pair{
  position:relative;z-index:2;flex:1;min-height:0;min-width:0;
- width:100%;max-width:480px;display:flex;align-items:center;justify-content:center;
- gap:clamp(12px,3.2vw,23px);padding:4px 0 clamp(8px,2dvh,18px);
+ width:100%;max-width:480px;
+ /* Stage height must fit Bank jar; Pot/Bank share top edge */
+ min-height:clamp(150px,28dvh,230px);
+ padding:4px 0 clamp(8px,2dvh,18px);
+ display:block;
 }
 .sgv-bottle-pair .sgv-pending-pot{
- position:relative;left:auto;right:auto;top:auto;bottom:auto;
- flex:0 1 clamp(96px,27vw,142px);width:clamp(96px,27vw,142px);
- height:clamp(115px,17.5dvh,169px);min-width:0;
- margin:clamp(12px,2.2dvh,20px) 0 0;
- border:0;border-radius:0;background:none;
+ position:absolute;left:50%;top:0;
+ transform:translateX(-50%);
+ width:clamp(96px,27vw,130px);
+ height:clamp(120px,22dvh,162px);
+ margin:0;border:0;border-radius:0;background:none;
  padding:0;display:block;overflow:visible;
- box-shadow:none;opacity:1;filter:none;appearance:none;
- /* This is an interactive BUTTON, not the old decorative Pot. */
+ box-shadow:none;appearance:none;
  pointer-events:auto;touch-action:manipulation;
  color:#865a3b;text-shadow:none;cursor:pointer;
- transform-origin:78% 82%;will-change:transform;
+ transform-origin:50% 82%;will-change:transform;
+ z-index:3;
 }
 .sgv-bottle-pair .sgv-pending-pot:disabled{
  opacity:1;filter:none;cursor:default;
@@ -758,13 +781,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-bottle-pair .sgv-pending-pot:focus-visible{
  outline:4px solid #3d72ee;outline-offset:4px;border-radius:22px;
 }
-.sgv-bottle-pair .sgv-pending-pot::before{
- content:"";position:absolute;z-index:0;
- left:5%;right:5%;top:auto;bottom:0;height:13%;
- border:3px solid #e5d7d3;border-radius:50%;
- background:linear-gradient(#f7f0ee,#a9a4bc);
- box-shadow:0 4px 0 #6f928988;pointer-events:none;
-}
+.sgv-bottle-pair .sgv-pending-pot::before,
 .sgv-bottle-pair .sgv-pending-pot::after{display:none}
 .sgv-pot-bottle-glass{
  position:absolute;z-index:1;left:10%;right:10%;top:19%;bottom:11%;
@@ -792,7 +809,8 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
  pointer-events:none;
 }
 .sgv-pot-pour-lip{
- position:absolute;z-index:5;top:19%;right:16%;width:2px;height:2px;
+ /* Slightly above Victory jar mouth so the stream reads from the rim. */
+ position:absolute;z-index:5;top:3%;left:28%;width:2px;height:2px;
  pointer-events:none;
 }
 .sgv-bottle-pair .sgv-pot-label{
@@ -812,33 +830,52 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-bottle-pair .sgv-pot-resonance{
  top:14%;right:-5px;font-size:9px;
 }
-.sgv-bottle-pair .sgv-chest-area{
- position:relative;flex:0 1 clamp(178px,51vw,290px);
- width:clamp(178px,51vw,290px);
- height:clamp(155px,24dvh,245px);
- min-width:0;max-width:none;min-height:0;
- align-items:center;justify-content:center;isolation:isolate;
+.sgv-bottle-pair .sgv-bank-bottle{
+ position:absolute;left:-12px;top:0;
+ width:clamp(104px,30.4vw,156px); /* 0.8× prior bank size */
+ height:clamp(130px,24dvh,184px);
+ z-index:2;
 }
+.sgv-bottle-pair .sgv-jar-pad{
+ position:absolute;z-index:0;left:6%;right:6%;bottom:-2%;
+ height:18%;border-radius:50%;
+ border:3px solid #e5d7d3;
+ background:linear-gradient(#f7f0ee,#cfc9d8 55%,#9a96b0);
+ box-shadow:inset 0 3px #ffffffaa,0 4px 0 #6f928988,0 6px 10px #4a6a6644;
+ pointer-events:none;
+}
+.sgv-bottle-pair .sgv-bank-bottle.sgv-bank-target-hit .sgv-victory-jar-art{
+ filter:drop-shadow(0 0 14px #ffe08a99) drop-shadow(0 6px 8px #488c665a);
+}
+.sgv-bottle-pair .sgv-bank-bottle .sgv-honey-gleam-sweep{
+ z-index:5;
+}
+.sgv-bottle-pair .sgv-jar-pad::after{
+ content:"";position:absolute;inset:18% 16% 42%;
+ border:3px solid #ebe4e2;border-bottom:0;border-radius:50%;
+ pointer-events:none;
+}
+.sgv-bottle-pair .sgv-victory-jar-art,
 .sgv-bottle-pair .sgv-chest-art{
- width:100%;height:100%;max-width:none;max-height:none;
- filter:drop-shadow(0 8px 8px #488c665a);
+ position:absolute;inset:0;width:100%;height:100%;
+ max-width:none;max-height:none;filter:drop-shadow(0 6px 8px #488c665a);
+ z-index:1;
 }
 .sgv-bottle-pair .sgv-chest-body{
- top:19%;bottom:17%;left:8%;right:8%;
- border-radius:25% 25% 23% 23% / 22% 22% 28% 28%;
+ /* Measurement host for pour only — no legacy glass bbox. */
+ position:absolute;inset:0;width:100%;height:100%;
+ border:0!important;border-radius:0;background:none!important;
+ box-shadow:none;overflow:visible;
 }
-.sgv-bottle-pair .sgv-chest-rim{
- left:32%;right:32%;top:13%;height:11%;
- border:4px solid #ffe8b4;border-radius:18px;
-}
-.sgv-bottle-pair .sgv-chest-mouth{top:15%;z-index:7}
+.sgv-bottle-pair .sgv-chest-rim{display:none!important}
+.sgv-bottle-pair .sgv-chest-mouth{top:10%;z-index:7}
 .sgv-bottle-pair .sgv-goal-progress{
  position:absolute;left:50%;right:auto;top:-9px;bottom:auto;
  transform:translateX(-50%);z-index:12;
  min-width:clamp(110px,29vw,147px);
  padding:5px 9px 6px;pointer-events:none;
 }
-.sgv-bottle-pair .sgv-chest-glow{bottom:8%}
+.sgv-bottle-pair .sgv-chest-glow{display:none}
 /* Keep only one main bottom action. Reserve the rest of the control strip
    for future abilities rather than filling it with redundant controls. */
 .sgv-actions{
@@ -860,25 +897,15 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 }
 .sgv-pour-stream-core{stroke:#ffbe46;opacity:1}
 @media(max-width:365px){
- .sgv-bottle-pair{gap:10px}
- .sgv-bottle-pair .sgv-pending-pot{flex-basis:94px;width:94px;height:118px}
- .sgv-bottle-pair .sgv-chest-area{flex-basis:178px;width:178px;height:161px}
- .sgv-bottle-pair .sgv-goal-progress{min-width:110px}
- 
+ .sgv-bottle-pair .sgv-bank-bottle{width:96px;height:118px}
+ .sgv-bottle-pair .sgv-pending-pot{width:88px;height:110px}
 }
 @media(max-height:730px){
  .sgv-bottle-pair{padding-bottom:4px}
- .sgv-bottle-pair .sgv-pending-pot{height:clamp(98px,16.5dvh,123px);margin-top:9px}
- .sgv-bottle-pair .sgv-chest-area{height:clamp(128px,21dvh,167px)}
- .sgv-bottle-pair .sgv-goal-progress{top:-7px}
 }
 @media(max-height:580px){
- .sgv-bottle-pair .sgv-pending-pot{height:96px;margin-top:7px}
- .sgv-bottle-pair .sgv-chest-area{height:120px}
  .sgv-bottle-pair .sgv-pot-label{top:33%;font-size:10px}
  .sgv-bottle-pair .sgv-pot-amount{top:52%;font-size:20px}
- 
- .sgv-bottle-pair .sgv-goal-progress{top:-7px;padding:3px 7px}
  .sgv-actions .sgv-flip{max-height:55px}
 }
 @media(prefers-reduced-motion:reduce){
@@ -889,16 +916,9 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 
 /* The little Pot is physically lifted to this open Bank mouth before pouring.
    The orange stream now spans only the short distance between glass lips. */
-.sgv-bottle-pair .sgv-chest-rim{
- left:10%;right:10%;top:17%;height:12%;
- border:4px solid #e8ffff;border-radius:50%;
- background:linear-gradient(#c4eaf5b0,#ffffff33);
- box-shadow:inset 0 2px 2px #f8ffffd6,0 2px 3px #72aeb884;
-}
-.sgv-bottle-pair .sgv-chest-rim:after{display:none}
-.sgv-bottle-pair .sgv-chest-mouth{top:21%;z-index:7}
+.sgv-bottle-pair .sgv-chest-mouth{top:10%;z-index:7}
 .sgv-bottle-pair .sgv-goal-progress{
- top:62%;bottom:auto;left:50%;right:auto;transform:translateX(-50%);
+ top:55%;bottom:auto;left:50%;right:auto;transform:translate(-50%,-50%);
  min-width:0;width:max-content;max-width:96%;
  background:transparent;border:0;border-radius:0;box-shadow:none;
  padding:0;gap:2px;display:flex;align-items:center;
@@ -958,12 +978,10 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 }
 @keyframes sgv-water-shimmer{from{opacity:.50}to{opacity:.85}}
 @media(max-width:365px){
- .sgv-bottle-pair .sgv-goal-progress{top:61%}
  .sgv-bottle-pair .sgv-goal-progress strong{font-size:18px}
  .sgv-bottle-pair .sgv-goal-progress span{font-size:9px}
 }
 @media(max-height:580px){
- .sgv-bottle-pair .sgv-goal-progress{top:61%}
  .sgv-bottle-pair .sgv-goal-progress strong{font-size:17px}
 }
 @media(prefers-reduced-motion:reduce){
@@ -974,39 +992,12 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 }
 
 /* The small bottle is the Bank CTA. No separate payout pill. */
-.sgv-bottle-pair .sgv-pot-bankable .sgv-pot-bottle-glass{
- border-color:#efffff;
- box-shadow:inset 5px 3px 6px #ffffffb2,inset -5px -5px 8px #9bd4df59,
-   0 0 0 3px #d5fff1ad,0 0 15px 5px #96ffe1a1,0 4px 8px #7b9f9c5c;
+.sgv-bottle-pair .sgv-pot-bankable .sgv-jar-front{
+ filter:brightness(1.08);
 }
-.sgv-bottle-pair .sgv-pot-bankable::after{
- content:"";display:block;position:absolute;z-index:6;
- inset:19% 8% 10%;border:2px solid #dffff4bd;
- border-radius:31% 31% 27% 27%/21% 21% 27% 27%;
- background:none;box-shadow:0 0 10px 2px #94ffdb8f;
- pointer-events:none;animation:sgv-bankable-breathe 2.2s ease-in-out infinite;
-}
-.sgv-pot-bankable .sgv-pot-glass-shine{
- top:-18%;bottom:auto;left:-54%;width:34%;height:145%;border-radius:0;
- background:linear-gradient(90deg,transparent,#ffffff22 12%,#ffffffc8 52%,transparent);
- filter:none;transform:skewX(-19deg);
- animation:sgv-bankable-shine 2.8s ease-in-out infinite;
-}
-@keyframes sgv-bankable-shine{
-  0%,23%{left:-54%;opacity:0}
-  28%{opacity:.85}
-  55%{left:127%;opacity:.75}
-  62%,100%{left:127%;opacity:0}
-}
-@keyframes sgv-bankable-breathe{
-  0%,100%{opacity:.42;filter:brightness(1)}
-  50%{opacity:.96;filter:brightness(1.13)}
-}
-.sgv-bottle-pair .sgv-pot-bankable:active .sgv-pot-bottle-glass{filter:brightness(1.13)}
+.sgv-bottle-pair .sgv-pot-bankable:active .sgv-jar-front{filter:brightness(1.13)}
 @media(prefers-reduced-motion:reduce){
- .sgv-pot-bankable .sgv-pot-glass-shine,
- .sgv-bottle-pair .sgv-pot-bankable::after{animation:none}
- .sgv-bottle-pair .sgv-pot-bankable::after{opacity:.75}
+ .sgv-bottle-pair .sgv-pot-bankable .sgv-jar-front{filter:brightness(1.08)}
 }
 
 
@@ -1043,9 +1034,6 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-bottle-pair .sgv-chest-rim{display:none!important}
 .sgv-bottle-pair .sgv-pot-bottle-glass{
  border-top:3px solid #b4eef6cc;
-}
-.sgv-bottle-pair .sgv-chest-body{
- border-top:3px solid #b9effac9;
 }
 
 /* Short, temporary fracture on the pending Pot; the two hazards differ:
@@ -1117,7 +1105,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 /* Center the secured progress inside the glass, away from the platform lip.
    No plaque or new background; use a light type outline for fluid contrast. */
 .sgv-bottle-pair .sgv-goal-progress{
- left:50%;top:50%;bottom:auto;right:auto;
+ left:50%;top:55%;bottom:auto;right:auto;
  transform:translate(-50%,-50%);
  display:flex;flex-direction:column;align-items:center;justify-content:center;
  gap:3px;max-width:96%;width:max-content;min-width:0;
@@ -1563,15 +1551,19 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 @media(prefers-reduced-motion:reduce){
   .sgv-honey-win .sgv-honey-idle-star{animation:none;opacity:.7;transform:none}
 }
-.sgv-honey-win .sgv-jar-layer,
-.sgv-honey-win .sgv-jar-mask{
+.sgv-victory-jar-art,
+.sgv-honey-win .sgv-honey-hero-art{
+  position:relative;width:100%;height:100%;overflow:visible;
+}
+.sgv-jar-layer,
+.sgv-jar-mask{
   position:absolute;inset:0;width:100%;height:100%;
   pointer-events:none;
 }
-.sgv-honey-win .sgv-jar-layer{
+.sgv-jar-layer{
   object-fit:fill;display:block;user-select:none;
 }
-.sgv-honey-win .sgv-jar-mask{
+.sgv-jar-mask{
   mask-image:url('/honey-fill-mask.png');
   -webkit-mask-image:url('/honey-fill-mask.png');
   mask-size:100% 100%;
@@ -1583,10 +1575,10 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
   transform-origin:50% 50%;
   transform:translateY(7%) scale(0.82);
 }
-.sgv-honey-win .sgv-jar-back{z-index:1}
-.sgv-honey-win .sgv-jar-honey-layer{z-index:2}
-.sgv-honey-win .sgv-jar-lights{z-index:3}
-.sgv-honey-win .sgv-jar-front{z-index:4;opacity:.78}
+.sgv-jar-back{z-index:1}
+.sgv-jar-honey-layer{z-index:2}
+.sgv-jar-lights{z-index:3}
+.sgv-jar-front{z-index:4;opacity:.78}
 .sgv-jar-honey-layer .sgv-fluid-fill{
   border-radius:0;left:0;right:0;bottom:0;
   background:
@@ -1602,19 +1594,19 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
   background:radial-gradient(ellipse at 50% 35%,#fffdf0 0%,#ffe08a 55%,#f49a00 100%);
   box-shadow:0 0 18px #ffd56acc,0 0 8px #fff8c8aa;
 }
-.sgv-honey-win .sgv-honey-internal-light{
+.sgv-honey-internal-light{
   position:absolute;inset:0;pointer-events:none;
   background:
     radial-gradient(ellipse at 38% 30%,#ffffffcc 0%,transparent 36%),
     radial-gradient(ellipse at 50% 58%,#ffd56a55 0%,transparent 55%);
   mix-blend-mode:screen;opacity:.85;
 }
-.sgv-honey-win .sgv-honey-reflection{
+.sgv-honey-reflection{
   position:absolute;left:14%;top:-18%;width:18%;height:140%;
   opacity:.38;pointer-events:none;transform:rotate(-14deg);transform-origin:center;
   background:linear-gradient(90deg,transparent,#fffef8,transparent);
 }
-.sgv-honey-win .sgv-honey-gleam-sweep{
+.sgv-honey-gleam-sweep{
   position:absolute;z-index:auto;top:0;bottom:0;width:28%;left:0;border-radius:40%;
   background:linear-gradient(90deg,transparent,#ffffffee,transparent);
   opacity:0;pointer-events:none;transform:translateX(-120%);

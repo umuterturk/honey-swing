@@ -118,12 +118,12 @@ export const INTRO={
   fadeOut:[0.900,1.100]
 };
 const INTRO_COPY={
-  bank:value=>'BANK '+value,
+  bank:value=>'SAVE '+value,
   cross:()=>'CROSS',
   flip:()=>'FLIP',
   flipFactor:value=>'×'+value,
   zero:()=>'Pot safe.',
-  snap:()=>'Pot lost. Bank safe.'
+  snap:()=>'Pot lost. Savings safe.'
 };
 export function introCopy(kind,value){
   const write=INTRO_COPY[kind];

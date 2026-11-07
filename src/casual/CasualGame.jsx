@@ -67,9 +67,9 @@ export default function CasualGame(){
  const tip=won?'Beautiful! The jar is full!':snaps>=FIRST_LEVEL.maxSnaps?'Out of chances. Try again!':
    turn===0?'Tap a card to move the swing!':
    event.type==='snap'?'Oops! Stay inside the purple arc!':
-   canBank&&pending>0?'Save your stars! Tap BANK.':
+   canBank&&pending>0?'Save your honey! Tap SAVE.':
    event.type==='bank'?'Amazing! Keep collecting!':
-   'Watch the swing. Bank before it snaps!';
+   'Watch the swing. Save before it snaps!';
  const play=(action,source)=>{
    if(over||paused||busyRef.current)return;
    const next=stepFirstLevel(round,action);
@@ -129,7 +129,7 @@ export default function CasualGame(){
      </div>
      <div className="sg-buttons">
        <button type="button" className="sg-button sg-bank" disabled={!canBank} onClick={()=>play({type:'bank'})}>
-         <span className="sg-button-icon sg-chest">▣<i>★</i></span><span className="sg-action-name">Bank</span>
+         <span className="sg-button-icon sg-chest">▣<i>★</i></span><span className="sg-action-name">Save</span>
        </button>
        <button type="button" className="sg-button sg-flip" disabled={!canFlip} onClick={event=>play({type:'flip'},event.currentTarget.querySelector('.sg-next-card'))}>
          <span className="sg-button-icon sg-arrow">⟳</span><span className="sg-action-name">Flip</span>

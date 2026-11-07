@@ -1,5 +1,5 @@
 import {gsap} from 'gsap';
-import {bankPourAmounts} from './presentation.js';
+import {bankPourAmounts,fluidFillPercent} from './presentation.js';
 import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from './cardDirection.js';
 import {meterPercent} from './meterScale.js';
 import {
@@ -14,6 +14,31 @@ const reducedMotion=()=>typeof window!=='undefined'&&
 const point=(node,root)=>{
   const a=node.getBoundingClientRect(),b=root.getBoundingClientRect();
   return {x:a.left-b.left+a.width/2,y:a.top-b.top+a.height/2};
+};
+// Top of the honey meniscus — geometric center sinks into the fluid.
+const honeySurfacePoint=(root,jar,fallback)=>{
+  const surface=jar?.querySelector?.('.sgv-fluid-surface');
+  const fill=jar?.querySelector?.('.sgv-fluid-fill');
+  const node=surface||fill||fallback;
+  if(!node)return null;
+  const a=node.getBoundingClientRect(),b=root.getBoundingClientRect();
+  return {x:a.left-b.left+a.width/2,y:a.top-b.top+(surface?1:0)};
+};
+const tapSpoutPoint=(root,tap)=>{
+  const a=tap.getBoundingClientRect(),b=root.getBoundingClientRect();
+  return {x:a.left-b.left+a.width/2,y:a.top-b.top+a.height*.88};
+};
+const pourStreamPath=(start,end)=>{
+  const dx=end.x-start.x,dy=end.y-start.y;
+  return 'M '+start.x+' '+start.y+' C '+(start.x+dx*.36)+' '+(start.y-8)+
+    ', '+(end.x-dx*.25)+' '+(end.y-Math.max(6,dy*.20))+', '+end.x+' '+end.y;
+};
+const paintJarFill=(jar,secured,fillTarget,{max=76,smooth=true}={})=>{
+  const fillEl=jar?.querySelector?.('.sgv-fluid-fill');
+  if(!fillEl||!Number.isFinite(fillTarget)||fillTarget<=0)return;
+  const pct=fluidFillPercent(secured,fillTarget,{max,smooth});
+  fillEl.style.height=pct+'%';
+  fillEl.style.opacity=pct>0?'1':'0';
 };
 const removeNodes=nodes=>nodes.forEach(node=>node?.remove());
 let clearStatic=()=>{};
@@ -83,22 +108,110 @@ function flyingCard(source,root,isFlip){
   root.appendChild(clone);
   return {clone,start:{x:x+width/2,y:y+height/2}};
 }
-function potChip(root,origin,value){
-  const chip=document.createElement('span');
-  chip.className='sgv-pot-fly';
-  chip.setAttribute('aria-hidden','true');
-  chip.textContent='+'+value;
-  Object.assign(chip.style,{left:origin.x+'px',top:origin.y+'px'});
-  root.appendChild(chip);
-  return chip;
+function snapSide(view){
+  return (view?.to??0)>=0?'right':'left';
+}
+
+function waspSelector(side){
+  return side==='right'?'.sgv-meter-wasp-right':'.sgv-meter-wasp-left';
+}
+
+// Marker left % of the rail so the needle sits on the hit-side wasp (past ±limit ticks).
+function waspMarkerPercent(root,side){
+  const rail=root.querySelector('.sgv-meter-marker-rail');
+  const wasp=root.querySelector(waspSelector(side));
+  if(!rail||!wasp)return side==='right'?100:0;
+  const railBox=rail.getBoundingClientRect();
+  const waspBox=wasp.getBoundingClientRect();
+  if(railBox.width<=0)return side==='right'?100:0;
+  const center=waspBox.left+waspBox.width/2;
+  return Math.max(-6,Math.min(106,((center-railBox.left)/railBox.width)*100));
+}
+
+function pulseWasp(root,side,{scale=1.22,repeat=3,duration=0.14}={}){
+  const wasp=root.querySelector(waspSelector(side));
+  if(!wasp)return ()=>{};
+  // Left wasp mirrors via scaleX(-1); pulse both axes without dropping the flip.
+  const sx=side==='left'?-1:1;
+  const tw=gsap.fromTo(wasp,
+    {scaleX:sx,scaleY:1},
+    {scaleX:sx*scale,scaleY:scale,duration,yoyo:true,repeat,ease:'power1.inOut',
+      onComplete:()=>gsap.set(wasp,{clearProps:'scale,scaleX,scaleY'})});
+  return ()=>{tw.kill();gsap.set(wasp,{clearProps:'scale,scaleX,scaleY'});};
+}
+
+// C-arc (flipped C from the right): wasp tumbles to the heart; heart swells and falls.
+export function animateSnapHeartLoss(root,side,onPop){
+  if(!root||reducedMotion()){onPop?.();return ()=>{};}
+  const lives=root.querySelector('.sgv-lives');
+  const filled=lives&&[...lives.querySelectorAll('.sgv-heart:not(.sgv-heart-empty)')].at(-1);
+  const wasp=root.querySelector(waspSelector(side));
+  if(!filled||!wasp){onPop?.();return ()=>{};}
+  const start=point(wasp,root);
+  const end=point(filled,root);
+  const flyer=wasp.cloneNode(true);
+  flyer.className='sgv-wasp-flyer';
+  flyer.removeAttribute('style');
+  Object.assign(flyer.style,{left:start.x+'px',top:start.y+'px'});
+  root.appendChild(flyer);
+  const prevOpacity=wasp.style.opacity;
+  wasp.style.opacity='0';
+  const dx=end.x-start.x,dy=end.y-start.y;
+  // Left = open-right C (bulge left). Right = flipped C (bulge right).
+  const bulge=side==='left'?-1:1;
+  const reach=Math.max(72,Math.min(130,Math.abs(dx)*0.55+Math.abs(dy)*0.25));
+  const mid1={x:dx*0.22+bulge*reach,y:dy*0.28-18};
+  const mid2={x:dx*0.62+bulge*reach*0.45,y:dy*0.72-8};
+  const nodes=[flyer];
+  const tweens=[];
+  const restore=()=>{
+    wasp.style.opacity=prevOpacity;
+    for(const tw of tweens)tw.kill?.();
+    for(const node of nodes)node.remove();
+  };
+  const sx=side==='left'?-1:1;
+  const spin=side==='left'?-200:200;
+  const flight=0.66;
+  const tl=gsap.timeline({onComplete:restore});
+  tl.fromTo(flyer,
+    {opacity:1,x:0,y:0,scaleX:sx,scaleY:1,rotation:side==='left'?-18:18},
+    {keyframes:[
+      {x:mid1.x,y:mid1.y,scaleX:-sx,scaleY:1.06,rotation:spin*0.45,duration:flight*0.38,ease:'power1.out'},
+      {x:mid2.x,y:mid2.y,scaleX:sx,scaleY:1.1,rotation:spin*0.78,duration:flight*0.32,ease:'none'},
+      {x:dx,y:dy,scaleX:-sx,scaleY:1.05,rotation:spin,duration:flight*0.30,ease:'power2.in'}
+    ]},0);
+  tl.call(()=>{
+    const heart=document.createElement('span');
+    heart.className='sgv-heart-pop';
+    heart.textContent='♥';
+    heart.setAttribute('aria-hidden','true');
+    Object.assign(heart.style,{left:end.x+'px',top:end.y+'px'});
+    root.appendChild(heart);
+    nodes.push(heart);
+    onPop?.();
+    const fall=gsap.timeline({onComplete:()=>heart.remove()});
+    fall.fromTo(heart,{opacity:1,scale:1,x:0,y:0,rotation:0},
+      {scale:1.85,y:-10,duration:0.18,ease:'power2.out'},0);
+    fall.to(heart,{y:96,x:bulge*-18,rotation:bulge*-28,scale:1.55,duration:0.42,ease:'power2.in'},0.16);
+    fall.to(heart,{opacity:0,scale:1.15,duration:0.18,ease:'power1.in'},0.42);
+    tweens.push(fall);
+  },[],flight);
+  tl.to(flyer,{opacity:0,scaleX:sx*0.7,scaleY:0.7,duration:0.22,ease:'power1.in'},flight);
+  return ()=>{tl.kill();restore();};
 }
 
 export function animateCardAction({
-  root,source,action,view,onMeter,onPot,onFactors,onSnap,onComplete,firstFactorAwards=[]
+  root,source,action,view,onMeter,onPot,onFactors,onSnap,onChanceLost,onComplete,
+  firstFactorAwards=[]
 }){
   if(!root||!source||reducedMotion()){
     const summary=reducedCardSummary(view);
-    if(view.snap){onSnap();onMeter(summary.position);onPot(summary.rawPot);}
+    if(view.snap){
+      onSnap();
+      onChanceLost?.();
+      onMeter(summary.position);
+      onPot(summary.rawPot);
+    }
     else {onMeter(summary.position);onPot(summary.rawPot);}
     onFactors(summary.factors);
     const clear=root&&reducedMotion()?showReducedCard(root,view):()=>{};
@@ -107,9 +220,7 @@ export function animateCardAction({
   }
   const {clone,start}=flyingCard(source,root,action.type==='flip');
   const centerNode=root.querySelector('.sgv-flight-center');
-  const potNode=root.querySelector('.sgv-pending-pot');
   const center=centerNode?point(centerNode,root):{x:root.clientWidth/2,y:root.clientHeight*.43};
-  const tray=potNode?point(potNode,root):{x:root.clientWidth*.25,y:root.clientHeight*.63};
   const nodes=[clone],animations=[];
   const originalOpacity=source.style.opacity;
   const centerX=center.x-start.x,centerY=center.y-start.y;
@@ -128,29 +239,70 @@ export function animateCardAction({
   clearStatic();
   const marks=cardMotionMarks({type:action.type,snap:!!view.snap,rewards:view.rewards||[]});
   const limit=view.meterLimit||8;
+  const side=snapSide(view);
   const finalPercent=meterPercent(view.snap?0:view.to,limit);
+  const waspPercent=view.snap?waspMarkerPercent(root,side):finalPercent;
   const track=root.querySelector('.sgv-meter-track');
   const marker=root.querySelector('.sgv-meter-marker');
-  const finalOrigin=track?flyerOrigin({
-    track:track.getBoundingClientRect(),root:root.getBoundingClientRect(),finalPercent
+  const needleValue=marker?.querySelector('.sgv-meter-needle-value');
+  const rootBox=root.getBoundingClientRect();
+  const trackBox=track?.getBoundingClientRect();
+  // Part 2 aims at the needle's current seat; the needle only moves after landing.
+  const needleHere=marker?point(marker,root):
+    (trackBox?flyerOrigin({track:trackBox,root:rootBox,finalPercent:50}):
+      {x:root.clientWidth/2,y:root.clientHeight*.28});
+  const aimX=needleHere.x-start.x,aimY=needleHere.y-start.y;
+  const finalOrigin=trackBox?flyerOrigin({
+    track:trackBox,root:rootBox,finalPercent:view.snap?waspPercent:finalPercent
   }):null;
   if(marker){
     marker.classList.add('sgv-marker-gsap');
-    const release=()=>marker.classList.remove('sgv-marker-gsap');
-    if(!view.snap){
+    const release=()=>{
+      marker.classList.remove('sgv-marker-gsap');
+      if(needleValue)needleValue.textContent=String(Math.abs(view.snap?0:view.to));
+    };
+    if(view.snap){
+      const fromLeft=marker.style.left||'50%';
+      const hitDur=Math.max(0.001,marks.meterEnd-(marks.meterStart||0));
+      const homeDur=Math.max(0.001,marks.end-marks.needleHome);
+      const hit=gsap.fromTo(marker,{left:fromLeft},{
+        left:waspPercent+'%',duration:hitDur,delay:marks.meterStart||0,
+        ease:'power2.out',overwrite:'auto'
+      });
+      const home=gsap.to(marker,{
+        left:finalPercent+'%',duration:homeDur,delay:marks.needleHome,
+        ease:'power2.inOut',overwrite:'auto'
+      });
+      animations.push(()=>{hit.kill();home.kill();release();});
+    }else{
       const glide=gsap.fromTo(marker,{left:marker.style.left||'50%'},{
         left:finalPercent+'%',duration:Math.max(0.001,marks.meterEnd-(marks.meterStart||0)),
         delay:marks.meterStart||0,ease:'power2.out',overwrite:'auto'
       });
       animations.push(()=>{glide.kill();release();});
-    }else animations.push(release);
+    }
   }
   source.style.opacity='.36';
   animations.push(gsap.fromTo(source,{scale:1},{
     scale:view.firstTap?1.12:.96,duration:view.firstTap?0.12:0.08,yoyo:true,repeat:1
   }));
-  tl.to(clone,{x:centerX,y:centerY,scale:1.13,
-    rotation:action.type==='flip'?160:-5,duration:.23,ease:'power2.out'},0);
+  const centerDur=marks.centerAt||0.22;
+  const diveDur=Math.max(0.12,(marks.cardArrive||0.42)-centerDur);
+  const fadeDur=Math.min(0.12,diveDur*0.35);
+  // Part 1: rise to center and grow. Part 2: dive to the current needle and shrink;
+  // opacity drops only in the late end of that landing.
+  tl.fromTo(clone,{scale:.94,opacity:1},
+    {x:centerX,y:centerY,scale:1.38,rotation:action.type==='flip'?160:-6,
+      duration:centerDur,ease:'power2.out'},0);
+  tl.to(clone,{x:aimX,y:aimY,scale:.16,rotation:action.type==='flip'?200:-2,
+    duration:diveDur,ease:'power2.out'},centerDur);
+  tl.to(clone,{opacity:0,duration:fadeDur,ease:'power2.out'},centerDur+diveDur-fadeDur);
+  const needleArt=marker?.querySelector('.sgv-meter-needle');
+  tl.call(()=>{
+    if(!alive||!needleArt)return;
+    animations.push(gsap.fromTo(needleArt,{scale:1},
+      {scale:1.22,duration:.10,yoyo:true,repeat:1,ease:'power1.out'}));
+  },[],marks.meterStart);
   if(action.type==='flip'&&marks.faceEnd!=null)tl.call(()=>{
     if(!alive)return;
     clone.className='sgv-card sgv-flying-card sgv-card-'+cardDirection(view.signedCard);
@@ -159,26 +311,50 @@ export function animateCardAction({
       '<path d="'+CARD_ARROW_PATH+'"/></svg>'+
       '<strong>'+Math.abs(view.signedCard)+'</strong>';
   },[],marks.faceEnd);
-  tl.call(()=>{if(alive)onMeter(view.to);},[],view.snap?marks.copyStart:marks.meterEnd);
+  tl.call(()=>{
+    if(!alive)return;
+    if(view.snap){
+      // Keep React meter at the pre-snap seat; GSAP owns left through the wasp hit.
+      if(needleValue)needleValue.textContent=String(Math.abs(view.to));
+    }else onMeter(view.to);
+  },[],view.snap?marks.copyStart:marks.meterEnd);
   if(view.snap){
-    // The attempted meter target is shown at the boundary before returning to 0.
-    tl.to(clone,{x:centerX+(view.to>=0?130:-130),y:centerY-18,
-      scale:.45,rotation:view.to>=0?35:-35,opacity:0,
-      duration:.30,ease:'power3.in'},.24);
-    tl.call(()=>{if(alive){onSnap();onPot(view.rawPotAfter);onFactors(view.factorsAfter);}},[],marks.snapAt);
+    tl.call(()=>{
+      if(!alive)return;
+      animations.push(pulseWasp(root,side));
+      onSnap();
+      onPot(view.rawPotAfter);
+      onFactors(view.factorsAfter);
+      if(!view.showChances)onChanceLost?.();
+    },[],marks.snapAt);
+    tl.call(()=>{
+      if(!alive)return;
+      if(view.showChances){
+        animations.push(animateSnapHeartLoss(root,side,()=>{if(alive)onChanceLost?.();}));
+      }
+    },[],marks.heartFly);
+    tl.call(()=>{if(alive&&needleValue)needleValue.textContent='0';},[],marks.needleHome);
+    // React left catches up only after GSAP has parked the needle at 0.
     tl.call(()=>{if(alive)onMeter(0);},[],marks.end);
   }else{
-    const tier3=marks.rewards!=null;
-    const flyAdd=startAt=>{
-      if(view.addedToPot<=0)return;
-      const coin=potChip(root,center,view.addedToPot);
-      nodes.push(coin);
-      gsap.set(coin,{opacity:0,scale:.6});
-      tl.to(coin,{x:tray.x-center.x,y:tray.y-center.y,
-        opacity:1,scale:1.12,duration:.28,ease:'power2.out'},startAt);
-      tl.to(coin,{opacity:0,scale:.52,duration:.12},startAt+.26);
+    const startTapPour=()=>{
+      if(!alive)return;
+      const fromPot=Number.isFinite(view.rawPotBefore)
+        ?view.rawPotBefore:Math.max(0,(view.rawPotAfter||0)-(view.addedToPot||0));
+      if((view.addedToPot||0)<=0){
+        onPot(view.rawPotAfter);
+        return;
+      }
+      animations.push(animateTapPour({
+        root,
+        fromPot,
+        toPot:view.rawPotAfter,
+        fillTarget:view.potTarget,
+        added:view.addedToPot,
+        onPourProgress:value=>{if(alive)onPot(value);}
+      }));
     };
-    if(tier3){
+    if(marks.rewards!=null){
       tl.call(()=>{
         if(!alive)return;
         animations.push(flyMultiplierRewards({
@@ -186,18 +362,12 @@ export function animateCardAction({
         }));
       },[],marks.rewards);
       tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],marks.factors);
-      flyAdd(marks.add);
-      tl.to(clone,{x:tray.x-start.x,y:tray.y-start.y,
-        scale:.12,rotation:action.type==='flip'?330:5,opacity:0,
-        duration:.34,ease:'power2.in'},marks.travel);
-      tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],marks.pot);
+      tl.call(startTapPour,[],marks.pourStart||marks.meterEnd);
+      tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],marks.pourEnd||marks.pot);
       tl.call(()=>{},[],marks.end);
     }else{
-      flyAdd(marks.add);
-      tl.to(clone,{x:tray.x-start.x,y:tray.y-start.y,
-        scale:.12,rotation:action.type==='flip'?330:5,opacity:0,
-        duration:.34,ease:'power2.in'},.25);
-      tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],marks.pot);
+      tl.call(startTapPour,[],marks.pourStart||marks.meterEnd);
+      tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],marks.pourEnd||marks.pot);
       tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],marks.factors);
       tl.call(()=>{},[],marks.end);
     }
@@ -349,6 +519,114 @@ export function animateFactorReset(root){
   return ()=>{tw.kill();gsap.set(targets,{clearProps:'y,filter'});};
 }
 
+// After the needle settles: stream honey from the meter tap into the Pot meniscus.
+export function animateTapPour({
+  root,fromPot=0,toPot=0,fillTarget,added=0,onPourProgress,onComplete
+}){
+  const settle=()=>{
+    onPourProgress?.(toPot);
+    onComplete?.();
+  };
+  if(!root||reducedMotion()||!(toPot>fromPot)){
+    settle();
+    return ()=>{};
+  }
+  const tap=root.querySelector('.sgv-honey-tap');
+  const pot=root.querySelector('.sgv-pending-pot');
+  const lip=pot?.querySelector?.('.sgv-pot-pour-lip')||pot?.querySelector?.('.sgv-pot-art-mouth');
+  if(!tap||!pot){
+    settle();
+    return ()=>{};
+  }
+  let alive=true;
+  const nodes=[],tweens=[];
+  const cleanup=()=>{
+    for(const tween of tweens)tween.kill?.();
+    removeNodes(nodes);
+  };
+  const tl=gsap.timeline({onComplete:()=>{
+    if(!alive)return;
+    alive=false;
+    onPourProgress?.(toPot);
+    cleanup();
+    onComplete?.();
+  }});
+  let streamPaths=[],streamSplash=null,streamDrawn=false;
+  const retargetStream=()=>{
+    if(!streamDrawn||!alive)return;
+    const start=tapSpoutPoint(root,tap);
+    const end=honeySurfacePoint(root,pot,lip)||point(lip||pot,root);
+    const d=pourStreamPath(start,end);
+    for(const path of streamPaths)path.setAttribute('d',d);
+    if(streamSplash)Object.assign(streamSplash.style,{left:end.x+'px',top:end.y+'px'});
+  };
+  tl.call(()=>{
+    if(!alive)return;
+    paintJarFill(pot,fromPot,fillTarget,{max:76,smooth:true});
+    const start=tapSpoutPoint(root,tap);
+    const end=honeySurfacePoint(root,pot,lip)||point(lip||pot,root);
+    const doc=root.ownerDocument;
+    const svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.classList.add('sgv-pour-stream');
+    svg.setAttribute('viewBox','0 0 '+root.clientWidth+' '+root.clientHeight);
+    svg.setAttribute('width',root.clientWidth);
+    svg.setAttribute('height',root.clientHeight);
+    svg.setAttribute('aria-hidden','true');
+    root.appendChild(svg);nodes.push(svg);
+    const d=pourStreamPath(start,end);
+    streamPaths=[];
+    for(const [kind,width] of [['sgv-pour-stream-glow','9'],['sgv-pour-stream-core','4.5']]){
+      const path=doc.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d',d);
+      path.setAttribute('class',kind);
+      path.setAttribute('stroke-width',width);
+      path.setAttribute('fill','none');
+      path.setAttribute('stroke-linecap','round');
+      svg.appendChild(path);
+      streamPaths.push(path);
+      const length=path.getTotalLength();
+      gsap.set(path,{strokeDasharray:length,strokeDashoffset:length});
+      tweens.push(gsap.to(path,{strokeDashoffset:0,duration:.14,ease:'power1.in'}));
+    }
+    tweens.push(gsap.to(svg,{opacity:0,duration:.18,delay:.58}));
+    streamSplash=doc.createElement('span');
+    streamSplash.className='sgv-pour-splash';
+    streamSplash.setAttribute('aria-hidden','true');
+    Object.assign(streamSplash.style,{left:end.x+'px',top:end.y+'px'});
+    root.appendChild(streamSplash);nodes.push(streamSplash);
+    tweens.push(gsap.fromTo(streamSplash,{opacity:0,scale:.55},
+      {opacity:.95,scale:1,duration:.18,repeat:2,yoyo:true,delay:.10}));
+    tweens.push(gsap.to(streamSplash,{opacity:0,duration:.16,delay:.55}));
+    streamDrawn=true;
+  },[],0);
+  const transfer={value:0};
+  tl.to(transfer,{value:1,duration:.58,ease:'power1.inOut',
+    onUpdate:()=>{
+      if(!alive)return;
+      const potValue=fromPot+(toPot-fromPot)*transfer.value;
+      // Label stays whole drops; fluid can ease through fractional height.
+      onPourProgress?.(Math.round(potValue));
+      paintJarFill(pot,potValue,fillTarget,{max:76,smooth:true});
+      retargetStream();
+    }},0.10);
+  if(added>0){
+    const label=root.ownerDocument.createElement('span');
+    label.className='sgv-pot-fly';
+    label.textContent='+'+added;
+    label.setAttribute('aria-hidden','true');
+    const end=honeySurfacePoint(root,pot,lip)||point(lip||pot,root);
+    Object.assign(label.style,{left:end.x+'px',top:(end.y-8)+'px'});
+    root.appendChild(label);nodes.push(label);
+    tl.fromTo(label,{opacity:0,scale:.75,y:6},
+      {opacity:1,scale:1.08,y:-10,duration:.18,ease:'back.out(1.6)'},0.28);
+    tl.to(label,{opacity:0,y:-22,duration:.22,ease:'power2.in'},0.52);
+  }
+  tl.call(()=>{},[],0.72);
+  return ()=>{
+    alive=false;tl.kill();cleanup();
+  };
+}
+
 // A normal Bank builds the lip-to-lip timeline. Reduced motion keeps the
 // committed totals and a static +N at the Bank mouth instead of the stream.
 export function chooseBankPour({
@@ -365,7 +643,8 @@ export function chooseBankPour({
 // first bring the Pot mouth above the Bank mouth, then pour a short stream.
 // Payouts and legal moves continue to come exclusively from the engine.
 export function animateBankPour({
-  root,source,potValue,fromScore,toScore,onPourProgress,onTake,onCount,onComplete
+  root,source,potValue,fromScore,toScore,fillTarget,
+  onPourProgress,onTake,onCount,onComplete
 }){
   const settle=()=>{
     onPourProgress?.(0);
@@ -389,15 +668,15 @@ export function animateBankPour({
   }
 
   // Measure the *rotated* source lip without showing that rotation.
-  // This works regardless of iPhone viewport size or safe-area insets.
+  // Pot sits right of Bank, so tip left into the Bank's right rim.
   const bankPoint=point(mouth,root);
   const bankRect=bank.getBoundingClientRect();
-  const angle=56;
+  const angle=-56;
   gsap.set(source,{rotation:angle,transformOrigin:'50% 72%'});
   const rotatedLip=point(lip,root);
   gsap.set(source,{rotation:0});
   const targetLip={
-    x:bankPoint.x-Math.min(40,bankRect.width*.20),
+    x:bankPoint.x+Math.min(40,bankRect.width*.20),
     y:bankPoint.y-Math.min(27,bankRect.height*.20)
   };
   const approach={x:targetLip.x-rotatedLip.x,y:targetLip.y-rotatedLip.y};
@@ -422,16 +701,35 @@ export function animateBankPour({
     onComplete();
   }});
 
-  // 1. Lift toward the receiving mouth, then tip right into pouring position.
-  tl.to(source,{x:approach.x*.48,y:approach.y*.82,rotation:24,
+  // 1. Lift toward the receiving mouth, then tip left into pouring position.
+  tl.to(source,{x:approach.x*.48,y:approach.y*.82,rotation:-24,
     duration:.26,ease:'power2.out'},0);
   tl.to(source,{x:approach.x,y:approach.y,rotation:angle,
     duration:.27,ease:'power2.inOut'},.23);
 
-  // 2. Draw a SHORT connecting stream from the arrived lip to the open jar.
+  // 2. Draw a SHORT connecting stream from the arrived lip to the honey surface.
+  // The end point tracks the rising meniscus while the jar fills.
+  let streamPaths=[],streamSplash=null,streamDrawn=false;
+  const paintBankFill=secured=>{
+    const fillEl=bank.querySelector('.sgv-fluid-fill');
+    if(!fillEl||!Number.isFinite(fillTarget)||fillTarget<=0)return;
+    const pct=fluidFillPercent(secured,fillTarget,{max:78});
+    fillEl.style.height=pct+'%';
+    fillEl.style.opacity=pct>0?'1':'0';
+  };
+  const retargetStream=()=>{
+    if(!streamDrawn||!alive)return;
+    const start=point(lip,root);
+    const end=honeySurfacePoint(root,bank,mouth)||point(mouth,root);
+    const d=pourStreamPath(start,end);
+    for(const path of streamPaths)path.setAttribute('d',d);
+    if(streamSplash)Object.assign(streamSplash.style,{left:end.x+'px',top:end.y+'px'});
+  };
   tl.call(()=>{
     if(!alive)return;
-    const start=point(lip,root),end=point(mouth,root);
+    paintBankFill(fromScore);
+    const start=point(lip,root);
+    const end=honeySurfacePoint(root,bank,mouth)||point(mouth,root);
     const doc=root.ownerDocument;
     const svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');
     svg.classList.add('sgv-pour-stream');
@@ -440,9 +738,8 @@ export function animateBankPour({
     svg.setAttribute('height',root.clientHeight);
     svg.setAttribute('aria-hidden','true');
     root.appendChild(svg);nodes.push(svg);
-    const dx=end.x-start.x,dy=end.y-start.y;
-    const d='M '+start.x+' '+start.y+' C '+(start.x+dx*.36)+' '+(start.y-8)+
-      ', '+(end.x-dx*.25)+' '+(end.y-Math.max(6,dy*.20))+', '+end.x+' '+end.y;
+    const d=pourStreamPath(start,end);
+    streamPaths=[];
     for(const [kind,width] of [['sgv-pour-stream-glow','9'],['sgv-pour-stream-core','4.5']]){
       const path=doc.createElementNS('http://www.w3.org/2000/svg','path');
       path.setAttribute('d',d);
@@ -451,19 +748,21 @@ export function animateBankPour({
       path.setAttribute('fill','none');
       path.setAttribute('stroke-linecap','round');
       svg.appendChild(path);
+      streamPaths.push(path);
       const length=path.getTotalLength();
       gsap.set(path,{strokeDasharray:length,strokeDashoffset:length});
       tweens.push(gsap.to(path,{strokeDashoffset:0,duration:.15,ease:'power1.in'}));
     }
     tweens.push(gsap.to(svg,{opacity:0,duration:.20,delay:.88}));
-    const splash=doc.createElement('span');
-    splash.className='sgv-pour-splash';
-    splash.setAttribute('aria-hidden','true');
-    Object.assign(splash.style,{left:end.x+'px',top:(end.y+6)+'px'});
-    root.appendChild(splash);nodes.push(splash);
-    tweens.push(gsap.fromTo(splash,{opacity:0,scale:.55},
+    streamSplash=doc.createElement('span');
+    streamSplash.className='sgv-pour-splash';
+    streamSplash.setAttribute('aria-hidden','true');
+    Object.assign(streamSplash.style,{left:end.x+'px',top:end.y+'px'});
+    root.appendChild(streamSplash);nodes.push(streamSplash);
+    tweens.push(gsap.fromTo(streamSplash,{opacity:0,scale:.55},
       {opacity:.95,scale:1,duration:.22,repeat:2,yoyo:true,delay:.12}));
-    tweens.push(gsap.to(splash,{opacity:0,duration:.18,delay:.83}));
+    tweens.push(gsap.to(streamSplash,{opacity:0,duration:.18,delay:.83}));
+    streamDrawn=true;
   },[],.51);
 
   // 3. A single progress value drives BOTH liquid volumes, starting as the
@@ -475,6 +774,8 @@ export function animateBankPour({
       const {pot,secured}=bankPourAmounts(initialPot,fromScore,toScore,transfer.value);
       onPourProgress?.(pot);
       onCount(secured);
+      paintBankFill(secured);
+      retargetStream();
     }},.63);
 
   // 4. Small earned-value acknowledgement near the surface, never a giant popup.
@@ -507,4 +808,54 @@ export function animateBankPour({
   return ()=>{
     alive=false;tl.kill();cleanup();
   };
+}
+
+// After a winning Bank pour: heartbeat + shine on the Bank, then hand off to victory.
+export function animateBankTargetCelebrate({root,onComplete}){
+  const bank=root?.querySelector?.('.sgv-bank-bottle');
+  const art=bank?.querySelector?.('.sgv-victory-jar-art')||bank;
+  const front=bank?.querySelector?.('.sgv-jar-front');
+  const gleam=bank?.querySelector?.('.sgv-honey-gleam-sweep');
+  let alive=true;
+  const clear=()=>{
+    if(art)gsap.set(art,{clearProps:'scale,filter'});
+    if(front)gsap.set(front,{clearProps:'filter,opacity'});
+    if(gleam)gsap.set(gleam,{clearProps:'opacity,transform,x'});
+    bank?.classList.remove('sgv-bank-target-hit');
+  };
+  const finish=()=>{
+    if(!alive)return;
+    alive=false;
+    clear();
+    onComplete?.();
+  };
+  if(!root||!bank){
+    finish();
+    return ()=>{};
+  }
+  bank.classList.add('sgv-bank-target-hit');
+  if(reducedMotion()){
+    const tl=gsap.timeline({onComplete:finish});
+    if(front)tl.to(front,{opacity:1,filter:'brightness(1.18)',duration:.12},0)
+      .to(front,{opacity:.78,filter:'brightness(1)',duration:.14},.12);
+    else tl.to({},{},.25);
+    return ()=>{alive=false;tl.kill();clear();};
+  }
+  const tl=gsap.timeline({onComplete:finish});
+  tl.fromTo(art,{scale:1},{
+    scale:1.07,duration:.18,ease:'power1.out',yoyo:true,repeat:5,
+    transformOrigin:'50% 70%'
+  },0);
+  if(front){
+    tl.to(front,{opacity:1,filter:'brightness(1.22) saturate(1.08)',duration:.2},0);
+    tl.to(front,{opacity:.78,filter:'brightness(1)',duration:.35},.65);
+  }
+  if(gleam){
+    tl.fromTo(gleam,
+      {opacity:0,x:'-120%'},
+      {opacity:.9,x:'160%',duration:.55,ease:'power1.inOut'},.08);
+    tl.to(gleam,{opacity:0,duration:.15},.58);
+  }
+  tl.to({},{},1.0);
+  return ()=>{alive=false;tl.kill();clear();};
 }

@@ -12,7 +12,7 @@
 
 - Spec: `docs/superpowers/specs/2026-11-07-play-jar-layout-victory-art-design.md`
 - Reuse only Victory jar assets: `public/empty-complete-jar.png`, `public/empty-front-jar.png`, `public/honey-fill-mask.png`
-- Bank ~**1.35–1.5×** Pot width; same baseline; Pot `left: 50%` + `translateX(-50%)`; Bank near left content padding
+- Bank ~**1.35–1.5×** Pot width; same **top** edge; Pot `left: 50%` + `translateX(-50%)`; Bank near left content padding
 - Absolute slots in `.sgv-bottle-pair` (not flex centering / spacer / grid)
 - Keep bottom BANK button, assistive live region, fill-percent formulas, meter/tap placement unchanged
 - Keep pour anchors: `.sgv-pot-pour-lip` on Pot, `.sgv-chest-mouth` on Bank; measurement host for pour scale remains queryable (`.sgv-chest-body` or Bank root — Task 3 locks the selector)

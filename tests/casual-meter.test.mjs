@@ -5,19 +5,19 @@ import {meterPercent,meterMarks} from '../src/casual/meterScale.js';
 test('all nine visible Level 1 numbers use accurate positions in the same meter scale',()=>{
   const marks=meterMarks(8);
   assert.deepEqual(marks,[-8,-6,-4,-2,0,2,4,6,8]);
-  assert.deepEqual(marks.map(n=>meterPercent(n,8)),[0,12.5,25,37.5,50,62.5,75,87.5,100]);
+  // Playable band is inset so snap-danger wasps sit past ±8.
+  assert.deepEqual(marks.map(n=>meterPercent(n,8)),[11,20.75,30.5,40.25,50,59.75,69.5,79.25,89]);
   for(const n of marks){
-    // Both the marker and its matching label use meterPercent(n, limit).
-    assert.equal(meterPercent(n,8),50+50*n/8);
+    assert.equal(meterPercent(n,8),50+39*n/8);
   }
 });
 
 test('markers clamp within the same physical scale, including a Snap overshoot',()=>{
-  assert.equal(meterPercent(-11,8),0);
-  assert.equal(meterPercent(11,8),100);
+  assert.equal(meterPercent(-11,8),11);
+  assert.equal(meterPercent(11,8),89);
   assert.equal(meterPercent(0,8),50);
-  assert.equal(meterPercent(3,8),68.75);
-  assert.equal(meterPercent(-1,8),43.75);
+  assert.equal(meterPercent(3,8),64.625);
+  assert.equal(meterPercent(-1,8),45.125);
 });
 
 test('other integer Snap limits have a readable symmetric scale',()=>{
@@ -29,8 +29,8 @@ test('other integer Snap limits have a readable symmetric scale',()=>{
     assert.ok(ticks.every(Number.isInteger));
     assert.deepEqual(ticks, ticks.toSorted((a,b)=>a-b));
     assert.equal(new Set(ticks).size,ticks.length);
-    assert.equal(meterPercent(-limit,limit),0);
-    assert.equal(meterPercent(limit,limit),100);
+    assert.equal(meterPercent(-limit,limit),11);
+    assert.equal(meterPercent(limit,limit),89);
     assert.equal(meterPercent(0,limit),50);
   }
 });

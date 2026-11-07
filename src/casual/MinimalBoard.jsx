@@ -2,6 +2,7 @@ import React from 'react';
 import {meterPercent,meterMarks} from './meterScale.js';
 import {fluidFillPercent} from './presentation.js';
 import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from './cardDirection.js';
+import {VictoryJarArt} from './VictoryJarArt.js';
 
 export const signedValue=n=>n>0?'+'+n:String(n);
 export const directionLabel=n=>n<0?'LEFT':n>0?'RIGHT':'CENTER';
@@ -35,6 +36,10 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
          </div>
        </div>
      </div>
+     <img className="sgv-meter-wasp sgv-meter-wasp-left" src="/wasp-looking-right.png"
+       alt="" aria-hidden="true" draggable="false"/>
+     <img className="sgv-meter-wasp sgv-meter-wasp-right" src="/wasp-looking-right.png"
+       alt="" aria-hidden="true" draggable="false"/>
      <div className="sgv-meter-marker-rail" aria-hidden="true">
        <span className="sgv-meter-marker" style={{left:percentage+'%'}}>
          <span className="sgv-meter-needle">
@@ -45,12 +50,20 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
      </div>
      <img className="sgv-honey-tap" src="/honey-tap.png" alt="" aria-hidden="true" draggable="false"/>
      <div className="sgv-multipliers" role="group" aria-label="Swing, Flip, Jackpot multipliers">
-       {multipliers.filter(({kind})=>!visibleFactors||visibleFactors.includes(kind)).map(({kind,value,label})=>
+       {multipliers
+         .filter(({kind})=>!visibleFactors||visibleFactors.includes(kind))
+         .slice()
+         .sort((a,b)=>(a.kind==='flip')-(b.kind==='flip'))
+         .map(({kind,value,label})=>
          <span key={kind} className={'sgv-multiplier-pill sgv-multiplier-'+kind+
            ((dock==='swing'&&kind==='swing')||(dock==='flip-pill'&&kind==='flip')||
             (dock==='jackpot'&&kind==='jackpot')?' sgv-dock':'')}
            data-factor={kind} title={label} aria-label={label+': times '+value}>
-           ×{value}
+           <span className="sgv-multiplier-value">×{value}</span>
+           {kind==='swing'?<img className="sgv-multiplier-icon sgv-multiplier-daisy" src="/celebration/daisy-2.png"
+             alt="" aria-hidden="true" draggable="false"/>:null}
+           {kind==='flip'?<img className="sgv-multiplier-icon sgv-multiplier-bee" src="/bee-smiling-closed-eyes.png"
+             alt="" aria-hidden="true" draggable="false"/>:null}
          </span>)}
      </div>
      {beat?<p className="sgv-meter-beat" role="status">{beat}</p>:null}
@@ -68,12 +81,10 @@ export function PendingPot({value,target=24,bankable=false,onBank,className='',i
    disabled={interactive?!bankable:undefined}
    onClick={interactive?event=>onBank?.(event.currentTarget):undefined}
    aria-label={!interactive?'Pot has '+value+' pending drops':bankable
-     ?'Tap Pot to bank '+value+' drops'
-     :'Pot has '+value+' potential drops. Banking not yet available'}>
-   <span className="sgv-pot-bottle-glass" aria-hidden="true">
-     <span className="sgv-pot-liquid" style={{height:fill+'%',opacity:fill>0?1:0}}/>
-     <span className="sgv-pot-glass-shine"/>
-   </span>
+     ?'Tap Pot to save '+value+' drops'
+     :'Pot has '+value+' potential drops. Saving not yet available'}>
+   <span className="sgv-jar-pad" aria-hidden="true"/>
+   <VictoryJarArt fillPercent={fill} className="sgv-pot-victory-art" mouthClassName="sgv-pot-art-mouth"/>
    <span className="sgv-pot-pour-lip" aria-hidden="true"/>
    <span className="sgv-pot-label">POT</span>
    <span className="sgv-pot-amount"><DropletIcon className="sgv-pot-drop"/>{value}</span>
@@ -82,7 +93,7 @@ export function PendingPot({value,target=24,bankable=false,onBank,className='',i
 
 export function GoalProgress({banked,target}){
  return <div className="sgv-goal-progress" role="status" aria-label={'Secured '+banked+' of '+target+' drops'}>
-   <span>BANK</span><strong>{banked} / {target}</strong>
+   <span>SAVINGS</span><strong>{banked} / {target}</strong>
  </div>;
 }
 
@@ -91,26 +102,12 @@ export function GlassChest({banked,target}){
  const fill=fluidFillPercent(banked,target,{max:78});
  return <div className="sgv-chest-area sgv-bank-bottle"
    aria-label={banked+' of '+target+' drops secured'} data-gold={banked}>
+   <span className="sgv-jar-pad" aria-hidden="true"/>
    <div className="sgv-chest-glow" aria-hidden="true"/>
-   <div className="sgv-chest-art">
-     <div className="sgv-chest-platform" aria-hidden="true"/>
-     <div className="sgv-chest-body">
-       <div className="sgv-chest-inner">
-         <div className="sgv-fluid-fill" style={{height:fill+'%',opacity:fill>0?1:0}} aria-hidden="true">
-           <span className="sgv-fluid-surface"/>
-           <span className="sgv-fluid-bubble sgv-fluid-bubble-a"/>
-           <span className="sgv-fluid-bubble sgv-fluid-bubble-b"/>
-           <span className="sgv-fluid-bubble sgv-fluid-bubble-c"/>
-         </div>
-       </div>
-       <span className="sgv-glass-highlight sgv-glass-highlight-left"/>
-       <span className="sgv-glass-highlight sgv-glass-highlight-right"/>
-       <span className="sgv-glass-spark sgv-glass-spark-a">✦</span>
-       <span className="sgv-glass-spark sgv-glass-spark-b">✦</span>
-     </div>
-     <span className="sgv-chest-mouth" aria-hidden="true"/>
-     <GoalProgress banked={banked} target={target}/>
+   <div className="sgv-chest-body" aria-hidden="true">
+     <VictoryJarArt fillPercent={fill} className="sgv-bank-victory-art" mouthClassName="sgv-chest-mouth"/>
    </div>
+   <GoalProgress banked={banked} target={target}/>
  </div>;
 }
 

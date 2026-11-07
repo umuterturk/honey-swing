@@ -3,7 +3,7 @@ import {
   ONBOARDING_PROGRESS_KEY,SEEN_FEATURE_INTROS_KEY
 } from './onboardingProgress.js';
 
-// J1 ships the Bank card only. Later unlocks stay in the derived map so the
+// J1 ships the Save card only. Later unlocks stay in the derived map so the
 // registry can be checked against the levels; their cards arrive in J5.
 const BANK_DEMO=Object.freeze({
   duration:1.4,
@@ -19,9 +19,9 @@ export const FEATURE_INTROS=Object.freeze({
     id:'bank',
     unlockLevel:1,
     icon:'bank-jar',
-    name:'Bank',
+    name:'Save',
     copyKey:'intro.bank',
-    copy:'Save honey into your jar.',
+    copy:'Save honey into your Savings.',
     highlightTarget:'bank',
     demoScript:BANK_DEMO
   })

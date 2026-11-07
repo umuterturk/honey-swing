@@ -6,13 +6,13 @@
 
 ## Goal
 
-Reposition the play jars so the pending **Pot** sits centered under the honey tap and the secured **Bank** jar sits at the left edge, both on the same baseline. Replace the current CSS bottle / chest art with the Victory layered jar (same assets and stack as the win hero jar). Bank remains clearly larger than Pot.
+Reposition the play jars so the pending **Pot** sits centered under the honey tap and the secured **Bank** jar sits at the left edge, both top-aligned. Replace the current CSS bottle / chest art with the Victory layered jar (same assets and stack as the win hero jar). Bank remains clearly larger than Pot.
 
 ## Decisions
 
 | Topic | Choice |
 |-------|--------|
-| Baseline | Same bottom edge for Pot and Bank |
+| Vertical align | Same **top** edge for Pot and Bank (Bank hangs lower because it is taller) |
 | Bank horizontal | Near left safe edge (phone side padding / safe-left) |
 | Pot horizontal | True center of the phone column (`left: 50%` + `translateX(-50%)`), under the honey tap |
 | Layout technique | Absolute slots inside `.sgv-bottle-pair` (not flex centering / spacer / grid) |
@@ -25,8 +25,8 @@ Reposition the play jars so the pending **Pot** sits centered under the honey ta
 
 | Slot | Role | Position | Size |
 |------|------|----------|------|
-| **Bank** | Secured honey | `left` ≈ side padding (`16px`) + safe-left; bottom-aligned with Pot | Larger play jar — about **1.35–1.5×** Pot width; height from Victory art aspect |
-| **Pot** | Pending honey | Horizontal center of `.sgv-phone` content; under `.sgv-honey-tap`; same baseline as Bank | Smaller — roughly today’s Pot footprint (~96–142px wide) |
+| **Bank** | Secured honey | `left` ≈ side padding (`16px`) + safe-left; top-aligned with Pot | Larger play jar — about **1.35–1.5×** Pot width; height from Victory art aspect |
+| **Pot** | Pending honey | Horizontal center of `.sgv-phone` content; under `.sgv-honey-tap`; same top edge as Bank | Smaller — roughly today’s Pot footprint (~96–142px wide) |
 | **Right** | Empty | No third jar | Intentional so Pot stays true center |
 
 ### Narrow / short viewports
@@ -77,7 +77,7 @@ Extract or share the Victory jar layer markup (today’s `heroJar()` in `levelSc
 ## Acceptance
 
 1. At the reference phone width, Pot’s horizontal center aligns with the honey tap’s horizontal center.
-2. Bank sits at the left content edge with normal side padding; bottoms of Pot and Bank align.
+2. Bank sits at the left content edge with normal side padding; tops of Pot and Bank align.
 3. Both jars visibly use the Victory back / fill-mask / front treatment (not the old CSS bottle/chest shapes).
 4. Bank reads larger than Pot (~1.35–1.5× width).
 5. Bank pour still lands in the Bank mouth; reduced-motion path still completes without layout jump.

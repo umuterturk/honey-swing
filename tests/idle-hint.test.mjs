@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {signed} from '../src/external/engines.js';
 import {
   ONBOARDING_COUNT,newOnboardingRound,onboardingActions,onboardingFinished,
-  onboardingLevel,stepOnboarding
+  onboardingLevel,stepOnboarding,wouldSnap
 } from '../src/casual/onboardingLevels.js';
 import {clearWinMemo,hasWinningContinuation,idleHintAction,winMemoSize} from '../src/casual/idleHint.js';
 
@@ -25,20 +25,14 @@ function line(level,values){
 }
 const same=(a,b)=>!!a&&!!b&&a.type===b.type&&a.index===b.index&&a.dropIndex===b.dropIndex;
 
-test('Level 15 after +4 then Flip does not hint the Bank that caps at 29',()=>{
-  const state=line(15,[4,'flip']);
-  let capped=play(state,bank);
-  capped=steerValue(capped,1);
-  capped=play(capped,bank);
-  assert.equal(capped.game.deal.T,29);
-  const kept=play(steerValue(state,1),bank);
-  assert.equal(kept.game.deal.T,32);
-  const hint=idleHintAction(state);
-  assert.notEqual(hint.type,'bank');
-  assert.equal(hint.type,'steer');
-  assert.equal(signed(state.game.deal.hand[hint.index]),1);
-  assert.equal(hasWinningContinuation(stepOnboarding(state,hint)),true);
-  assert.equal(hasWinningContinuation(stepOnboarding(state,bank)),false);
+test('Level 15 can Snap on the opening +9 and still keep a win path',()=>{
+  const state=newOnboardingRound(15);
+  assert.deepEqual(state.game.deal.hand.map(signed),[4,9]);
+  assert.equal(wouldSnap(state,{type:'steer',index:1}),true);
+  const snapped=play(state,{type:'steer',index:1});
+  assert.equal(snapped.snaps,1);
+  assert.equal(snapped.event.type,'snap');
+  assert.equal(hasWinningContinuation(snapped),true);
 });
 
 test('Level 12 after +4 then +1 does not hint the Bank that caps at 17',()=>{
@@ -80,16 +74,16 @@ test('when several actions still win, Bank stays ahead of a safe card',()=>{
   assert.equal(idleHintAction(state).type,'bank');
 });
 
-test('Level 15 opening hints the first safe card, not the losing Flip',()=>{
+test('Level 15 opening hints the +4, not the Snap +9',()=>{
   const state=newOnboardingRound(15);
   const hint=idleHintAction(state);
   assert.equal(hint.type,'steer');
   assert.equal(hint.index,0);
-  assert.equal(signed(state.game.deal.hand[0]),4);
-  assert.equal(hasWinningContinuation(stepOnboarding(state,flip)),false);
+  assert.equal(signed(state.game.deal.hand[hint.index]),4);
+  assert.equal(wouldSnap(state,hint),false);
   const afterFour=line(15,[4]);
   assert.equal(idleHintAction(afterFour).type,'flip');
-  assert.equal(hasWinningContinuation(steerValue(afterFour,1)),false);
+  assert.equal(wouldSnap(afterFour,{type:'steer',index:0}),true);
 });
 
 test('every idle hint keeps a win when any legal action still has one',()=>{

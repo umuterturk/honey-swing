@@ -4,7 +4,7 @@ import {signed} from '../src/external/engines.js';
 import {
   newOnboardingRound,onboardingActions,onboardingFinished,stepOnboarding
 } from '../src/casual/onboardingLevels.js';
-import {bankAssistiveMessage,nextBankAnnouncement} from '../src/casual/bankStatus.js';
+import {bankAssistiveMessage,nextBankAnnouncement,shouldAutoBank} from '../src/casual/bankStatus.js';
 
 function steer(round,value){
   const index=round.game.deal.hand.findIndex(id=>signed(id)===value);
@@ -16,8 +16,8 @@ function steer(round,value){
 test('Level 10 start asks for two more cards',()=>{
   const start=newOnboardingRound(10);
   assert.equal(start.game.deal.plays,0);
-  assert.equal(bankAssistiveMessage(start),'Play 2 more cards to Bank.');
-  assert.equal(bankAssistiveMessage(steer(start,3)),'Play 1 more card to Bank.');
+  assert.equal(bankAssistiveMessage(start),'Play 2 more cards to Save.');
+  assert.equal(bankAssistiveMessage(steer(start,3)),'Play 1 more card to Save.');
 });
 
 test('Level 10 after +3 then -5 asks for Zero',()=>{
@@ -25,7 +25,7 @@ test('Level 10 after +3 then -5 asks for Zero',()=>{
   assert.equal(state.game.deal.plays,2);
   assert.equal(state.zeroBreakCount,0);
   assert.ok(state.game.deal.pot.length>0);
-  assert.equal(bankAssistiveMessage(state),'Hit Zero to unlock Bank.');
+  assert.equal(bankAssistiveMessage(state),'Hit Zero to unlock Save.');
 });
 
 test('an empty Pot after two plays and the Zero gate says nothing to bank',()=>{
@@ -49,20 +49,37 @@ test('an empty Pot after two plays and the Zero gate says nothing to bank',()=>{
     zeroBreakCount:1,
     game:{...round.game,deal:{...round.game.deal,plays:2,pot:[],potValue:0}}
   };
-  assert.equal(bankAssistiveMessage(direct),'Nothing to bank yet.');
+  assert.equal(bankAssistiveMessage(direct),'Nothing to save yet.');
 });
 
-test('Bank ready uses the projected payout and aria-live updates only on change',()=>{
+test('Save ready uses the projected payout and aria-live updates only on change',()=>{
   let state=steer(steer(newOnboardingRound(10),3),-5);
   state=steer(state,2);
   assert.equal(state.game.lastAction.zeroBreak,true);
-  assert.equal(bankAssistiveMessage(state),'Bank ready: '+state.game.deal.potValue);
-  const first=nextBankAnnouncement(null,'Play 2 more cards to Bank.');
+  assert.equal(bankAssistiveMessage(state),'Save ready: '+state.game.deal.potValue);
+  const first=nextBankAnnouncement(null,'Play 2 more cards to Save.');
   assert.equal(first.text,'');
-  const same=nextBankAnnouncement(first.previous,'Play 2 more cards to Bank.');
+  const same=nextBankAnnouncement(first.previous,'Play 2 more cards to Save.');
   assert.equal(same.text,null);
-  const changed=nextBankAnnouncement(same.previous,'Hit Zero to unlock Bank.');
-  assert.equal(changed.text,'Hit Zero to unlock Bank.');
-  const ready=nextBankAnnouncement(changed.previous,'Bank ready: 17');
-  assert.equal(ready.text,'Bank ready: 17');
+  const changed=nextBankAnnouncement(same.previous,'Hit Zero to unlock Save.');
+  assert.equal(changed.text,'Hit Zero to unlock Save.');
+  const ready=nextBankAnnouncement(changed.previous,'Save ready: 17');
+  assert.equal(ready.text,'Save ready: 17');
+});
+
+test('auto-Bank only when every legal action is Bank',()=>{
+  assert.equal(shouldAutoBank([{type:'bank'}]),true);
+  assert.equal(shouldAutoBank([{type:'bank'},{type:'bank',dropIndex:0}]),true);
+  assert.equal(shouldAutoBank([{type:'bank'},{type:'flip'}]),false);
+  assert.equal(shouldAutoBank([{type:'steer',index:0}]),false);
+  assert.equal(shouldAutoBank([]),false);
+  assert.equal(shouldAutoBank(null),false);
+});
+
+test('the Bank button does not overlay a second BANK label',async()=>{
+  const {readFileSync}=await import('node:fs');
+  const screen=readFileSync(new URL('../src/casual/SimplifiedGame.jsx',import.meta.url),'utf8');
+  assert.match(screen,/shouldAutoBank\(available\)/);
+  assert.doesNotMatch(screen,/sgv-ack/);
+  assert.doesNotMatch(screen,/setAck\(\{kind:'bank'/);
 });

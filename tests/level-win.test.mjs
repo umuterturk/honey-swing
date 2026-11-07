@@ -513,7 +513,7 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     const view=await mount();
     const host=view.host;
     const praise=host.querySelector('.sgv-win-praise');
-    const liquid=host.querySelector('.sgv-fluid-fill');
+    const liquid=host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill');
     const tally=host.querySelector('.sgv-win-tally');
     const targetRow=host.querySelector('.sgv-honey-scoreboard-target');
     const cta=host.querySelector('.sgv-end-cta');
@@ -669,6 +669,7 @@ test('jar mouth origin stays laid out on 320, 430, and a safe-area phone',async(
       {width:430,height:932,top:0,right:0,bottom:0,left:0},
       {width:320,height:568,top:44,right:0,bottom:34,left:0}
     ];
+    let zeroInsetOriginY=0;
     for(const box of cases){
       resetStorage();
       saveRound(bankedLevel1());
@@ -696,7 +697,8 @@ test('jar mouth origin stays laid out on 320, 430, and a safe-area phone',async(
         y:lip.top+lip.height/2-layerBox.top
       };
       if(box.width===430)assert.ok(origin.x>200,'430 lip is not the 320 fallback');
-      if(box.top===44)assert.ok(origin.y>140,'inset lip is below the zero-inset fallback');
+      if(box.width===320&&box.top===0)zeroInsetOriginY=origin.y;
+      if(box.top===44)assert.ok(origin.y>zeroInsetOriginY,'inset lip is below the zero-inset fallback');
       await view.unmount();
       sizer.remove();
     }

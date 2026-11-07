@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   ONBOARDING_LEVELS,ONBOARDING_COUNT,GARDEN_2_START,levelValidation,onboardingLevel,
-  newOnboardingRound,onboardingActions,stepOnboarding,onboardingVictory
+  newOnboardingRound,onboardingActions,stepOnboarding,onboardingVictory,wouldSnap
 } from '../src/casual/onboardingLevels.js';
 import {signed,newOverswing,stepOverswing,overswingPayout,overswingActions} from '../src/external/engines.js';
 import {multiplierRewards} from '../src/casual/multiplierView.js';
@@ -388,13 +388,22 @@ test('Level 12: plus-then-Flip banks 28 and Flip-first never reaches the target'
 });
 
 test('Lower Orchard stubs are winnable and the light test can miss by banking early',()=>{
-  assert.equal(play(line(15,[4,'flip',1]),bank).game.deal.T,32);
-  let miss=line(15,[4,'flip','bank',1,'bank']);
-  assert.equal(miss.game.deal.T,29);
+  assert.equal(play(line(15,['flip','flip']),bank).game.deal.T,38);
+  let miss=line(15,[4,'flip','bank']);
+  assert.equal(miss.game.deal.T,6);
   assert.equal(onboardingVictory(miss),false);
   assert.equal(play(line(13,[3,2,-6]),bank).game.deal.T>=16,true);
-  assert.equal(play(line(19,[4,'flip']),bank).game.deal.T,28);
-  assert.equal(play(line(20,[3,4]),bank).game.deal.T,7);
+  assert.equal(play(line(19,['flip','flip']),bank).game.deal.T,38);
+  assert.equal(play(line(20,['flip',3]),bank).game.deal.T,7);
+});
+
+test('Levels 15–20 open with a +9 Snap for feedback testing',()=>{
+  for(let id=15;id<=20;id++){
+    const round=newOnboardingRound(id);
+    const index=round.game.deal.hand.findIndex(card=>signed(card)===9);
+    assert.ok(index>=0,'L'+id+' missing opening +9');
+    assert.equal(wouldSnap(round,{type:'steer',index}),true,'L'+id+' +9 should Snap');
+  }
 });
 
 test('Garden 1 has no forced loss except Level 12, and every level has a win',()=>{
@@ -427,6 +436,6 @@ test('the board keeps a next garden and does not offer Replay Challenge',async()
   assert.doesNotMatch(source,/REPLAY CHALLENGE/);
   assert.doesNotMatch(source,/animatePotBreak\(root,'zero'\)/);
   assert.match(source,/Pot safe\./);
-  assert.match(source,/Pot lost\. Bank safe\./);
+  assert.match(source,/Pot lost\. Savings safe\./);
   assert.match(source,/3000/);
 });

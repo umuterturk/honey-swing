@@ -53,8 +53,8 @@ test('an unseen Level 1 shows the Bank card once',()=>{
   assert.equal(first.gate,true);
   assert.equal(first.phase,'intro');
   assert.equal(first.intro.id,'bank');
-  assert.equal(first.intro.name,'Bank');
-  assert.equal(first.intro.copy,'Save honey into your jar.');
+  assert.equal(first.intro.name,'Save');
+  assert.equal(first.intro.copy,'Save honey into your Savings.');
   assert.equal(first.intro.copy.length<=42,true);
   const again=featureIntroForEntry({round,storage,reduced:false});
   assert.equal(again.show,true);
@@ -229,8 +229,8 @@ test('reduced motion shows the Bank card as a still storyboard with no tweens',(
   assert.match(html,/sgv-feature-intro-static/);
   assert.match(html,/data-feature="bank"/);
   assert.match(html,/NEW!/);
-  assert.match(html,/>Bank</);
-  assert.match(html,/Save honey into your jar\./);
+  assert.match(html,/>Save</);
+  assert.match(html,/Save honey into your Savings\./);
   assert.match(html,/>PLAY</);
   assert.doesNotMatch(html,/disabled=/);
   assert.equal((html.match(/sgv-feature-intro-frame/g)||[]).length,3);
@@ -268,12 +268,12 @@ test('the Bank overlay is the only intro and the in-level acknowledgement stays'
   assert.match(html,/sgv-feature-intro-scrim/);
   assert.match(html,/aria-modal="true"/);
   assert.doesNotMatch(html,/Swing|Flip|Zero|Snap|landing/);
-  assert.equal(introCopy('bank',5),'BANK 5');
+  assert.equal(introCopy('bank',5),'SAVE 5');
   assert.equal(introCopy('cross'),'CROSS');
   assert.equal(introCopy('flip'),'FLIP');
   assert.equal(introCopy('flipFactor',2),'×2');
   assert.equal(introCopy('zero'),'Pot safe.');
-  assert.equal(introCopy('snap'),'Pot lost. Bank safe.');
+  assert.equal(introCopy('snap'),'Pot lost. Savings safe.');
   const seen=new Set();
   assert.equal(takeFirstOutcome(seen,'bank').kind,'bank');
   assert.equal(takeFirstOutcome(seen,'bank'),null);
@@ -284,7 +284,7 @@ test('the Bank overlay is the only intro and the in-level acknowledgement stays'
   assert.doesNotMatch(registry,/external\/engines/);
   assert.doesNotMatch(overlay,/external\/engines|landing_band|sgv-flip-band/);
   assert.match(source,/takeFirstOutcome\(seenFactorsRef\.current,'bank'\)/);
-  assert.match(source,/introCopy\('bank',overswingPayout/);
+  assert.doesNotMatch(source,/introCopy\('bank',overswingPayout/);
   assert.match(source,/function play\(action,source\)\{\s*if\(finished\)return;\s*if\(!boardTapDuringIntro\(introGateRef\.current\)\.play\)return;/);
   assert.match(source,/introPointerDecision\(/);
   assert.match(source,/dismissFeatureIntro\(/);

@@ -2,7 +2,7 @@ import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {overswingPayout,signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
 import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
-import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour} from './minimalMotion.js';
+import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour,animateBankTargetCelebrate} from './minimalMotion.js';
 import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
 import {applyHoneyLayout} from './honeyWin.js';
@@ -13,7 +13,7 @@ import {createFxBus} from './fx/fxBus.js';
 import {FxLayer} from './fx/FxLayer.jsx';
 import {clearWinMemo,idleHintAction} from './idleHint.js';
 import {LevelEndScreen,LevelStartScreen,dismissLevelScreen} from './levelScreens.js';
-import {bankAssistiveMessage,nextBankAnnouncement} from './bankStatus.js';
+import {bankAssistiveMessage,nextBankAnnouncement,shouldAutoBank} from './bankStatus.js';
 import {focusTargetAfterSkip,isSkipKey,rememberFocus} from './skipFocus.js';
 import {ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress} from './onboardingProgress.js';
 import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
@@ -94,6 +94,7 @@ export default function SimplifiedGame(){
   const available=finished||animating||introGate?[]:onboardingActions(round);
   const canBank=available.some(a=>a.type==='bank'&&a.dropIndex==null);
   const canFlip=available.some(a=>a.type==='flip');
+  const autoBank=shouldAutoBank(available);
   const potentialPayout=overswingPayout(game,level.rules);
   // During a Bank pour the committed payout drains. Any other beat shows the
   // accrued Pot directly, including a multiplied add that is larger than the old total.
@@ -249,16 +250,21 @@ export default function SimplifiedGame(){
     if(result.text)setBankLive(result.text);
   },[bankMessage]);
   useEffect(()=>{
+    // Mark first Save unlock as seen without overlaying a second "SAVE N" on the button.
     if(!canBank)return;
-    const first=takeFirstOutcome(seenFactorsRef.current,'bank');
-    if(!first)return;
-    setAck({kind:'bank',text:introCopy('bank',overswingPayout(game,level.rules))});
+    takeFirstOutcome(seenFactorsRef.current,'bank');
   },[canBank,round.turn,round.levelId]);
   useEffect(()=>{
     if(!ack)return;
     const timer=setTimeout(()=>setAck(current=>current===ack?null:current),1100);
     return ()=>clearTimeout(timer);
   },[ack]);
+  useEffect(()=>{
+    if(finished||animating||introGate||startOpen||arriving||!autoBank)return;
+    const source=rootRef.current?.querySelector('.sgv-pending-pot');
+    const timer=setTimeout(()=>play({type:'bank'},source),280);
+    return ()=>clearTimeout(timer);
+  },[autoBank,finished,animating,introGate,startOpen,arriving,round.turn,round.levelId]);
 
   function stopArrival(){
     const handle=arrivalRef.current;
@@ -417,7 +423,7 @@ export default function SimplifiedGame(){
       startMotion({change},complete){
         setAnimating(true);
         setFeedback(change.snap?'snap':change.zeroBreak?'zero_break':action.type);
-        setBeat(change.zeroBreak?'Pot safe.':change.snap?'Pot lost. Bank safe.':'');
+        setBeat(change.zeroBreak?'Pot safe.':change.snap?'Pot lost. Savings safe.':'');
         setPulse(false);setHelp(false);
         resetMotionRef.current?.();breakMotionRef.current?.();
         resetMotionRef.current=null;breakMotionRef.current=null;
@@ -427,12 +433,17 @@ export default function SimplifiedGame(){
         };
         if(!root||!source){complete();return cancelAll;}
         if(motionKind(action,change)==='bank'){
+          const afterPour=()=>{
+            if(change.securedAfter<level.target){complete();return;}
+            cancelRef.current=animateBankTargetCelebrate({root,onComplete:complete});
+          };
           cancelRef.current=animateBankPour({
             root,source,potValue:change.rawPotBefore,
             fromScore:change.securedBefore,toScore:change.securedAfter,
+            fillTarget:level.target,
             onPourProgress:rawPot=>setView(v=>({...v,rawPot})),
             onTake:()=>setView(v=>({...v,rawPot:0,resonance:0})),
-            onCount:setShownGold,onComplete:complete
+            onCount:setShownGold,onComplete:afterPour
           });
           return cancelAll;
         }
@@ -441,7 +452,8 @@ export default function SimplifiedGame(){
         change.rewards.forEach(({kind})=>seenFactorsRef.current.add(kind));
         cancelRef.current=animateCardAction({
           root,source,action,view:{...change,firstTap:round.levelId===1&&round.turn===0,
-            meterLimit:level.rules.snapLimit},
+            meterLimit:level.rules.snapLimit,showChances:!!level.showChances,
+            potTarget:level.target},
           firstFactorAwards,
           onMeter:position=>{
             setView(v=>({...v,position}));
@@ -451,8 +463,8 @@ export default function SimplifiedGame(){
           onSnap:()=>{
             breakMotionRef.current?.();breakMotionRef.current=animatePotBreak(root,'snap');
             lossMotionRef.current?.();lossMotionRef.current=animateSnapLoss(root,change.rawPotBefore);
-            setView(v=>({...v,snaps:change.snapsAfter}));
           },
+          onChanceLost:()=>setView(v=>({...v,snaps:change.snapsAfter})),
           onFactors:factors=>{
             setView(v=>({...v,factors}));
             if(change.zeroBreak||change.snap||
@@ -625,7 +637,7 @@ export default function SimplifiedGame(){
       <div className="sgv-middle">
         <HorizontalMeter position={view.position} limit={level.rules.snapLimit}
           multipliers={view.factors} visibleFactors={level.visibleFactors}
-          showDanger={level.showChances} beat={ack&&ack.kind!=='bank'?ack.text:beat} dock={docking?level.dock:null}/>
+          showDanger={level.showChances} beat={ack?ack.text:beat} dock={docking?level.dock:null}/>
         <span className="sgv-flight-center" aria-hidden="true"/>
         <div className="sgv-bottle-pair" aria-label="Pending Pot and secured glass">
           <PendingPot value={potDisplay} target={level.target}
@@ -648,9 +660,8 @@ export default function SimplifiedGame(){
             className={'sgv-action sgv-bank sgv-bank-command'+(bankPulse?' sgv-attention':'')}
             disabled={!canBank}
             onClick={()=>play({type:'bank'},rootRef.current?.querySelector('.sgv-pending-pot'))}
-            aria-label={canBank?'Bank '+potDisplay+' pending drops':bankMessage}>
-            <span className="sgv-action-text">BANK{canBank?' '+potDisplay:''}</span>
-            {ack?.kind==='bank'&&<span className="sgv-ack">{ack.text}</span>}
+            aria-label={canBank?'Save '+potDisplay+' pending drops':bankMessage}>
+            <span className="sgv-action-text">SAVE{canBank?' '+potDisplay:''}</span>
           </button>
           <p className="sgv-bank-live" aria-live="polite" aria-atomic="true">{bankLive}</p>
           {level.showFlip&&remaining>0&&<button type="button"
@@ -669,7 +680,7 @@ export default function SimplifiedGame(){
       </section>
       {help&&!finished&&<ul className="sgv-glossary" role="note">
         <li>Card → meter → Pot</li>
-        <li>BANK → glass</li>
+        <li>SAVE → Savings</li>
         <li>Pill × this card</li>
         <li>0 keeps the Pot. Snap empties it.</li>
       </ul>}
