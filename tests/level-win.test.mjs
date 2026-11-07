@@ -305,6 +305,28 @@ test('a fail plays no praise, stars, count-up, or particles',()=>{
   assert.match(card,/sgv-win-tally/);
 });
 
+test('the win card keeps the end screen, the reset, and the Bank pour',async()=>{
+  const source=await read('../src/casual/SimplifiedGame.jsx');
+  const motion=await read('../src/casual/winMotion.js');
+  const css=await read('../src/casual/minimal.css');
+  const engines=await read('../src/external/engines.js');
+  assert.match(source,/<LevelEndScreen /);
+  assert.match(source,/<LevelStartScreen /);
+  assert.match(source,/className="sgv-reset-progress"/);
+  assert.match(source,/animateBankPour\(/);
+  assert.match(source,/playWinCelebration\(/);
+  assert.match(source,/LOWER ORCHARD/);
+  assert.match(source,/PLAY AGAIN/);
+  assert.doesNotMatch(source,/landing_band|sgv-flip-band|FlipLandingBand/);
+  assert.doesNotMatch(motion,/external\/engines|landing_band|sgv-flip-band/);
+  assert.doesNotMatch(engines,/winStars|Sweet!|starThresholds/);
+  assert.match(css,/\.sgv-end-card \.sgv-win-praise-1\{[^}]*color:var\(--honey-praise-h1\)/);
+  assert.match(css,/\.sgv-end-card \.sgv-win-praise-2\{[^}]*color:var\(--honey-praise-h2\)/);
+  assert.match(css,/\.sgv-end-card \.sgv-win-praise-3\{[^}]*color:var\(--honey-praise-h3\)/);
+  assert.match(css,/\.sgv-end-card \.sgv-win-tally\{[^}]*tabular-nums/);
+  assert.doesNotMatch(css,/\.sgv-win-star/);
+});
+
 function assertStylesheetTransform(node){
   const probe=document.createElement('div');
   probe.className=node.className;

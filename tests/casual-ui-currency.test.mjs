@@ -1,10 +1,4 @@
 import test from 'node:test';
-import {register} from 'node:module';
-register('./jsx-loader.mjs',import.meta.url);
-const {createElement}=await import('react');
-const {renderToStaticMarkup}=await import('react-dom/server');
-const {OnboardingControls}=await import('../src/casual/OnboardingControls.jsx');
-const {PendingPot}=await import('../src/casual/MinimalBoard.jsx');
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {fluidFillPercent,bankPourAmounts,visiblePotPayout} from '../src/casual/presentation.js';
@@ -30,20 +24,16 @@ test('tap-to-bank respects engine eligibility and previews actual payout',()=>{
  assert.equal(bankable(next),false);
 });
 
-test('P0 regression: SAVE is a button while the pending Pot is decorative',()=>{
- const pot=renderToStaticMarkup(createElement(PendingPot,{
-   value:5,cap:10,target:10,bankable:true,interactive:false
- }));
- assert.match(pot,/<div[^>]+class="sgv-pending-pot/);
- assert.doesNotMatch(pot,/<button[^>]+class="sgv-pending-pot/);
- const controls=renderToStaticMarkup(createElement(OnboardingControls,{
-   shownHand:[],level:{showFlip:false},round:null,pulseIndex:null,
-   finished:false,animating:false,available:[],onPlay(){},
-   bankPulse:false,canBank:true,potDisplay:5,bankMessage:'',bankLive:'',
-   remaining:0,docking:false,flipPulse:false,canFlip:false,getBankSource(){return null;}
- }));
- assert.match(controls,/<button[^>]+class="sgv-action sgv-bank sgv-bank-command/);
- assert.match(controls,/SAVE 5/);
+test('P0 regression: dedicated Bank remains tappable while decorative Pot is not',()=>{
+ const board=read('src/casual/MinimalBoard.jsx');
+ const screen=read('src/casual/SimplifiedGame.jsx');
+ const css=read('src/casual/minimal.css');
+ assert.match(board,/const Tag=interactive\?'button':'div'/);
+ assert.match(screen,/interactive=\{false\}/);
+ assert.match(screen,/className=\{'sgv-action sgv-bank sgv-bank-command'/);
+ assert.match(screen,/onClick=\{\(\)=>play\(\{type:'bank'\},rootRef.current\?\.querySelector\('\.sgv-pending-pot'\)\)\}/);
+ assert.match(css,/\.sgv-onboarding \.sgv-bottle-pair \.sgv-pot-display\{[\s\S]*?pointer-events:none/);
+ assert.match(board,/bankable&&interactive\?' sgv-pot-bankable':'/);
 });
 
 test('normal Bank stays eligible after three safe played cards',()=>{

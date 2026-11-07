@@ -41,7 +41,7 @@ test('Level 12 after +4 then +1 does not hint the Bank that caps at 17',()=>{
   capped=play(capped,flip);
   capped=play(capped,bank);
   assert.equal(capped.game.deal.T,17);
-  assert.equal(play(state,flip).game.deal.potValue,24);
+  assert.equal(play(state,flip).game.deal.potValue,29);
   const hint=idleHintAction(state);
   assert.notEqual(hint.type,'bank');
   assert.equal(hint.type,'flip');

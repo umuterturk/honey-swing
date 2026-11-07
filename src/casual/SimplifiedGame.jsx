@@ -1,13 +1,11 @@
-import React,{useEffect,useRef,useState} from 'react';
+import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {overswingPayout,signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
-import {HorizontalMeter,GlassChest,PendingPot} from './MinimalBoard.jsx';
-import {OnboardingHud} from './OnboardingHud.jsx';
-import {OnboardingControls} from './OnboardingControls.jsx';
-import {useHoneyLayout} from './useHoneyLayout.js';
+import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour,animateBankTargetCelebrate} from './minimalMotion.js';
 import {rawPotValue,visiblePotPayout,displayOf,settledPresentation,saveResetsVisibleFactors,potAddFlyerPhases} from './presentation.js';
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
+import {applyHoneyLayout} from './honeyWin.js';
 import {playWinCelebration} from './winMotion.js';
 import {playLevelStart} from './levelStartMotion.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
@@ -18,9 +16,9 @@ import {LevelEndScreen,LevelStartScreen,dismissLevelScreen} from './levelScreens
 import {bankAssistiveMessage,nextBankAnnouncement,shouldAutoBank} from './bankStatus.js';
 import {focusTargetAfterSkip,isSkipKey,rememberFocus} from './skipFocus.js';
 import {
-  clearOnboardingProgress,prepareOnboardingJump
+  ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress,
+  prepareOnboardingJump,readUnlockedOnboardingLevel
 } from './onboardingProgress.js';
-import {browserStorage,loadOnboardingRound,saveOnboardingRound,unlockOnboardingLevel} from './onboardingSession.js';
 import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
 import {FactorInfoOverlay} from './FactorInfoOverlay.jsx';
 import {factorInfoFor} from './factorInfoContent.js';
@@ -30,20 +28,36 @@ import {
 } from './featureIntroRegistry.js';
 import {
   newOnboardingRound,onboardingLevel,onboardingActions,onboardingFinished,
-  onboardingVictory,ONBOARDING_COUNT,GARDEN_2_START
+  onboardingVictory,wouldSnap,ONBOARDING_COUNT,GARDEN_2_START
 } from './onboardingLevels.js';
 
+const SESSION_KEY=ONBOARDING_SESSION_KEY;
+const PROGRESS_KEY=ONBOARDING_PROGRESS_KEY;
 function prefersReducedMotion(){
   return typeof window!=='undefined'&&
     !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+function browserStorage(){
+  try{return window.localStorage;}catch{return null;}
 }
 const event=(name,details={})=>{
   if(typeof window==='undefined')return;
   window.dispatchEvent(new CustomEvent('swing-casual-event',{detail:{name,...details}}));
 };
-
+function save(round){try{localStorage.setItem(SESSION_KEY,JSON.stringify(round));}catch{}}
+function initialRound(){
+  try{
+    const state=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
+    if(state&&Number.isInteger(state.levelId)&&state.levelId>=1&&state.levelId<=ONBOARDING_COUNT&&
+      state.game?.game==='overswing'&&state.game.deal&&Number.isInteger(state.turn)&&
+      Number.isInteger(state.snaps)&&Number.isInteger(state.flipCount)&&
+      Number.isInteger(state.zeroBreakCount))return state;
+  }catch{}
+  // No mid-level session: open at the unlocked level (debug jump / recovery).
+  return newOnboardingRound(readUnlockedOnboardingLevel(browserStorage(),ONBOARDING_COUNT));
+}
 export default function SimplifiedGame(){
-  const [round,setRound]=useState(loadOnboardingRound);
+  const [round,setRound]=useState(initialRound);
   const openingRef=useRef(null);
   if(openingRef.current===null)openingRef.current=featureIntroForEntry({
     round,storage:browserStorage(),reduced:prefersReducedMotion()
@@ -184,7 +198,45 @@ export default function SimplifiedGame(){
       handle.cancel();
     };
   },[finished,victory,round.levelId,deal.T]);
-  useHoneyLayout(rootRef,finished,victory);
+  useLayoutEffect(()=>{
+    const phone=rootRef.current;
+    if(!phone)return;
+    const apply=()=>{
+      const box=phone.getBoundingClientRect?.();
+      const height=box?.height||phone.clientHeight||0;
+      const width=box?.width||phone.clientWidth||0;
+      if(!(height>0)||!(width>0))return;
+      const style=getComputedStyle(phone);
+      // padding* already resolves env(safe-area-inset-*); reading --safe-* returns
+      // the unevaluated env() string, so parseFloat was always 0 on real phones.
+      const top=parseFloat(style.paddingTop)||0;
+      const right=parseFloat(style.paddingRight)||0;
+      const bottom=parseFloat(style.paddingBottom)||0;
+      const left=parseFloat(style.paddingLeft)||0;
+      phone.classList.toggle('sgv-honey-short',height-top-bottom<520);
+      applyHoneyLayout(phone.querySelector('.sgv-honey-win'),width,height,{top,right,bottom,left});
+    };
+    const nodes=[...phone.querySelectorAll(
+      ':scope > .sgv-hud, :scope > .sgv-middle, :scope > .sgv-controls'
+    )];
+    for(const node of nodes){
+      if(finished&&victory){
+        node.setAttribute('aria-hidden','true');
+        node.setAttribute('inert','');
+      }else{
+        node.removeAttribute('aria-hidden');
+        node.removeAttribute('inert');
+      }
+    }
+    apply();
+    window.addEventListener('resize',apply);
+    const ro=typeof ResizeObserver==='function'?new ResizeObserver(apply):null;
+    ro?.observe(phone);
+    return ()=>{
+      window.removeEventListener('resize',apply);
+      ro?.disconnect();
+    };
+  },[finished,victory]);
   useEffect(()=>{
     const reduced=typeof window!=='undefined'&&
       window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -321,7 +373,7 @@ export default function SimplifiedGame(){
     cancelRef.current=null;resetMotionRef.current=null;
     lossMotionRef.current=null;breakMotionRef.current=null;
     const next=newOnboardingRound(id);
-    saveOnboardingRound(next);
+    save(next);
     setRound(next);setView(displayOf(next));setShownGold(0);
     setAnimating(false);setFeedback(null);setPulse(false);setBeat('');setHelp(false);
     setDocking(Boolean(onboardingLevel(id).dock));
@@ -389,7 +441,7 @@ export default function SimplifiedGame(){
   }
   function skip(){
     event('tutorial_skip',{level:level.id});
-    unlockOnboardingLevel(GARDEN_2_START);
+    try{localStorage.setItem(PROGRESS_KEY,String(GARDEN_2_START));}catch{}
     startLevel(GARDEN_2_START);
   }
 
@@ -416,7 +468,7 @@ export default function SimplifiedGame(){
         if(onboardingVictory(next)){
           event('level_complete',{level:level.id,actions:next.turn});
           if(level.id===ONBOARDING_COUNT)event('onboarding_complete');
-          unlockOnboardingLevel(Math.min(ONBOARDING_COUNT,level.id+1));
+          try{localStorage.setItem(PROGRESS_KEY,String(Math.min(ONBOARDING_COUNT,level.id+1)));}catch{}
         }
         const outcome=change.snap?'snap':change.zeroBreak?'zero':
           change.rewards.some(reward=>reward.kind==='swing')?'cross':
@@ -618,12 +670,45 @@ export default function SimplifiedGame(){
       <GardenScene/>
       <FxLayer bus={fxRef.current}/>
       <div className="sgv-atmosphere" aria-hidden="true"/>
-      <OnboardingHud level={level} shownGold={shownGold} hearts={hearts}
-        docking={docking} devMenuOpen={devMenuOpen} help={help}
-        onReset={resetProgress} onToggleMenu={()=>setDevMenuOpen(open=>!open)}
-        onGoToLevel={goToLevelPrompt}
-        onToggleHelp={()=>{setHelp(value=>!value);setDevMenuOpen(false);}}
-        onSkip={()=>{setDevMenuOpen(false);skip();}}/>
+      <header className="sgv-hud sgv-tutorial-hud">
+        <div className="sgv-level" aria-label={'Level '+level.id+(level.telegraph?' '+level.name:'')}>
+          <span>★</span><strong>Level {level.id}</strong>
+          {level.telegraph&&<small className="sgv-level-name">{level.name}</small>}
+        </div>
+        <div className="sgv-hud-right">
+          <div className="sgv-gold-counter" aria-label={shownGold+' drops secured'}>
+            <span className="sgv-gold-icon">●</span><strong>{shownGold}</strong>
+          </div>
+          {level.showChances&&<div className={'sgv-lives'+(docking&&level.dock==='hearts'?' sgv-dock':'')}
+            aria-label={hearts+' chances remaining'}>
+            {Array.from({length:level.maxSnaps},(_,i)=><span key={i}
+              className={i<hearts?'sgv-heart':'sgv-heart sgv-heart-empty'}>♥</span>)}
+          </div>}
+          <div className="sgv-tutorial-tools">
+            <button type="button" className="sgv-reset-progress"
+              onClick={resetProgress} aria-label="Reset onboarding progress and restart Level 1"
+              title="Reset onboarding progress">
+              <span aria-hidden="true" className="sgv-reset-icon">↺</span>
+              <span className="sgv-reset-label">Reset</span>
+            </button>
+            <button type="button" className="sgv-dev-menu-toggle"
+              onClick={()=>setDevMenuOpen(open=>!open)}
+              aria-label="More onboarding tools" aria-expanded={devMenuOpen}>⋯</button>
+            {devMenuOpen&&<div className="sgv-dev-menu" role="group" aria-label="Onboarding tools">
+              <button type="button" onClick={goToLevelPrompt}>
+                Go to level…
+              </button>
+              <button type="button" onClick={()=>{setHelp(value=>!value);setDevMenuOpen(false);}}>
+                {help?'Hide help':'Show help'}
+              </button>
+              {level.id<GARDEN_2_START&&<button type="button"
+                onClick={()=>{setDevMenuOpen(false);skip();}}>
+                Skip to Level 13
+              </button>}
+            </div>}
+          </div>
+        </div>
+      </header>
       <div className="sgv-spring-top" aria-hidden="true"/>
       <div className="sgv-middle">
         <HorizontalMeter position={view.position} limit={level.rules.snapLimit}
@@ -643,13 +728,39 @@ export default function SimplifiedGame(){
           <GlassChest banked={shownGold} target={level.target}/>
         </div>
       </div>
-      <OnboardingControls
-        shownHand={shownHand} level={level} round={round} pulseIndex={pulseIndex}
-        finished={finished} animating={animating} available={available} onPlay={play}
-        bankPulse={bankPulse} canBank={canBank} potDisplay={potDisplay}
-        bankMessage={bankMessage} bankLive={bankLive} remaining={remaining}
-        docking={docking} flipPulse={flipPulse} canFlip={canFlip}
-        getBankSource={()=>rootRef.current?.querySelector('.sgv-pending-pot')}/>
+      <section className="sgv-controls sgv-tutorial-controls" aria-label="Card actions">
+        <div className="sgv-card-shelf" aria-hidden="true"/>
+        <div className="sgv-hand" aria-label="Your cards">
+          {shownHand.map((id,i)=><SimpleCard key={id} id={id} index={i}
+            value={signed(id)} showDirection={true}
+            risky={level.showChances&&wouldSnap(round,{type:'steer',index:i})}
+            highlighted={pulseIndex===i}
+            disabled={finished||animating||!available.some(a=>a.type==='steer'&&a.index===i)}
+            onPlay={(index,element)=>play({type:'steer',index},element)}/>)}
+        </div>
+        <div className="sgv-actions sgv-tutorial-actions">
+          <button type="button"
+            className={'sgv-action sgv-bank sgv-bank-command'+(bankPulse?' sgv-attention':'')}
+            disabled={!canBank}
+            onClick={()=>play({type:'bank'},rootRef.current?.querySelector('.sgv-pending-pot'))}
+            aria-label={canBank?'Save '+potDisplay+' pending drops':bankMessage}>
+            <span className="sgv-action-text">SAVE{canBank?' '+potDisplay:''}</span>
+          </button>
+          <p className="sgv-bank-live" aria-live="polite" aria-atomic="true">{bankLive}</p>
+          {level.showFlip&&remaining>0&&<button type="button"
+            className="sgv-action sgv-flip"
+            data-dock={docking&&level.dock==='flip'?true:undefined}
+            data-hint={flipPulse?true:undefined}
+            disabled={!canFlip}
+            onClick={e=>play({type:'flip'},e.currentTarget.querySelector('.sgv-next-card'))}
+            aria-label={'Flip a hidden card. '+remaining+' remain'}>
+            <span className="sgv-action-icon">⟳</span>
+            <span className="sgv-action-text">FLIP</span>
+            <span className="sgv-flip-next"><span className="sgv-next-card">?</span>
+              <small>{remaining} left</small></span>
+          </button>}
+        </div>
+      </section>
       <div className="sgv-spring-bottom" aria-hidden="true"/>
       {help&&!finished&&<ul className="sgv-glossary" role="note">
         <li>Card → meter → Pot</li>

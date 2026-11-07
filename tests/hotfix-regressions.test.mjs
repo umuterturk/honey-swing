@@ -1,7 +1,4 @@
 import test from 'node:test';
-import {register} from 'node:module';
-register('./jsx-loader.mjs',import.meta.url);
-const {OnboardingHud}=await import('../src/casual/OnboardingHud.jsx');
 import assert from 'node:assert/strict';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
@@ -16,17 +13,19 @@ import {newOnboardingRound} from '../src/casual/onboardingLevels.js';
 
 const read=async path=>readFile(new URL(path,import.meta.url),'utf8');
 
-test('reset is visible at every level without opening developer tools',()=>{
-  for(const id of [1,8,20]){
-    const header=renderToStaticMarkup(createElement(OnboardingHud,{
-      level:{id,telegraph:false,showChances:false},shownGold:0,hearts:2,
-      docking:false,devMenuOpen:false,help:false,onReset(){},
-      onToggleMenu(){},onGoToLevel(){},onToggleHelp(){},onSkip(){}
-    }));
-    assert.match(header,/class="sgv-reset-progress"/);
-    assert.match(header,/aria-label="Reset onboarding progress and restart Level 1"/);
-    assert.doesNotMatch(header,/role="group" aria-label="Onboarding tools"/);
-  }
+test('the header reset renders without a dev gate and restarts Level 1',async()=>{
+  const source=await read('../src/casual/SimplifiedGame.jsx');
+  const header=source.slice(source.indexOf('<header className="sgv-hud sgv-tutorial-hud">'),
+    source.indexOf('</header>'));
+  assert.match(header,/<button type="button" className="sgv-reset-progress"/);
+  assert.match(header,/onClick=\{resetProgress\}/);
+  assert.match(header,/aria-label="Reset onboarding progress and restart Level 1"/);
+  assert.doesNotMatch(header,/import\.meta\.env\.DEV/);
+  assert.doesNotMatch(header,/level\.id>=\d+&&<button type="button" className="sgv-reset-progress"/);
+  const reset=source.slice(source.indexOf('function resetProgress(){'),
+    source.indexOf('function nextLevel(){'));
+  assert.match(reset,/clearOnboardingProgress\(window\.localStorage\)/);
+  assert.match(reset,/startLevel\(1\)/);
   const storage={
     items:new Map([[ONBOARDING_PROGRESS_KEY,'8']]),
     getItem(key){return this.items.get(key)??null;},
@@ -43,6 +42,7 @@ test('reset is visible at every level without opening developer tools',()=>{
   }));
   assert.match(html,/sgv-honey-reset/);
   assert.match(html,/aria-label="Reset progress"/);
+  assert.doesNotMatch(html,/RESET PROGRESS/);
 });
 
 test('level start and win and lose screens render and can be dismissed',()=>{
