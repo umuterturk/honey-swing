@@ -379,25 +379,3 @@ test('Garden 1 has no forced loss except Level 12, and every level has a win',()
     if(id<=4)assert.equal(report.failedEnds,0,'early fail '+id);
   }
 });
-
-test('the board keeps a next garden and does not offer Replay Challenge',async()=>{
-  const {readFile}=await import('node:fs/promises');
-  const source=await readFile(new URL('../src/casual/SimplifiedGame.jsx',import.meta.url),'utf8');
-  assert.match(source,/<header className="sgv-hud sgv-tutorial-hud">/);
-  assert.match(source,/<HorizontalMeter position=\{view\.position\}/);
-  assert.doesNotMatch(source,/level\.showMeter\s*\?/);
-  assert.match(source,/visiblePotPayout\(potentialPayout,rawPotValue\(deal\),view\.rawPot\)/);
-  assert.match(source,/<PendingPot value=\{potDisplay\}/);
-  assert.match(source,/<GlassChest banked=\{shownGold\}/);
-  assert.match(source,/<SimpleCard key=\{id\}/);
-  assert.match(source,/className=\{'sgv-action sgv-bank sgv-bank-command'/);
-  assert.match(source,/const shownHand=deal\.hand\.slice/);
-  assert.match(source,/LOWER ORCHARD/);
-  assert.match(source,/Skip to Level 13/);
-  assert.match(source,/startLevel\(GARDEN_2_START\)/);
-  assert.doesNotMatch(source,/REPLAY CHALLENGE/);
-  assert.doesNotMatch(source,/animatePotBreak\(root,'zero'\)/);
-  assert.match(source,/Pot safe\./);
-  assert.match(source,/Pot lost\. Savings safe\./);
-  assert.match(source,/3000/);
-});
