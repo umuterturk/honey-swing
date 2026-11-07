@@ -60,6 +60,41 @@ function placeStatic(root,className,text,origin){
   root.appendChild(node);
   return node;
 }
+const FACTOR_FLYER=Object.freeze({
+  swing:Object.freeze({
+    copy:'More Flower',
+    src:'/celebration/daisy-2.png',
+    alt:'',
+    flight:0.45
+  }),
+  flip:Object.freeze({
+    copy:'More Bee',
+    src:'/bee-smiling-closed-eyes.png',
+    alt:'',
+    flight:0.45
+  })
+});
+function makeFactorFlyer(kind){
+  const spec=FACTOR_FLYER[kind];
+  if(!spec)return null;
+  const node=document.createElement('span');
+  node.className='sgv-factor-flyer sgv-factor-flyer-'+kind;
+  node.setAttribute('aria-hidden','true');
+  const img=document.createElement('img');
+  img.src=spec.src;img.alt=spec.alt;img.draggable=false;
+  const label=document.createElement('span');
+  label.textContent=spec.copy;
+  node.append(img,label);
+  return node;
+}
+function placeStaticFactor(root,kind,origin){
+  const node=makeFactorFlyer(kind);
+  if(!node)return null;
+  node.classList.add('sgv-static-outcome');
+  Object.assign(node.style,{left:origin.x+'px',top:origin.y+'px'});
+  root.appendChild(node);
+  return node;
+}
 function showReducedCard(root,view){
   const summary=reducedCardSummary(view);
   if(!root)return ()=>{};
@@ -69,10 +104,17 @@ function showReducedCard(root,view){
     const origin=pot?point(pot,root):{x:root.clientWidth*.25,y:root.clientHeight*.63};
     nodes.push(placeStatic(root,'sgv-pot-fly',summary.add,origin));
   }
-  if(summary.cross){
+  if(summary.flower){
     const pill=root.querySelector('[data-factor="swing"]');
     const origin=pill?point(pill,root):{x:root.clientWidth/2,y:root.clientHeight*.4};
-    nodes.push(placeStatic(root,'sgv-factor-tip',summary.cross,{x:origin.x,y:origin.y+28}));
+    const node=placeStaticFactor(root,'swing',{x:origin.x,y:origin.y+28});
+    if(node)nodes.push(node);
+  }
+  if(summary.bee){
+    const pill=root.querySelector('[data-factor="flip"]');
+    const origin=pill?point(pill,root):{x:root.clientWidth/2,y:root.clientHeight*.4};
+    const node=placeStaticFactor(root,'flip',{x:origin.x,y:origin.y+28});
+    if(node)nodes.push(node);
   }
   const clear=()=>removeNodes(nodes);
   const cancel=replaceStatic(clear);
@@ -201,8 +243,7 @@ export function animateSnapHeartLoss(root,side,onPop){
 }
 
 export function animateCardAction({
-  root,source,action,view,onMeter,onPot,onFactors,onSnap,onChanceLost,onComplete,
-  firstFactorAwards=[]
+  root,source,action,view,onMeter,onPot,onFactors,onSnap,onChanceLost,onComplete
 }){
   if(!root||!source||reducedMotion()){
     const summary=reducedCardSummary(view);
@@ -237,7 +278,10 @@ export function animateCardAction({
     onComplete();
   }});
   clearStatic();
-  const marks=cardMotionMarks({type:action.type,snap:!!view.snap,rewards:view.rewards||[]});
+  const marks=cardMotionMarks({
+    type:action.type,snap:!!view.snap,rewards:view.rewards||[],
+    from:view.from,to:view.to
+  });
   const limit=view.meterLimit||8;
   const side=snapSide(view);
   const finalPercent=meterPercent(view.snap?0:view.to,limit);
@@ -252,9 +296,6 @@ export function animateCardAction({
     (trackBox?flyerOrigin({track:trackBox,root:rootBox,finalPercent:50}):
       {x:root.clientWidth/2,y:root.clientHeight*.28});
   const aimX=needleHere.x-start.x,aimY=needleHere.y-start.y;
-  const finalOrigin=trackBox?flyerOrigin({
-    track:trackBox,root:rootBox,finalPercent:view.snap?waspPercent:finalPercent
-  }):null;
   if(marker){
     marker.classList.add('sgv-marker-gsap');
     const release=()=>{
@@ -354,13 +395,30 @@ export function animateCardAction({
         onPourProgress:value=>{if(alive)onPot(value);}
       }));
     };
-    if(marks.rewards!=null){
+    const hasSwing=(view.rewards||[]).some(reward=>reward.kind==='swing');
+    const hasFlip=(view.rewards||[]).some(reward=>reward.kind==='flip');
+    if(marks.swingFlyer!=null&&hasSwing){
+      tl.call(()=>{
+        if(!alive||!marker)return;
+        animations.push(flyFactorLabels({
+          root,
+          plan:[{kind:'swing',start:0,origin:point(marker,root)}]
+        }));
+      },[],marks.swingFlyer);
+    }
+    if(marks.flipFlyer!=null&&hasFlip){
       tl.call(()=>{
         if(!alive)return;
-        animations.push(flyMultiplierRewards({
-          root,rewards:view.rewards,firstFactorAwards,origin:finalOrigin
+        const flipBtn=root.querySelector('.sgv-flip');
+        const origin=flipBtn?point(flipBtn,root):
+          {x:root.clientWidth*.5,y:root.clientHeight*.82};
+        animations.push(flyFactorLabels({
+          root,
+          plan:[{kind:'flip',start:0,origin}]
         }));
-      },[],marks.rewards);
+      },[],marks.flipFlyer);
+    }
+    if(marks.rewards!=null){
       tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],marks.factors);
       tl.call(startTapPour,[],marks.pourStart||marks.meterEnd);
       tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],marks.pourEnd||marks.pot);
@@ -382,53 +440,38 @@ export function animateCardAction({
   };
 }
 
-const OBJECT_WORDS={swing:'CROSS',jackpot:'JACKPOT'};
-
-export function flyMultiplierRewards({root,rewards,firstFactorAwards=[],origin=null}){
-  if(!root||!rewards?.length||reducedMotion())return ()=>{};
-  const marker=root.querySelector('.sgv-meter-marker')||root.querySelector('.sgv-meter-track');
-  const track=root.querySelector('.sgv-meter-track');
-  if(!origin&&!marker&&!track)return ()=>{};
-  const start=origin||point(marker||track,root),nodes=[],tweens=[];
-  for(const [index,{kind,value}] of rewards.entries()){
+export function flyFactorLabels({root,plan}){
+  if(!root||!plan?.length||reducedMotion())return ()=>{};
+  const nodes=[],tweens=[];
+  for(const {kind,start,origin} of plan){
     const target=root.querySelector('[data-factor="'+kind+'"]');
-    if(!target)continue;
+    const flyer=makeFactorFlyer(kind);
+    if(!target||!flyer||!origin)continue;
     const end=point(target,root);
-    const chip=document.createElement('span');
-    chip.className='sgv-bonus-flyer';
-    chip.textContent='×'+value;
-    chip.setAttribute('aria-hidden','true');
-    Object.assign(chip.style,{left:start.x+'px',top:start.y+'px',marginLeft:'-21px',marginTop:'-16px'});
-    root.appendChild(chip);nodes.push(chip);
-    const delay=index*.055;
-    const flight=gsap.timeline({onComplete:()=>chip.remove()});
-    flight.fromTo(chip,{opacity:0,scale:.75},{opacity:1,scale:1.14,duration:.10},delay);
-    flight.to(chip,{x:end.x-start.x,y:end.y-start.y,
-      scale:.60,duration:.30,ease:'power2.inOut'},delay+.10);
-    flight.to(chip,{opacity:0,scale:.2,duration:.10},delay+.40);
-    flight.call(()=>{
+    Object.assign(flyer.style,{
+      left:origin.x+'px',top:origin.y+'px',
+      marginLeft:'-40px',marginTop:'-16px'
+    });
+    root.appendChild(flyer);nodes.push(flyer);
+    const flight=FACTOR_FLYER[kind].flight;
+    const tl=gsap.timeline({onComplete:()=>flyer.remove()});
+    tl.fromTo(flyer,{opacity:0,scale:.82},{opacity:1,scale:1.06,duration:.10},start);
+    tl.to(flyer,{
+      x:end.x-origin.x,y:end.y-origin.y,scale:.72,
+      duration:flight-0.20,ease:'power2.inOut'
+    },start+0.10);
+    tl.to(flyer,{opacity:0,scale:.35,duration:.10},start+flight-0.10);
+    tl.call(()=>{
       const bounce=gsap.fromTo(target,{scale:.88},
         {scale:1,duration:.26,ease:'back.out(2.1)'});
       tweens.push(bounce);
-    },[],delay+.40);
-    tweens.push(flight);
-    if(OBJECT_WORDS[kind]){
-      const tip=document.createElement('span');
-      tip.className='sgv-factor-tip';
-      tip.textContent=OBJECT_WORDS[kind];
-      Object.assign(tip.style,{left:end.x+'px',top:end.y+28+'px'});
-      tip.setAttribute('aria-hidden','true');
-      root.appendChild(tip);nodes.push(tip);
-      tweens.push(gsap.fromTo(tip,{opacity:0,y:4},{
-        opacity:1,y:0,duration:.16,delay:delay+.3,
-        onComplete:()=>gsap.to(tip,{opacity:0,duration:.2,delay:.52,onComplete:()=>tip.remove()})
-      }));
-    }
+    },[],start+flight-0.10);
+    tweens.push(tl);
   }
   return ()=>{
     for(const t of tweens)t.kill?.();
     removeNodes(nodes);
-    for(const {kind} of rewards){
+    for(const {kind} of plan){
       const pill=root.querySelector('[data-factor="'+kind+'"]');
       if(pill)gsap.set(pill,{clearProps:'scale'});
     }

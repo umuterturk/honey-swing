@@ -186,6 +186,18 @@ test('reduced motion uses More Flower / More Bee and never CROSS',()=>{
   assert.equal(both.cross,null);
 });
 
+test('factor flyer motion uses More Flower / More Bee art and drops CROSS chips',()=>{
+  const motion=readFileSync(new URL('../src/casual/minimalMotion.js',import.meta.url),'utf8');
+  assert.match(motion,/More Flower/);
+  assert.match(motion,/More Bee/);
+  assert.match(motion,/daisy-2\.png/);
+  assert.match(motion,/bee-smiling-closed-eyes\.png/);
+  assert.doesNotMatch(motion,/OBJECT_WORDS/);
+  assert.doesNotMatch(motion,/textContent='CROSS'/);
+  const css=readFileSync(new URL('../src/casual/minimal.css',import.meta.url),'utf8');
+  assert.match(css,/\.sgv-factor-flyer\b/);
+});
+
 test('reduced motion Snap keeps add hidden and does not shake',()=>{
   const zero=reducedCardSummary({to:0,rawPotAfter:17,addedToPot:4,rewards:[],factorsAfter:[],snap:false});
   assert.equal(zero.position,0);
