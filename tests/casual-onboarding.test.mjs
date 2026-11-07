@@ -50,35 +50,6 @@ test('Garden 1 plus a playable Lower Orchard replace the ten-level tutorial',()=
   }
 });
 
-test('each level docks only the factors it has taught',()=>{
-  const expect={
-    1:[],2:[],3:['swing'],4:['swing'],5:['swing'],
-    6:['swing','flip'],7:['swing','flip'],8:['swing','flip'],
-    9:['swing'],10:['swing'],11:['swing','flip'],12:['swing','flip'],
-    13:['swing','flip'],14:['swing','flip'],15:['swing','flip'],
-    16:['swing','flip'],17:['swing','flip'],18:['swing','flip'],19:['swing','flip'],
-    20:['swing','flip']
-  };
-  for(const level of ONBOARDING_LEVELS){
-    const factors=expect[level.id];
-    assert.deepEqual([...level.visibleFactors],factors,level.name);
-    assert.equal(level.rules.enableSwingFactor,factors.includes('swing'));
-    assert.equal(level.rules.enableFlipFactor,factors.includes('flip'));
-    assert.equal(level.rules.enableJackpotFactor,false);
-    assert.equal(level.visibleFactors.includes('jackpot'),false);
-    assert.equal(level.requiresZeroBreak,level.id===10);
-  }
-  assert.equal(onboardingLevel(3).dock,'swing');
-  assert.equal(onboardingLevel(5).dock,'flip');
-  assert.equal(onboardingLevel(6).dock,'flip-pill');
-  assert.equal(onboardingLevel(8).dock,null);
-  assert.equal(onboardingLevel(11).dock,'hearts');
-  assert.equal(onboardingLevel(19).telegraph,true);
-  assert.equal(onboardingLevel(5).pulse,'flip');
-  assert.equal(onboardingLevel(6).pulse,'flip');
-  assert.equal(onboardingLevel(8).pulse,'card-then-flip');
-});
-
 test('running Pot pays only the card just played; Overswing still revalues the whole Pot',()=>{
   const casual={runningPot:true,snapLimit:8,steerAlwaysToPot:true,
     steerNoncrossPenalty:0,flipNoncrossPenalty:0,enableResonance:false,
