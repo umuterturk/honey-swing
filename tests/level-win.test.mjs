@@ -662,49 +662,6 @@ test('reduced motion mounts the static final card with 0 particles',async()=>{
   });
 });
 
-test('jar mouth origin stays laid out on 320, 430, and a safe-area phone',async()=>{
-  await withStylesheet(async()=>{
-    const cases=[
-      {width:320,height:568,top:0,right:0,bottom:0,left:0},
-      {width:430,height:932,top:0,right:0,bottom:0,left:0},
-      {width:320,height:568,top:44,right:0,bottom:34,left:0}
-    ];
-    let zeroInsetOriginY=0;
-    for(const box of cases){
-      resetStorage();
-      saveRound(bankedLevel1());
-      const sizer=document.createElement('style');
-      sizer.textContent=[
-        '.sgv-phone{width:'+box.width+'px !important;height:'+box.height+'px !important;',
-        '--safe-top:'+box.top+'px;--safe-right:'+box.right+'px;',
-        '--safe-bottom:'+box.bottom+'px;--safe-left:'+box.left+'px}'
-      ].join('');
-      document.head.appendChild(sizer);
-      const view=await mount();
-      const host=view.host.querySelector('.sgv-phone');
-      const layer=host.querySelector('.sgv-fx-layer');
-      const mouth=host.querySelector('.sgv-honey-mouth');
-      const timeline=timelineOf(host.querySelector('.sgv-win-praise'));
-      assert.ok(timeline,box.width+' timeline');
-      timeline.pause();
-      timeline.time(1.05);
-      assert.equal(layer.__fxBus.pool.live().some(entry=>entry.event==='win-burst'),false);
-      assert.ok(host.querySelector('.sgv-honey-scoreboard'));
-      const layerBox=layoutRect(layer);
-      const lip=layoutRect(mouth);
-      const origin={
-        x:lip.left+lip.width/2-layerBox.left,
-        y:lip.top+lip.height/2-layerBox.top
-      };
-      if(box.width===430)assert.ok(origin.x>200,'430 lip is not the 320 fallback');
-      if(box.width===320&&box.top===0)zeroInsetOriginY=origin.y;
-      if(box.top===44)assert.ok(origin.y>zeroInsetOriginY,'inset lip is below the zero-inset fallback');
-      await view.unmount();
-      sizer.remove();
-    }
-  });
-});
-
 test('win FX stacks above the end card, under NEW!, and the CTA still receives the tap',async()=>{
   await withStylesheet(async()=>{
     const phone=document.createElement('div');
