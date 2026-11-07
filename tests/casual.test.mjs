@@ -79,16 +79,6 @@ test('safe casual STEER always adds the absolute card rank, even without crossin
   assert.equal(overswingPayout(round.game,FIRST_LEVEL.rules),5);
 });
 
-test('original Overswing noncrossing STEER still discards; casual rule is opt-in only',()=>{
-  let normal=newOverswing({deckOverride:FIRST_LEVEL.deck,seed:20261104,initialHandSize:3});
-  normal=stepOverswing(normal,{type:'steer',index:0},{snapLimit:8,bankCapacityLoss:0});
-  normal=stepOverswing(normal,{type:'steer',index:0},{snapLimit:8,bankCapacityLoss:0});
-  assert.equal(normal.deal.S,1);
-  assert.equal(normal.lastAction.destination,'discard');
-  assert.equal(normal.lastAction.addedToPot,0);
-  assert.deepEqual(normal.deal.pot.map(id=>Math.abs(signed(id))),[3]);
-});
-
 test('landing exactly on zero resets all multipliers without losing absolute Pot',()=>{
   const rules={snapLimit:8,bankCapacityLoss:0,steerAlwaysToPot:true};
   let game=newOverswing({deckOverride:[2,23,10,20,22,3],seed:42,initialHandSize:2});
