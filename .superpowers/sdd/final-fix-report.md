@@ -9,3 +9,12 @@ Tests:
 - `node --test tests/motion-order.test.mjs`: PASS, 13/13.
 - `npm test`: PASS, 177/177.
 - IDE diagnostics for edited files: no linter errors.
+
+---
+Status: DONE (power2.out cubic inverse)
+Fix:
+- `inverseNeedleGlideEase` now uses `1 - Math.cbrt(1-p)` for GSAP `power2.out` (cubic), not `sqrt`.
+- Recomputed `zeroCrossMark` / swing flyer marks in `tests/motion-order.test.mjs` (e.g. steer 0.473, flip 0.533, reverse cross 0.511).
+Tests:
+- `node --test tests/motion-order.test.mjs`: PASS, 13/13.
+- `npm test`: PASS, 177/177.

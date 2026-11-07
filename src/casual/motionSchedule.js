@@ -7,7 +7,7 @@ export const NEEDLE_GLIDE_EASE='power2.out';
 
 function inverseNeedleGlideEase(progress){
   const p=Math.max(0,Math.min(1,progress));
-  return 1-Math.sqrt(1-p);
+  return 1-Math.cbrt(1-p);
 }
 
 export function zeroCrossMark({from,to,meterStart,meterEnd}){

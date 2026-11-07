@@ -34,7 +34,7 @@ test('a crossing Flip reveals before either reward particle',()=>{
     type:'flip',rewards:crossingFlip,from:3,to:-2
   });
   assert.equal(marks.flipFlyer,0.140);
-  assert.equal(marks.swingFlyer,0.554);
+  assert.equal(marks.swingFlyer,0.533);
   assert.equal(marks.rewards,0.140);
   assert.ok(marks.flipFlyer<marks.swingFlyer);
   assert.ok(marks.swingFlyer<=marks.meterEnd);
@@ -48,8 +48,8 @@ test('a Steer cross finishes the meter glide before its reward and tap pour',()=
   });
   assert.equal(marks.meterStart,0.420);
   assert.equal(marks.meterEnd,0.620);
-  assert.equal(marks.swingFlyer,0.494);
-  assert.equal(marks.rewards,0.494);
+  assert.equal(marks.swingFlyer,0.473);
+  assert.equal(marks.rewards,0.473);
   assert.equal(marks.pourStart,0.620);
   assert.ok(marks.meterStart<=marks.swingFlyer);
   assert.ok(marks.swingFlyer<=marks.meterEnd);
@@ -117,8 +117,8 @@ test('reward flyers use the final meter position, not a mid-glide marker',()=>{
 });
 
 test('zeroCrossMark hits 0 during a sign-changing glide',()=>{
-  assert.equal(zeroCrossMark({from:3,to:-2,meterStart:0.420,meterEnd:0.620}),0.494);
-  assert.equal(zeroCrossMark({from:-2,to:3,meterStart:0.480,meterEnd:0.680}),0.525);
+  assert.equal(zeroCrossMark({from:3,to:-2,meterStart:0.420,meterEnd:0.620}),0.473);
+  assert.equal(zeroCrossMark({from:-2,to:3,meterStart:0.480,meterEnd:0.680}),0.511);
   assert.equal(zeroCrossMark({from:2,to:0,meterStart:0.420,meterEnd:0.620}),0.620);
   assert.equal(zeroCrossMark({from:2,to:5,meterStart:0.420,meterEnd:0.620}),null);
   assert.equal(zeroCrossMark({from:0,to:3,meterStart:0.420,meterEnd:0.620}),0.420);
@@ -128,7 +128,7 @@ test('Swing flyer starts at zeroCross; Flip flyer at faceEnd; both may coexist',
   const steer=cardMotionMarks({
     type:'steer',rewards:[{kind:'swing',value:2}],from:3,to:-2
   });
-  assert.equal(steer.swingFlyer,0.494);
+  assert.equal(steer.swingFlyer,0.473);
   assert.equal(steer.flipFlyer,null);
   assert.equal(steer.rewards,steer.swingFlyer);
 
@@ -144,7 +144,7 @@ test('Swing flyer starts at zeroCross; Flip flyer at faceEnd; both may coexist',
     type:'flip',rewards:[{kind:'swing',value:2},{kind:'flip',value:2}],from:3,to:-2
   });
   assert.equal(both.flipFlyer,0.140);
-  assert.equal(both.swingFlyer,0.554);
+  assert.equal(both.swingFlyer,0.533);
   assert.equal(both.rewards,0.140);
   assert.ok(both.flipFlyer<both.swingFlyer);
 });
@@ -153,8 +153,10 @@ test('factors update after the last Flower/Bee flyer arrives',()=>{
   const both=cardMotionMarks({
     type:'flip',rewards:crossingFlip,from:3,to:-2
   });
-  assert.ok(both.factors>=both.swingFlyer+0.45);
-  assert.ok(both.factors>=both.flipFlyer+0.45);
+  const afterSwing=Math.round((both.swingFlyer+0.45)*1000)/1000;
+  const afterFlip=Math.round((both.flipFlyer+0.45)*1000)/1000;
+  assert.ok(both.factors>=afterSwing);
+  assert.ok(both.factors>=afterFlip);
 });
 
 test('Swing without a zero cross falls back to meterStart',()=>{
