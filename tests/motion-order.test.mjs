@@ -2,53 +2,58 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
-  STATIC_OUTCOME_MS,cardMotionMarks,flyerOrigin,reducedBankSummary,reducedCardSummary
+  STATIC_OUTCOME_MS,cardMotionMarks,flyerOrigin,reducedBankSummary,reducedCardSummary,
+  zeroCrossMark
 } from '../src/casual/motionSchedule.js';
 
 const flipReward=[{kind:'flip',value:3}];
 const crossingFlip=[{kind:'swing',value:2},{kind:'flip',value:2}];
 
 test('first Flip× reveals the face, centers, then arrives at the needle before rewards',()=>{
-  const marks=cardMotionMarks({type:'flip',rewards:flipReward});
+  const marks=cardMotionMarks({type:'flip',rewards:flipReward,from:1,to:4});
   assert.equal(marks.faceEnd,0.140);
+  assert.equal(marks.flipFlyer,0.140);
+  assert.equal(marks.rewards,0.140);
   assert.equal(marks.centerAt,0.280);
   assert.equal(marks.cardArrive,0.480);
   assert.equal(marks.meterStart,0.480);
   assert.equal(marks.meterEnd,0.680);
-  assert.equal(marks.rewards,0.680);
   assert.equal(marks.pourStart,0.680);
   assert.equal(marks.pourEnd,1.400);
+  assert.ok(marks.faceEnd<=marks.flipFlyer);
+  assert.ok(marks.flipFlyer<=marks.meterEnd);
   assert.ok(marks.faceEnd<=marks.centerAt);
   assert.ok(marks.centerAt<=marks.cardArrive);
   assert.ok(marks.cardArrive<=marks.meterStart);
-  assert.ok(marks.meterEnd<=marks.rewards);
   assert.ok(marks.pourStart<=marks.pourEnd);
   assert.ok(marks.pourEnd<=marks.end);
 });
 
 test('a crossing Flip reveals before either reward particle',()=>{
-  const marks=cardMotionMarks({type:'flip',rewards:crossingFlip});
-  assert.equal(marks.faceEnd,0.140);
-  assert.equal(marks.meterEnd,0.680);
-  assert.equal(marks.rewards,0.680);
-  assert.ok(marks.meterEnd<=marks.rewards);
+  const marks=cardMotionMarks({
+    type:'flip',rewards:crossingFlip,from:3,to:-2
+  });
+  assert.equal(marks.flipFlyer,0.140);
+  assert.equal(marks.swingFlyer,0.600);
+  assert.equal(marks.rewards,0.140);
+  assert.ok(marks.flipFlyer<marks.swingFlyer);
+  assert.ok(marks.swingFlyer<=marks.meterEnd);
   assert.equal(marks.pourStart,0.680);
   assert.equal(marks.add,0.680);
 });
 
 test('a Steer cross finishes the meter glide before its reward and tap pour',()=>{
-  const marks=cardMotionMarks({type:'steer',rewards:[{kind:'swing',value:2}]});
-  assert.equal(marks.centerAt,0.220);
-  assert.equal(marks.cardArrive,0.420);
+  const marks=cardMotionMarks({
+    type:'steer',rewards:[{kind:'swing',value:2}],from:3,to:-2
+  });
   assert.equal(marks.meterStart,0.420);
   assert.equal(marks.meterEnd,0.620);
-  assert.equal(marks.rewards,0.620);
+  assert.equal(marks.swingFlyer,0.540);
+  assert.equal(marks.rewards,0.540);
   assert.equal(marks.pourStart,0.620);
-  assert.equal(marks.pourEnd,1.340);
-  assert.ok(marks.centerAt<=marks.cardArrive);
-  assert.ok(marks.meterEnd<=marks.rewards);
+  assert.ok(marks.meterStart<=marks.swingFlyer);
+  assert.ok(marks.swingFlyer<=marks.meterEnd);
   assert.ok(marks.meterEnd<=marks.pourStart);
-  assert.ok(marks.pourEnd<=marks.end);
 });
 
 test('Snap schedule moves the needle only after the card arrives',()=>{
@@ -111,19 +116,77 @@ test('reward flyers use the final meter position, not a mid-glide marker',()=>{
   }).x,68);
 });
 
-test('reduced motion keeps add and CROSS and does not shake Snap',()=>{
-  assert.equal(STATIC_OUTCOME_MS,1100);
-  const card=reducedCardSummary({to:4,rawPotAfter:9,addedToPot:4,rewards:[],factorsAfter:[]});
-  assert.equal(card.add,'+4');
-  assert.equal(card.cross,null);
-  assert.equal(card.position,4);
-  assert.equal(card.shake,false);
-  const cross=reducedCardSummary({
-    to:-2,rawPotAfter:13,addedToPot:10,rewards:[{kind:'swing',value:2}],factorsAfter:[{kind:'swing',value:2}]
+test('zeroCrossMark hits 0 during a sign-changing glide',()=>{
+  assert.equal(zeroCrossMark({from:3,to:-2,meterStart:0.420,meterEnd:0.620}),0.540);
+  assert.equal(zeroCrossMark({from:-2,to:3,meterStart:0.480,meterEnd:0.680}),0.560);
+  assert.equal(zeroCrossMark({from:2,to:0,meterStart:0.420,meterEnd:0.620}),0.620);
+  assert.equal(zeroCrossMark({from:2,to:5,meterStart:0.420,meterEnd:0.620}),null);
+  assert.equal(zeroCrossMark({from:0,to:3,meterStart:0.420,meterEnd:0.620}),0.420);
+});
+
+test('Swing flyer starts at zeroCross; Flip flyer at faceEnd; both may coexist',()=>{
+  const steer=cardMotionMarks({
+    type:'steer',rewards:[{kind:'swing',value:2}],from:3,to:-2
   });
-  assert.equal(cross.cross,'CROSS');
-  assert.equal(cross.add,'+10');
-  assert.equal(cross.shake,false);
+  assert.equal(steer.swingFlyer,0.540);
+  assert.equal(steer.flipFlyer,null);
+  assert.equal(steer.rewards,steer.swingFlyer);
+
+  const flip=cardMotionMarks({
+    type:'flip',rewards:[{kind:'flip',value:3}],from:1,to:4
+  });
+  assert.equal(flip.faceEnd,0.140);
+  assert.equal(flip.flipFlyer,0.140);
+  assert.equal(flip.swingFlyer,null);
+  assert.equal(flip.rewards,0.140);
+
+  const both=cardMotionMarks({
+    type:'flip',rewards:[{kind:'swing',value:2},{kind:'flip',value:2}],from:3,to:-2
+  });
+  assert.equal(both.flipFlyer,0.140);
+  assert.equal(both.swingFlyer,0.600);
+  assert.equal(both.rewards,0.140);
+  assert.ok(both.flipFlyer<both.swingFlyer);
+});
+
+test('Swing without a zero cross falls back to meterStart',()=>{
+  const marks=cardMotionMarks({
+    type:'steer',rewards:[{kind:'swing',value:2}],from:2,to:5
+  });
+  assert.equal(marks.swingFlyer,marks.meterStart);
+});
+
+test('reduced motion uses More Flower / More Bee and never CROSS',()=>{
+  assert.equal(STATIC_OUTCOME_MS,1100);
+  const quiet=reducedCardSummary({to:4,rawPotAfter:9,addedToPot:4,rewards:[],factorsAfter:[]});
+  assert.equal(quiet.add,'+4');
+  assert.equal(quiet.flower,null);
+  assert.equal(quiet.bee,null);
+  assert.equal(quiet.cross,null);
+  const swing=reducedCardSummary({
+    to:-2,rawPotAfter:13,addedToPot:10,
+    rewards:[{kind:'swing',value:2}],factorsAfter:[{kind:'swing',value:2}]
+  });
+  assert.equal(swing.flower,'More Flower');
+  assert.equal(swing.bee,null);
+  assert.equal(swing.cross,null);
+  const flip=reducedCardSummary({
+    to:4,rawPotAfter:9,addedToPot:4,
+    rewards:[{kind:'flip',value:3}],factorsAfter:[{kind:'flip',value:3}]
+  });
+  assert.equal(flip.bee,'More Bee');
+  assert.equal(flip.flower,null);
+  const both=reducedCardSummary({
+    to:-2,rawPotAfter:13,addedToPot:10,
+    rewards:[{kind:'swing',value:2},{kind:'flip',value:2},{kind:'jackpot',value:2}],
+    factorsAfter:[]
+  });
+  assert.equal(both.flower,'More Flower');
+  assert.equal(both.bee,'More Bee');
+  assert.equal(both.cross,null);
+});
+
+test('reduced motion Snap keeps add hidden and does not shake',()=>{
   const zero=reducedCardSummary({to:0,rawPotAfter:17,addedToPot:4,rewards:[],factorsAfter:[],snap:false});
   assert.equal(zero.position,0);
   assert.equal(zero.add,'+4');
