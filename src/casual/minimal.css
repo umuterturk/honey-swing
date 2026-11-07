@@ -77,14 +77,16 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-multipliers{position:absolute;z-index:5;left:9%;right:9%;top:76px;display:flex;align-items:flex-start;justify-content:flex-start;gap:clamp(6px,2vw,12px)}
 .sgv-multiplier-pill{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:clamp(48px,13vw,59px);height:31px;padding:2px 7px 3px;border-radius:18px;border:3px solid #fff8e9;box-shadow:0 4px 0 var(--pill-rim),0 6px 8px #776a8040,inset 0 2px #ffffffa1;background:linear-gradient(#fff5e0,var(--pill-color));font-size:clamp(16px,4.3vw,21px);font-weight:1000;color:var(--pill-text);text-shadow:0 1px #fff9;font-variant-numeric:tabular-nums;white-space:nowrap;transform-origin:50% 0%}
 .sgv-multiplier-pill::before{content:"";position:absolute;z-index:-1;left:50%;top:-19px;width:3px;height:19px;border-radius:2px;background:#f2e0cbd9;box-shadow:0 0 2px #8e6179;transform:translateX(-50%)}
+button.sgv-multiplier-pill{font:inherit;color:inherit;appearance:none;cursor:pointer}
+button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-multiplier-swing{--pill-color:#efc4ee;--pill-rim:#b688c3;--pill-text:#744c9b;min-width:clamp(58px,16vw,72px);padding-left:8px;padding-right:4px}
 .sgv-multiplier-flip{--pill-color:#c9eaff;--pill-rim:#7eb8db;--pill-text:#3f73a9;margin-left:auto;min-width:clamp(58px,16vw,72px);padding-left:8px;padding-right:4px}
 .sgv-multiplier-jackpot{--pill-color:#ffe29a;--pill-rim:#d9ac59;--pill-text:#a46a35}
 .sgv-multiplier-icon{display:block;width:22px;height:22px;object-fit:contain;flex:none;pointer-events:none;user-select:none;-webkit-user-select:none}
 .sgv-multiplier-bee{transform:scaleX(-1)}
 .sgv-multiplier-value{position:relative;z-index:1;line-height:1}
-.sgv-factor-flyer{position:absolute;z-index:25;display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:4px 10px 5px;border-radius:17px;border:3px solid #fff8cd;background:linear-gradient(#fff6bb,#ffd35f);box-shadow:0 3px 0 #d69b42,0 5px 10px #a8764d70;color:#885326;font-size:13px;font-weight:1000;line-height:1;white-space:nowrap;pointer-events:none;transform-origin:center;will-change:transform,opacity}
-.sgv-factor-flyer img{width:20px;height:20px;object-fit:contain;flex:none;pointer-events:none}
+.sgv-factor-flyer{position:absolute;z-index:28;display:inline-flex;align-items:center;gap:10px;min-height:54px;padding:10px 18px 12px;border-radius:28px;border:4px solid #fffef0;background:linear-gradient(#fff8d0,#ffd45a 55%,#f0b42e);box-shadow:0 6px 0 #c88828,0 10px 18px #8a5a3066,inset 0 2px #ffffffcc;color:#7a4818;font-size:clamp(18px,5.2vw,24px);font-weight:1000;letter-spacing:.02em;line-height:1;white-space:nowrap;pointer-events:none;transform-origin:center;will-change:transform,opacity;text-shadow:0 1px #ffe9a8}
+.sgv-factor-flyer img{width:clamp(28px,8vw,36px);height:clamp(28px,8vw,36px);object-fit:contain;flex:none;pointer-events:none;filter:drop-shadow(0 2px 2px #00000033)}
 .sgv-event-snap .sgv-meter-track{animation:sgv-meter-shake .4s ease}
 @keyframes sgv-meter-shake{0%,100%{translate:0 0}20%,60%{translate:-7px 0}40%,80%{translate:7px 0}}
 .sgv-flight-center{position:absolute;left:50%;top:41%;width:1px;height:1px;pointer-events:none}

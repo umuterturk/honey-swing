@@ -20,6 +20,8 @@ import {
   prepareOnboardingJump,readUnlockedOnboardingLevel
 } from './onboardingProgress.js';
 import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
+import {FactorInfoOverlay} from './FactorInfoOverlay.jsx';
+import {factorInfoFor} from './factorInfoContent.js';
 import {
   boardTapDuringIntro,dismissFeatureIntro,featureIntroForEntry,introPointerDecision,
   derivedFeatureUnlocks
@@ -93,10 +95,13 @@ export default function SimplifiedGame(){
   const priorFocusRef=useRef(null),skipFocusedRef=useRef(false);
   const bankAnnounceRef=useRef(null);
   const [bankLive,setBankLive]=useState('');
+  const [factorInfo,setFactorInfo]=useState(null);
+  const factorInfoOpenerRef=useRef(null);
   const level=onboardingLevel(round.levelId);
   const {game}=round,deal=game.deal;
   const victory=onboardingVictory(round),finished=onboardingFinished(round);
-  const available=finished||animating||introGate?[]:onboardingActions(round);
+  const factorInfoEnabled=!animating&&!introGate&&!startOpen&&!finished;
+  const available=finished||animating||introGate||factorInfo?[]:onboardingActions(round);
   const canBank=available.some(a=>a.type==='bank'&&a.dropIndex==null);
   const canFlip=available.some(a=>a.type==='flip');
   const autoBank=shouldAutoBank(available);
@@ -279,6 +284,10 @@ export default function SimplifiedGame(){
     bankAnnounceRef.current=result.previous;
     if(result.text)setBankLive(result.text);
   },[bankMessage]);
+  useEffect(()=>{
+    if(!factorInfoEnabled&&factorInfo)setFactorInfo(null);
+  },[factorInfoEnabled,factorInfo]);
+  useEffect(()=>{setFactorInfo(null);},[round.levelId]);
   useEffect(()=>{
     // Mark first Save unlock as seen without overlaying a second "SAVE N" on the button.
     if(!canBank)return;
@@ -548,6 +557,7 @@ export default function SimplifiedGame(){
   return <main className="sgv-page">
     <div ref={rootRef}
       data-honey-win={finished&&victory?'true':undefined}
+      data-factor-info={factorInfo?true:undefined}
       className={'sgv-phone sgv-onboarding sgv-onboarding-'+level.id+
         (level.garden===2?' sgv-orchard':'')+' sgv-event-'+(feedback||round.event.type)+
         (arriving?' sgv-level-arrival':'')}
@@ -684,7 +694,14 @@ export default function SimplifiedGame(){
       <div className="sgv-middle">
         <HorizontalMeter position={view.position} limit={level.rules.snapLimit}
           multipliers={view.factors} visibleFactors={level.visibleFactors}
-          showDanger={level.showChances} beat={ack?ack.text:beat} dock={docking?level.dock:null}/>
+          showDanger={level.showChances} beat={ack?ack.text:beat} dock={docking?level.dock:null}
+          factorInfoEnabled={factorInfoEnabled}
+          onFactorInfo={kind=>{
+            factorInfoOpenerRef.current=rootRef.current?.querySelector(
+              '.sgv-multiplier-pill[data-factor="'+kind+'"]'
+            )||null;
+            setFactorInfo(kind);
+          }}/>
         <span className="sgv-flight-center" aria-hidden="true"/>
         <div className="sgv-bottle-pair" aria-label="Pending Pot and secured glass">
           <PendingPot value={potDisplay} target={level.target}
@@ -731,6 +748,13 @@ export default function SimplifiedGame(){
         <li>Pill × this card</li>
         <li>0 keeps the Pot. Snap empties it.</li>
       </ul>}
+      {factorInfo&&factorInfoFor(factorInfo)&&<FactorInfoOverlay
+        info={factorInfoFor(factorInfo)}
+        onDismiss={()=>{
+          setFactorInfo(null);
+          factorInfoOpenerRef.current?.focus?.();
+          factorInfoOpenerRef.current=null;
+        }}/>}
       {introGate&&introCard&&<FeatureIntroOverlay intro={introCard}
         reduced={prefersReducedMotion()} bus={fxRef.current} onDismiss={dismissIntro}
         levelId={round.levelId} introStartRef={introStartRef} levelReadyRef={levelReadyRef}/>}

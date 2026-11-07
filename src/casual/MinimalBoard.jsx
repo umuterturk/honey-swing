@@ -20,7 +20,8 @@ export function DropletIcon({className=''}) {
  </svg>;
 }
 
-export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=null,showDanger=true,beat='',dock=null}){
+export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=null,showDanger=true,beat='',dock=null,
+  onFactorInfo=null,factorInfoEnabled=false}){
  const percentage=meterPercent(position,limit);
  return <section className="sgv-meter-section" aria-label="Swing meter and multipliers">
    <div className="sgv-meter" role="group" data-value={position}
@@ -54,17 +55,25 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
          .filter(({kind})=>!visibleFactors||visibleFactors.includes(kind))
          .slice()
          .sort((a,b)=>(a.kind==='flip')-(b.kind==='flip'))
-         .map(({kind,value,label})=>
-         <span key={kind} className={'sgv-multiplier-pill sgv-multiplier-'+kind+
-           ((dock==='swing'&&kind==='swing')||(dock==='flip-pill'&&kind==='flip')||
-            (dock==='jackpot'&&kind==='jackpot')?' sgv-dock':'')}
-           data-factor={kind} title={label} aria-label={label+': times '+value}>
-           <span className="sgv-multiplier-value">×{value}</span>
-           {kind==='swing'?<img className="sgv-multiplier-icon sgv-multiplier-daisy" src="/celebration/daisy-2.png"
-             alt="" aria-hidden="true" draggable="false"/>:null}
-           {kind==='flip'?<img className="sgv-multiplier-icon sgv-multiplier-bee" src="/bee-smiling-closed-eyes.png"
-             alt="" aria-hidden="true" draggable="false"/>:null}
-         </span>)}
+         .map(({kind,value,label})=>{
+           const infoKind=kind==='swing'||kind==='flip'?kind:null;
+           const canInfo=!!(infoKind&&onFactorInfo);
+           const Tag=canInfo?'button':'span';
+           return <Tag key={kind} type={canInfo?'button':undefined}
+             className={'sgv-multiplier-pill sgv-multiplier-'+kind+
+               ((dock==='swing'&&kind==='swing')||(dock==='flip-pill'&&kind==='flip')||
+                (dock==='jackpot'&&kind==='jackpot')?' sgv-dock':'')}
+             data-factor={kind} title={label}
+             aria-label={canInfo?label+' info':label+': times '+value}
+             disabled={canInfo?!factorInfoEnabled:undefined}
+             onClick={canInfo&&factorInfoEnabled?()=>onFactorInfo(infoKind):undefined}>
+             <span className="sgv-multiplier-value">×{value}</span>
+             {kind==='swing'?<img className="sgv-multiplier-icon sgv-multiplier-daisy" src="/celebration/daisy-2.png"
+               alt="" aria-hidden="true" draggable="false"/>:null}
+             {kind==='flip'?<img className="sgv-multiplier-icon sgv-multiplier-bee" src="/bee-smiling-closed-eyes.png"
+               alt="" aria-hidden="true" draggable="false"/>:null}
+           </Tag>;
+         })}
      </div>
      {beat?<p className="sgv-meter-beat" role="status">{beat}</p>:null}
    </div>
