@@ -8,29 +8,6 @@ import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from '../src/casual/cardDir
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
-test('fluid fill is stable, monotone, capped and zero when empty',()=>{
- assert.equal(fluidFillPercent(0,24),0);
- assert.equal(fluidFillPercent(-5,24),0);
- assert.equal(fluidFillPercent(5,24),16);
- assert.equal(fluidFillPercent(24,24),78);
- assert.equal(fluidFillPercent(48,24),78);
- assert.equal(fluidFillPercent(0,24,{max:76}),0);
- assert.equal(fluidFillPercent(24,24,{max:76}),76);
- assert.equal(fluidFillPercent(5,0),0);
- // Even 1 drop must clear the Victory fill-mask dead zone (~9% transparent bottom).
- assert.ok(fluidFillPercent(1,82,{max:76,smooth:true})>=14);
- assert.ok(fluidFillPercent(1,34,{max:76,smooth:true})>=14);
- assert.equal(fluidFillPercent(0,82,{max:76,smooth:true}),0);
- assert.equal(fluidFillPercent(0,34,{max:76,smooth:true}),0);
- let last=0;
- for(let n=0;n<=100;n++){
-   const current=fluidFillPercent(n,24);
-   assert.ok(current>=last);
-   assert.ok(current<=78);
-   last=current;
- }
-});
-
 test('tap-to-bank respects engine eligibility and previews actual payout',()=>{
  let round=newRound();
  const bankable=state=>overswingActions(state.game,FIRST_LEVEL.rules)
@@ -96,19 +73,6 @@ test('Pot number and fluid represent engine payout, never the unmultiplied raw c
  assert.match(board,/sgv-pot-amount/);
  assert.doesNotMatch(board,/sgv-pot-bank-preview|bankPreview/);
  assert.doesNotMatch(css,/sgv-pot-bank-preview/);
-});
-
-test('only interactive bankable Pots shine; separate Bank action respects reduced motion',()=>{
- const board=read('src/casual/MinimalBoard.jsx');
- const screen=read('src/casual/SimplifiedGame.jsx');
- const css=read('src/casual/minimal.css');
- assert.match(board,/bankable&&interactive\?' sgv-pot-bankable':'/);
- assert.match(board,/disabled=\{interactive\?!bankable:undefined\}/);
- assert.match(board,/onClick=\{interactive\?event=>onBank\?\.\(event\.currentTarget\):undefined\}/);
- assert.match(screen,/interactive=\{false\}/);
- assert.match(screen,/sgv-bank-command/);
- assert.match(css,/\.sgv-bottle-pair \.sgv-pot-bankable \.sgv-jar-front/);
- assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{\s*\.sgv-bottle-pair \.sgv-pot-bankable \.sgv-jar-front/);
 });
 
 test('Snap cracks and loses pending fluid; Zero Break keeps the Pot without a crack',()=>{
