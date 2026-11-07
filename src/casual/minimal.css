@@ -1407,6 +1407,13 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-phone[data-intro-gate="true"] .sgv-controls{pointer-events:none}
 .sgv-phone[data-intro-gate="true"] .sgv-hand{pointer-events:none}
 .sgv-phone[data-intro-gate="true"] .sgv-actions{pointer-events:none}
+/* Factor pill info: lock play; keep pills above the dialog so a second tap can swap. */
+.sgv-phone[data-factor-info="true"] .sgv-controls{pointer-events:none}
+.sgv-phone[data-factor-info="true"] .sgv-hand{pointer-events:none}
+.sgv-phone[data-factor-info="true"] .sgv-actions{pointer-events:none}
+.sgv-phone[data-factor-info="true"] .sgv-multipliers{
+  position:relative;z-index:41;pointer-events:auto;
+}
 .sgv-feature-intro{
   --fs-xl:clamp(28px,6vw,36px);--fs-s:14px;
   position:absolute;z-index:40;inset:0;display:grid;place-items:center;
@@ -1426,6 +1433,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
   background:#fffef8;box-shadow:0 8px 14px #0002;color:#704b69;text-align:center;
 }
 .sgv-feature-intro-icon{width:72px;height:72px;flex:none}
+img.sgv-feature-intro-icon{object-fit:contain;display:block}
 .sgv-feature-intro-name{margin:8px 0 0;font-size:var(--fs-xl);font-weight:900;line-height:1.1}
 .sgv-feature-intro-demo{
   width:160px;height:120px;flex:none;position:relative;margin:8px 0;
