@@ -27,9 +27,9 @@ const make=spec=>{
   visibleFactors:Object.freeze(spec.factors.slice()),
   rules:Object.freeze({
     ...CASUAL_RULES,
-    // Soft Pot ceiling: at least 2× Hiveful (and 2× target) so gift/overscore
-    // banks still fit, while runaway multiplier pours stop counting past the rim.
-    potCap:Math.max(stars.star3*2,stars.target*2),
+    // Levels 1–15: Pot rim matches Savings target. Later gardens keep 2× headroom
+    // so gift/overscore banks still fit while runaway multiplier pours soft-stop.
+    potCap:spec.id<=15?stars.target:Math.max(stars.star3*2,stars.target*2),
     enableSwingFactor:spec.factors.includes('swing'),
     enableFlipFactor:spec.factors.includes('flip'),
     enableJackpotFactor:spec.factors.includes('jackpot'),

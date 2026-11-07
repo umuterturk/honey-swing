@@ -10,6 +10,10 @@ export function rawPotValue(deal){
 }
 
 
+// Victory jar honey-fill-mask.png is transparent in the bottom ~9%. Any positive
+// amount must clear that dead zone or the puddle is clipped to nothing (e.g. 1/34).
+const MIN_VISIBLE_FILL=14;
+
 // Keep the tank a readable, compact visual meter. More points always mean more fluid;
 // values beyond the goal are capped visually (the true numbers remain visible).
 export function fluidFillPercent(amount,target,{max=78,smooth=false}={}){
@@ -18,7 +22,7 @@ export function fluidFillPercent(amount,target,{max=78,smooth=false}={}){
   const percent=Math.min(max,(amount/target)*max);
   // Any positive amount keeps a readable meniscus (even 1 drop in a tall jar).
   // Discrete play rounds; smooth pours keep the float but never dip below the floor.
-  return smooth?Math.max(5,percent):Math.max(5,Math.round(percent));
+  return smooth?Math.max(MIN_VISIBLE_FILL,percent):Math.max(MIN_VISIBLE_FILL,Math.round(percent));
 }
 
 // Both displayed volumes derive from one clamped animation progress value.
@@ -44,6 +48,45 @@ export function saveResetsVisibleFactors(change,visibleFactors){
     const after=change.factorsAfter[index];
     return !!after&&factor.value>after.value;
   });
+}
+
+const POT_EQUATION_MAX_LEVEL=15;
+const POT_EQUATION_FACTOR_ORDER=Object.freeze(['swing','flip','jackpot']);
+
+// Onboarding Pot flyer: rank × visible factors (>1 only) → +added (levels 1–15).
+export function potAddFlyerTerms({
+  levelId=99,
+  visibleFactors=[],
+  addedToPot=0,
+  signedCard=null,
+  zeroBreak=false,
+  factorsBefore=[],
+  factorsAfter=[],
+  snap=false
+}={}){
+  if(snap||!Number.isFinite(addedToPot)||addedToPot<=0)return null;
+  const added=Math.round(addedToPot);
+  if(levelId>POT_EQUATION_MAX_LEVEL)return null;
+  const rank=Math.abs(Number(signedCard)||0);
+  if(!rank)return null;
+  const factors=zeroBreak?factorsBefore:factorsAfter;
+  const visible=new Set(Array.isArray(visibleFactors)?visibleFactors:[]);
+  const terms=POT_EQUATION_FACTOR_ORDER.flatMap(kind=>{
+    if(!visible.has(kind))return [];
+    const row=(factors||[]).find(part=>part.kind===kind);
+    if(!row||row.value<=1)return [];
+    return [{kind,value:row.value}];
+  });
+  if(!terms.length)return null;
+  return {rank,terms,added};
+}
+
+export function potAddFlyerPhases(props){
+  const added=Math.round(Number(props?.addedToPot)||0);
+  const plain='+'+added;
+  const terms=potAddFlyerTerms(props);
+  if(!terms)return {initial:plain,collapse:null,rich:false};
+  return {initial:terms,collapse:plain,rich:true};
 }
 
 export function bankPourAmounts(rawPot,securedBefore,securedAfter,progress){

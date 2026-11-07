@@ -13,10 +13,11 @@ const casualBase={
   enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:false
 };
 
-test('each onboarding level soft-caps the Pot at max(star3×2, target×2)',()=>{
+test('levels 1–15 soft-cap the Pot at the savings target; later keep 2× headroom',()=>{
   for(const level of ONBOARDING_LEVELS){
     const stars=STAR_THRESHOLDS[level.id];
-    assert.equal(level.rules.potCap,Math.max(stars.star3*2,stars.target*2),level.name);
+    const expected=level.id<=15?stars.target:Math.max(stars.star3*2,stars.target*2);
+    assert.equal(level.rules.potCap,expected,level.name);
   }
 });
 
@@ -106,11 +107,11 @@ test('Save resets visible multipliers and the helper detects it',()=>{
   assert.equal(saveResetsVisibleFactors(before,[]),false);
 });
 
-test('PendingPot shows value / cap in the board markup',()=>{
+test('PendingPot shows amount only; cap still wired for fill',()=>{
   const source=readFileSync(new URL('../src/casual/MinimalBoard.jsx',import.meta.url),'utf8');
-  assert.match(source,/sgv-pot-cap/);
-  assert.match(source,/showCap/);
-  assert.match(source,/value\}<\/span>/);
+  assert.doesNotMatch(source,/sgv-pot-cap/);
+  assert.match(source,/hasCap/);
+  assert.match(source,/fillTarget=hasCap\?cap:target/);
   const game=readFileSync(new URL('../src/casual/SimplifiedGame.jsx',import.meta.url),'utf8');
   assert.match(game,/cap=\{level\.rules\.potCap\}/);
   assert.match(game,/Multipliers reset\./);

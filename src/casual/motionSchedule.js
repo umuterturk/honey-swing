@@ -100,11 +100,12 @@ export function reducedCardSummary(view){
   const rewards=view?.rewards||[];
   const snap=!!view?.snap;
   const kinds=new Set(rewards.map(r=>r.kind));
+  const pourFly=!snap&&view.addedToPot>0?view?.pourFly:null;
   return {
     position:snap?0:view.to,
     rawPot:view.rawPotAfter,
     factors:view.factorsAfter,
-    add:!snap&&view.addedToPot>0?'+'+view.addedToPot:null,
+    pourFly,
     flower:!snap&&kinds.has('swing')?'More Flower':null,
     bee:!snap&&kinds.has('flip')?'More Bee':null,
     cross:null,

@@ -427,6 +427,35 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  font-size:22px;font-weight:1000;font-variant-numeric:tabular-nums;
  text-shadow:0 1px #fff7b2;pointer-events:none;will-change:transform,opacity;
 }
+.sgv-pot-fly.sgv-pot-fly-equation{
+ min-width:0;width:max-content;max-width:min(92vw,300px);margin-left:0;margin-top:-16px;
+ padding:4px 12px 5px;border-radius:16px;border-width:3px;
+ box-shadow:0 3px 0 #ca8630,0 5px 9px #895c3480;
+ font-size:clamp(14px,3.8vw,19px);font-weight:1000;letter-spacing:-.02em;line-height:1;
+ white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+}
+.sgv-pot-eq-rank,.sgv-pot-eq-mul,.sgv-pot-eq-factor,.sgv-pot-eq-arrow,.sgv-pot-eq-result{
+ font-variant-numeric:tabular-nums;line-height:1;
+}
+.sgv-pot-eq-term{display:inline-flex;align-items:center;gap:3px}
+.sgv-pot-eq-icon{
+ width:1.35em;height:1.35em;object-fit:contain;display:block;
+ filter:drop-shadow(0 1px 1px #a96a3088);
+}
+.sgv-pot-eq-mul{opacity:.75;font-size:.92em}
+.sgv-pot-eq-arrow{margin:0 1px;opacity:.85}
+.sgv-pot-eq-result{font-size:1.05em}
+.sgv-pot-fly.sgv-pot-fly-equation.sgv-static-outcome{
+ animation:sgv-pot-eq-drift 6.6s linear forwards,sgv-pot-eq-fadeout 1s ease-in 5.6s forwards;
+}
+@keyframes sgv-pot-eq-drift{
+ from{transform:translateX(-50%) translateY(0)}
+ to{transform:translateX(-50%) translateY(-32px)}
+}
+@keyframes sgv-pot-eq-fadeout{
+ from{opacity:1}
+ to{opacity:0}
+}
 /* The center is a reset line; only the edges represent Snap danger. */
 .sgv-meter-track[data-edge-danger="true"]{
  box-shadow:0 6px 0 #9b6e94,0 9px 15px #65599868,
@@ -454,7 +483,7 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 }
 @media(max-height:580px){
  .sgv-pending-pot{width:92px;height:49px;bottom:0;padding-top:9px;padding-bottom:3px}
- .sgv-pot-label{font-size:10px}.sgv-pot-amount{font-size:18px}
+ .sgv-bottle-pair .sgv-pot-amount{font-size:15px}
  .sgv-goal-progress{min-width:94px;bottom:0;padding:4px 6px}
  .sgv-goal-progress strong{font-size:16px}
 }
@@ -845,17 +874,16 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  position:absolute;z-index:5;top:3%;left:28%;width:2px;height:2px;
  pointer-events:none;
 }
-.sgv-bottle-pair .sgv-pot-label{
- position:absolute;z-index:5;left:0;right:0;top:36%;
- font-size:clamp(11px,2.9vw,14px);line-height:1;
- text-align:center;color:#80543d;text-shadow:0 1px #fff9e3;
-}
+.sgv-bottle-pair .sgv-pot-label{display:none}
 .sgv-bottle-pair .sgv-pot-amount{
- position:absolute;z-index:5;left:0;right:0;top:54%;
- margin:0;display:flex;align-items:center;justify-content:center;
- gap:2px;font-size:clamp(18px,5.2vw,26px);
+ position:absolute;z-index:6;left:50%;right:auto;top:auto;
+ margin:0;transform:translate(-50%,-58%);
+ bottom:calc(17.5% + var(--pot-fill,0%) * 0.535);
+ display:flex;align-items:center;justify-content:center;
+ gap:2px;font-size:clamp(14px,4vw,20px);
  line-height:1;font-variant-numeric:tabular-nums;font-weight:1000;
- color:#754b35;text-shadow:0 2px 2px #fffce8,0 0 7px #fff7d1;
+ color:#754b35;text-shadow:0 1px 2px #fffce8,0 0 6px #fff7d1;
+ pointer-events:none;transition:bottom .18s ease-out,opacity .12s linear;
 }
 .sgv-bottle-pair .sgv-pot-amount .sgv-pot-value,
 .sgv-bottle-pair .sgv-pot-amount .sgv-pot-cap,
@@ -948,8 +976,7 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  .sgv-bottle-pair{padding-bottom:4px}
 }
 @media(max-height:580px){
- .sgv-bottle-pair .sgv-pot-label{top:33%;font-size:10px}
- .sgv-bottle-pair .sgv-pot-amount{top:52%;font-size:20px}
+ .sgv-bottle-pair .sgv-pot-amount{font-size:17px}
  .sgv-actions .sgv-flip{max-height:55px}
 }
 @media(prefers-reduced-motion:reduce){
@@ -982,6 +1009,10 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-event-bank .sgv-fluid-fill{transition:height .12s linear,opacity .1s linear}
 .sgv-pour-stream{
  filter:none;opacity:1;z-index:24;pointer-events:none;
+}
+/* Tap→Pot stream lives in the jar stack at honey depth (under lights + front). */
+.sgv-victory-jar-art > .sgv-pour-stream{
+ z-index:2;inset:auto;right:auto;bottom:auto;overflow:visible;
 }
 .sgv-pour-stream-glow{stroke:#ffedb9;opacity:.7;filter:none}
 .sgv-pour-stream-core{stroke:#ffbb43;opacity:.97;filter:none}

@@ -8,6 +8,51 @@ import {
 } from './motionSchedule.js';
 import {publicUrl} from './publicUrl.js';
 
+const POT_EQ_ICONS=Object.freeze({
+  swing:'celebration/daisy-2.png',
+  flip:'bee-smiling-closed-eyes.png'
+});
+function mountPotEquationFlyer(doc,data){
+  const label=doc.createElement('span');
+  label.className='sgv-pot-fly sgv-pot-fly-equation';
+  label.setAttribute('aria-hidden','true');
+  const rank=doc.createElement('span');
+  rank.className='sgv-pot-eq-rank';
+  rank.textContent=String(data.rank);
+  label.append(rank);
+  for(const term of data.terms){
+    const wrap=doc.createElement('span');
+    wrap.className='sgv-pot-eq-term';
+    const mul=doc.createElement('span');
+    mul.className='sgv-pot-eq-mul';
+    mul.textContent='×';
+    const icon=POT_EQ_ICONS[term.kind];
+    if(icon){
+      const img=doc.createElement('img');
+      img.className='sgv-pot-eq-icon sgv-pot-eq-icon-'+term.kind;
+      img.src=publicUrl(icon);
+      img.alt='';
+      img.draggable=false;
+      wrap.append(mul,img);
+    }else{
+      wrap.append(mul);
+    }
+    const val=doc.createElement('span');
+    val.className='sgv-pot-eq-factor';
+    val.textContent='×'+term.value;
+    wrap.append(val);
+    label.append(wrap);
+  }
+  const arrow=doc.createElement('span');
+  arrow.className='sgv-pot-eq-arrow';
+  arrow.textContent='→';
+  const res=doc.createElement('span');
+  res.className='sgv-pot-eq-result';
+  res.textContent='+'+data.added;
+  label.append(arrow,res);
+  return label;
+}
+
 // All motions are presentation only. The game transaction is calculated once
 // before this module is called; interrupting an animation never changes rules.
 const reducedMotion=()=>typeof window!=='undefined'&&
@@ -34,6 +79,37 @@ const pourStreamPath=(start,end)=>{
   const dx=end.x-start.x,dy=end.y-start.y;
   return 'M '+start.x+' '+start.y+' C '+(start.x+dx*.36)+' '+(start.y-8)+
     ', '+(end.x-dx*.25)+' '+(end.y-Math.max(6,dy*.20))+', '+end.x+' '+end.y;
+};
+// Mount the pour SVG in the jar honey slot (under front glass) while keeping
+// path coordinates in phone-root space via a compensating offset.
+const appendPourStreamAtHoneyDepth=(root,jar,doc)=>{
+  const svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.classList.add('sgv-pour-stream');
+  svg.setAttribute('viewBox','0 0 '+root.clientWidth+' '+root.clientHeight);
+  svg.setAttribute('width',root.clientWidth);
+  svg.setAttribute('height',root.clientHeight);
+  svg.setAttribute('aria-hidden','true');
+  const art=jar?.querySelector?.('.sgv-victory-jar-art');
+  if(art){
+    const rootRect=root.getBoundingClientRect();
+    const artRect=art.getBoundingClientRect();
+    Object.assign(svg.style,{
+      left:(rootRect.left-artRect.left)+'px',
+      top:(rootRect.top-artRect.top)+'px',
+      width:root.clientWidth+'px',
+      height:root.clientHeight+'px'
+    });
+    const lights=art.querySelector('.sgv-jar-lights');
+    if(lights)art.insertBefore(svg,lights);
+    else{
+      const honey=art.querySelector('.sgv-jar-honey-layer');
+      if(honey)honey.after(svg);
+      else art.appendChild(svg);
+    }
+  }else{
+    root.appendChild(svg);
+  }
+  return svg;
 };
 const paintJarFill=(jar,secured,fillTarget,{max=76,smooth=true}={})=>{
   const fillEl=jar?.querySelector?.('.sgv-fluid-fill');
@@ -104,10 +180,26 @@ function showReducedCard(root,view){
   const summary=reducedCardSummary(view);
   if(!root)return ()=>{};
   const nodes=[];
-  if(summary.add){
+  if(summary.pourFly){
     const pot=root.querySelector('.sgv-pending-pot');
     const origin=pot?point(pot,root):{x:root.clientWidth*.25,y:root.clientHeight*.63};
-    nodes.push(placeStatic(root,'sgv-pot-fly',summary.add,origin));
+    const doc=root.ownerDocument;
+    let node;
+    if(summary.pourFly.rich){
+      node=mountPotEquationFlyer(doc,summary.pourFly.initial);
+      node.classList.add('sgv-static-outcome');
+    }else{
+      node=doc.createElement('span');
+      node.className='sgv-pot-fly sgv-static-outcome';
+      node.textContent=summary.pourFly.initial;
+      node.setAttribute('aria-hidden','true');
+    }
+    Object.assign(node.style,{
+      left:origin.x+'px',top:(origin.y-8)+'px',
+      transform:summary.pourFly.rich?'translateX(-50%)':undefined
+    });
+    root.appendChild(node);
+    nodes.push(node);
   }
   if(summary.flower){
     const pill=root.querySelector('[data-factor="swing"]');
@@ -123,7 +215,8 @@ function showReducedCard(root,view){
   }
   const clear=()=>removeNodes(nodes);
   const cancel=replaceStatic(clear);
-  const timer=setTimeout(cancel,STATIC_OUTCOME_MS);
+  const hold=summary.pourFly?.rich?6600:STATIC_OUTCOME_MS;
+  const timer=setTimeout(cancel,hold);
   return ()=>{clearTimeout(timer);cancel();};
 }
 function showReducedBank(root,fromScore,toScore){
@@ -397,6 +490,7 @@ export function animateCardAction({
         toPot:view.rawPotAfter,
         fillTarget:view.potTarget,
         added:view.addedToPot,
+        pourFly:view.pourFly,
         onPourProgress:value=>{if(alive)onPot(value);}
       }));
     };
@@ -585,7 +679,7 @@ export function animateFactorReset(root){
 
 // After the needle settles: stream honey from the meter tap into the Pot meniscus.
 export function animateTapPour({
-  root,fromPot=0,toPot=0,fillTarget,added=0,onPourProgress,onComplete
+  root,fromPot=0,toPot=0,fillTarget,added=0,pourFly=null,onPourProgress,onComplete
 }){
   const settle=()=>{
     onPourProgress?.(toPot);
@@ -630,13 +724,8 @@ export function animateTapPour({
     const start=tapSpoutPoint(root,tap);
     const end=honeySurfacePoint(root,pot,lip)||point(lip||pot,root);
     const doc=root.ownerDocument;
-    const svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.classList.add('sgv-pour-stream');
-    svg.setAttribute('viewBox','0 0 '+root.clientWidth+' '+root.clientHeight);
-    svg.setAttribute('width',root.clientWidth);
-    svg.setAttribute('height',root.clientHeight);
-    svg.setAttribute('aria-hidden','true');
-    root.appendChild(svg);nodes.push(svg);
+    const svg=appendPourStreamAtHoneyDepth(root,pot,doc);
+    nodes.push(svg);
     const d=pourStreamPath(start,end);
     streamPaths=[];
     for(const [kind,width] of [['sgv-pour-stream-glow','9'],['sgv-pour-stream-core','4.5']]){
@@ -673,19 +762,49 @@ export function animateTapPour({
       paintJarFill(pot,potValue,fillTarget,{max:76,smooth:true});
       retargetStream();
     }},0.10);
+  let pourEnd=.72;
   if(added>0){
-    const label=root.ownerDocument.createElement('span');
-    label.className='sgv-pot-fly';
-    label.textContent='+'+added;
-    label.setAttribute('aria-hidden','true');
+    const phases=pourFly||{initial:'+'+added,collapse:null,rich:false};
+    const plain='+'+added;
+    const equation=!!phases.rich;
+    if(equation)pourEnd=3.45;
+    const doc=root.ownerDocument;
+    const label=equation
+      ?mountPotEquationFlyer(doc,phases.initial)
+      :doc.createElement('span');
+    if(!equation){
+      label.className='sgv-pot-fly';
+      label.textContent=phases.initial||plain;
+      label.setAttribute('aria-hidden','true');
+    }
     const end=honeySurfacePoint(root,pot,lip)||point(lip||pot,root);
+    const flyX=equation?{xPercent:-50}:{};
     Object.assign(label.style,{left:end.x+'px',top:(end.y-8)+'px'});
     root.appendChild(label);nodes.push(label);
-    tl.fromTo(label,{opacity:0,scale:.75,y:6},
-      {opacity:1,scale:1.08,y:-10,duration:.18,ease:'back.out(1.6)'},0.28);
-    tl.to(label,{opacity:0,y:-22,duration:.22,ease:'power2.in'},0.52);
+    const eqIn=.28;
+    const eqCollapse=2.4;
+    const eqFadeOut=1;
+    const eqVisibleEnd=3.45;
+    const eqFadeStart=eqVisibleEnd-eqFadeOut;
+    tl.fromTo(label,{opacity:0,scale:equation?.82:.75,y:equation?4:6,...flyX},
+      {opacity:1,scale:equation?1:1.08,y:equation?-6:-10,
+        duration:equation?.16:.18,ease:equation?'power2.out':'back.out(1.6)',...flyX},eqIn);
+    if(equation){
+      const eqDriftStart=eqIn+.16;
+      tl.to(label,{y:-36,duration:eqFadeStart-eqDriftStart,ease:'none',...flyX},eqDriftStart);
+      tl.call(()=>{
+        if(!alive)return;
+        label.textContent=plain;
+        label.classList.remove('sgv-pot-fly-equation');
+      },[],eqCollapse);
+      tl.to(label,{scale:1.06,duration:.1,ease:'back.out(1.5)'},eqCollapse);
+      tl.to(label,{y:-52,duration:eqFadeOut,ease:'none',...flyX},eqFadeStart);
+      tl.to(label,{opacity:0,duration:eqFadeOut,ease:'power1.in',...flyX},eqFadeStart);
+    }else{
+      tl.to(label,{opacity:0,y:-22,duration:.22,ease:'power2.in'},0.52);
+    }
   }
-  tl.call(()=>{},[],0.72);
+  tl.call(()=>{},[],pourEnd);
   return ()=>{
     alive=false;tl.kill();cleanup();
   };
@@ -795,13 +914,9 @@ export function animateBankPour({
     const start=point(lip,root);
     const end=honeySurfacePoint(root,bank,mouth)||point(mouth,root);
     const doc=root.ownerDocument;
-    const svg=doc.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.classList.add('sgv-pour-stream');
-    svg.setAttribute('viewBox','0 0 '+root.clientWidth+' '+root.clientHeight);
-    svg.setAttribute('width',root.clientWidth);
-    svg.setAttribute('height',root.clientHeight);
-    svg.setAttribute('aria-hidden','true');
-    root.appendChild(svg);nodes.push(svg);
+    // Same honey-depth mount as tap→Pot so the stream sits under Savings text / front glass.
+    const svg=appendPourStreamAtHoneyDepth(root,bank,doc);
+    nodes.push(svg);
     const d=pourStreamPath(start,end);
     streamPaths=[];
     for(const [kind,width] of [['sgv-pour-stream-glow','9'],['sgv-pour-stream-core','4.5']]){

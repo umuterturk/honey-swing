@@ -83,31 +83,26 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
 
 // The Pot shows the engine's prospective Bank payout, not raw card value.
 // Its shine is the tappable affordance, replacing the separate Bank chip.
-// When cap is set, fill and label track that soft ceiling (value / cap).
+// Cap (when set) still drives fill / soft overflow; the label shows amount only.
 export function PendingPot({value,cap=null,target=24,bankable=false,onBank,className='',interactive=true}){
- const showCap=Number.isInteger(cap)&&cap>0;
- const fillTarget=showCap?cap:target;
+ const hasCap=Number.isInteger(cap)&&cap>0;
+ const fillTarget=hasCap?cap:target;
  const fill=fluidFillPercent(value,fillTarget,{max:76,smooth:true});
  const Tag=interactive?'button':'div';
- const amountLabel=showCap?value+' of '+cap:String(value);
  return <Tag type={interactive?'button':undefined}
-   className={'sgv-pending-pot sgv-pot-bottle'+(bankable&&interactive?' sgv-pot-bankable':'')+(!interactive?' sgv-pot-display':'')+(showCap&&value>=cap?' sgv-pot-full':'')+' '+className}
+   className={'sgv-pending-pot sgv-pot-bottle'+(bankable&&interactive?' sgv-pot-bankable':'')+(!interactive?' sgv-pot-display':'')+(hasCap&&value>=cap?' sgv-pot-full':'')+' '+className}
+   style={{'--pot-fill':fill+'%'}}
    disabled={interactive?!bankable:undefined}
    onClick={interactive?event=>onBank?.(event.currentTarget):undefined}
-   aria-label={!interactive?'Pot has '+amountLabel+' pending drops':bankable
+   aria-label={!interactive?'Pot has '+value+' pending drops':bankable
      ?'Tap Pot to save '+value+' drops'
-     :'Pot has '+amountLabel+' potential drops. Saving not yet available'}>
+     :'Pot has '+value+' potential drops. Saving not yet available'}>
    <span className="sgv-jar-pad" aria-hidden="true"/>
    <VictoryJarArt fillPercent={fill} className="sgv-pot-victory-art" mouthClassName="sgv-pot-art-mouth"/>
    <span className="sgv-pot-pour-lip" aria-hidden="true"/>
-   <span className="sgv-pot-label">POT</span>
-   <span className="sgv-pot-amount">
+   <span className="sgv-pot-amount" aria-hidden="true">
      <DropletIcon className="sgv-pot-drop"/>
-     {showCap
-       ?<><span className="sgv-pot-value">{value}</span>
-         <span className="sgv-pot-cap-sep" aria-hidden="true">/</span>
-         <span className="sgv-pot-cap">{cap}</span></>
-       :value}
+     {value}
    </span>
  </Tag>;
 }

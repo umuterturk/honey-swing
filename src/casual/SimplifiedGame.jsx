@@ -3,7 +3,7 @@ import {overswingPayout,signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
 import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour,animateBankTargetCelebrate} from './minimalMotion.js';
-import {rawPotValue,visiblePotPayout,displayOf,settledPresentation,saveResetsVisibleFactors} from './presentation.js';
+import {rawPotValue,visiblePotPayout,displayOf,settledPresentation,saveResetsVisibleFactors,potAddFlyerPhases} from './presentation.js';
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
 import {applyHoneyLayout} from './honeyWin.js';
 import {playWinCelebration} from './winMotion.js';
@@ -525,7 +525,9 @@ export default function SimplifiedGame(){
         cancelRef.current=animateCardAction({
           root,source,action,view:{...change,firstTap:round.levelId===1&&round.turn===0,
             meterLimit:level.rules.snapLimit,showChances:!!level.showChances,
-            potTarget:level.rules.potCap||level.target},
+            potTarget:level.rules.potCap||level.target,
+            levelId:level.id,visibleFactors:level.visibleFactors,
+            pourFly:potAddFlyerPhases({levelId:level.id,visibleFactors:level.visibleFactors,...change})},
           onMeter:position=>{
             setView(v=>({...v,position}));
             if(change.snap)setFeedback('snap');
