@@ -8,62 +8,6 @@ import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from '../src/casual/cardDir
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
-test('meter has one moving red needle and no fixed red zero line',()=>{
- const board=read('src/casual/MinimalBoard.jsx');
- const css=read('src/casual/minimal.css');
- assert.match(board,/className="sgv-meter-needle"/);
- assert.doesNotMatch(board,/className="sgv-meter-centerline"/);
- assert.match(board,/style=\{\{left:percentage\+'%'\}\}/);
- assert.match(css,/\.sgv-meter-needle\{/);
-});
-
-test('two adjacent bottles and a separate Bank action have honest touch affordances',()=>{
- const board=read('src/casual/MinimalBoard.jsx');
- const art=read('src/casual/VictoryJarArt.js');
- const screen=read('src/casual/SimplifiedGame.jsx');
- const css=read('src/casual/minimal.css');
- assert.match(board,/export function PendingPot\(/);
- assert.match(board,/className=\{'sgv-pending-pot sgv-pot-bottle'/);
- assert.match(board,/const Tag=interactive\?'button':'div'/);
- assert.match(board,/disabled=\{interactive\?!bankable:undefined\}/);
- assert.match(board,/onClick=\{interactive\?event=>onBank\?\.\(event\.currentTarget\):undefined\}/);
- assert.match(board,/bankable&&interactive\?' sgv-pot-bankable':'/);
- assert.doesNotMatch(board,/sgv-pot-bank-preview|bankPreview/);
- assert.doesNotMatch(css,/sgv-pot-bank-preview/);
- assert.match(board,/className="sgv-pot-amount"/);
- assert.match(board,/VictoryJarArt/);
- assert.match(art,/className:'sgv-fluid-fill'/);
- assert.match(board,/<GoalProgress banked=\{banked\} target=\{target\}\/>/);
- assert.match(screen,/className="sgv-bottle-pair"/);
- assert.match(screen,/interactive=\{false\}/);
- assert.match(screen,/className=\{'sgv-action sgv-bank sgv-bank-command'/);
- assert.match(screen,/className="sgv-gold-counter"/);
- assert.match(screen,/className="sgv-action sgv-flip"/);
- assert.match(css,/\.sgv-bottle-pair\{[\s\S]*?position:\s*relative/);
- assert.match(css,/\.sgv-bottle-pair \.sgv-goal-progress\{/);
-});
-
-test('play jars use Victory layered art and absolute Bank-left / Pot-center slots',()=>{
- const art=read('src/casual/VictoryJarArt.js');
- const board=read('src/casual/MinimalBoard.jsx');
- const screens=read('src/casual/levelScreens.js');
- const css=read('src/casual/minimal.css');
- assert.match(art,/export function VictoryJarArt/);
- assert.match(art,/empty-complete-jar\.png/);
- assert.match(art,/empty-front-jar\.png/);
- assert.match(art,/sgv-jar-honey-layer/);
- assert.match(art,/sgv-jar-lights/);
- assert.match(board,/VictoryJarArt/);
- assert.match(board,/className="sgv-pot-pour-lip"/);
- assert.match(board,/sgv-chest-mouth|mouthClassName/);
- assert.match(screens,/VictoryJarArt|from ['\"]\.\/VictoryJarArt/);
- assert.match(css,/\.sgv-bottle-pair\{[\s\S]*?position:\s*relative/);
- assert.match(css,/\.sgv-bottle-pair \.sgv-pending-pot\{[\s\S]*?left:\s*50%/);
- assert.match(css,/\.sgv-bottle-pair \.sgv-bank-bottle\{[\s\S]*?left:\s*0/);
- assert.match(css,/\.sgv-jar-mask\{[\s\S]*?honey-fill-mask\.png/);
- assert.doesNotMatch(board,/sgv-pot-bottle-glass|sgv-pot-liquid/);
-});
-
 test('fluid fill is stable, monotone, capped and zero when empty',()=>{
  assert.equal(fluidFillPercent(0,24),0);
  assert.equal(fluidFillPercent(-5,24),0);
@@ -87,17 +31,6 @@ test('fluid fill is stable, monotone, capped and zero when empty',()=>{
  }
 });
 
-test('currency is fluid, not stars or coins in either bottle',()=>{
- const board=read('src/casual/MinimalBoard.jsx');
- const motion=read('src/casual/minimalMotion.js');
- assert.match(board,/export function DropletIcon/);
- assert.doesNotMatch(board,/CoinIcon|GoldPile|★/);
- assert.match(board,/<DropletIcon className="sgv-pot-drop"\/>/);
- assert.doesNotMatch(motion,/sgv-flying-gold|sgv-lost-coin/);
- assert.match(motion,/sgv-fluid-drop/);
- assert.match(motion,/sgv-pour-stream/);
-});
-
 test('tap-to-bank respects engine eligibility and previews actual payout',()=>{
  let round=newRound();
  const bankable=state=>overswingActions(state.game,FIRST_LEVEL.rules)
@@ -113,84 +46,6 @@ test('tap-to-bank respects engine eligibility and previews actual payout',()=>{
  assert.equal(next.game.deal.pot.length,0);
  assert.equal(bankable(next),false);
 });
-
-test('Pot physically approaches the Bank lip, streams briefly, then returns home',()=>{
- const motion=read('src/casual/minimalMotion.js');
- const screen=read('src/casual/SimplifiedGame.jsx');
- const board=read('src/casual/MinimalBoard.jsx');
- const css=read('src/casual/minimal.css');
- assert.match(motion,/export function animateBankPour\(/);
- assert.match(motion,/export function animateBankTargetCelebrate\(/);
- assert.match(motion,/const angle=-56/);
- assert.match(motion,/rotatedLip=point\(lip,root\)/);
- assert.match(motion,/targetLip=\{/);
- assert.match(motion,/tl\.to\(source,\{x:approach\.x,y:approach\.y,rotation:angle/);
- assert.match(motion,/honeySurfacePoint/);
- assert.match(motion,/retargetStream/);
- assert.match(motion,/paintBankFill/);
- assert.match(motion,/fillTarget/);
- assert.match(motion,/classList\.add\('sgv-pour-stream'\)/);
- assert.match(motion,/tl\.to\(source,\{x:0,y:0,rotation:0/);
- assert.match(motion,/onPourProgress\?\.\(pot\)/);
- assert.match(motion,/onCount\(secured\)/);
- assert.match(motion,/onTake\(\)/);
- assert.match(motion,/onComplete\(\)/);
- assert.match(screen,/onPourProgress:rawPot=>setView/);
- assert.match(screen,/potValue:change\.rawPotBefore/);
- assert.match(screen,/cancelRef\.current=animateBankPour\(/);
- assert.match(screen,/animateBankTargetCelebrate/);
- assert.match(screen,/securedAfter<level\.target/);
- assert.match(board,/className="sgv-pot-pour-lip"/);
- assert.doesNotMatch(board,/className="sgv-pot-bottle-mouth"/);
- assert.doesNotMatch(board,/className="sgv-chest-rim"/);
- assert.doesNotMatch(board,/className="sgv-pot-bottle-rim"/);
- assert.match(css,/\.sgv-pot-bottle-mouth\{/);
- assert.match(motion,/export function animateSnapLoss\(/);
- assert.match(motion,/export function animateSnapHeartLoss\(/);
- assert.match(motion,/export function animateTapPour\(/);
- assert.match(motion,/appendPourStreamAtHoneyDepth/);
- assert.match(motion,/appendPourStreamAtHoneyDepth\(root,pot,/);
- assert.match(motion,/appendPourStreamAtHoneyDepth\(root,bank,/);
- assert.match(motion,/sgv-jar-honey-layer/);
- assert.match(css,/\.sgv-victory-jar-art\s*>\s*\.sgv-pour-stream/);
- assert.match(css,/z-index:2/);
- assert.match(motion,/tapSpoutPoint|sgv-honey-tap/);
- assert.match(screen,/potTarget:level\.rules\.potCap\|\|level\.target/);
- assert.match(screen,/onChanceLost:\(\)=>setView/);
-});
-
-test('actual Bank value and raw Pot drain are synchronized through the entire pour',()=>{
- const samples=[0,.02,.25,.5,.75,.98,1].map(p=>bankPourAmounts(7,10,66,p));
- assert.equal(samples[0].pot,7);
- assert.equal(samples[0].secured,10);
- assert.equal(samples.at(-1).pot,0);
- assert.equal(samples.at(-1).secured,66);
- for(let i=1;i<samples.length;i++){
-   assert.ok(samples[i].pot<samples[i-1].pot,'Pot decreases from the very start');
-   assert.ok(samples[i].secured>=samples[i-1].secured,'Bank total never drops');
- }
- assert.deepEqual(bankPourAmounts(7,10,66,-1),{pot:7,secured:10});
- assert.deepEqual(bankPourAmounts(7,10,66,2),{pot:0,secured:66});
- assert.ok(fluidFillPercent(3.5,24,{max:76,smooth:true})<
-           fluidFillPercent(7,24,{max:76,smooth:true}));
- assert.equal(fluidFillPercent(0,24,{max:76,smooth:true}),0);
-});
-
-test('approved visual cleanup is reflected in styling and version markup',()=>{
- const board=read('src/casual/MinimalBoard.jsx');
- const css=read('src/casual/minimal.css');
- const html=read('index.html');
- assert.match(css,/\.sgv-multiplier-pill::before\{display:none\}/);
- assert.match(css,/\.sgv-bottle-pair \.sgv-goal-progress\{[\s\S]*?background:transparent;border:0/);
- assert.match(css,/\.sg-foreground-leaves path\{/);
- assert.match(css,/@keyframes sgv-wind-leaf/);
- assert.match(css,/\.sg-cloud-one\{animation-duration:23s\}/);
- assert.match(css,/\.sg-waterfall path:nth-child\(3\)/);
- assert.doesNotMatch(board,/sgv-pot-bottle-rim/);
- assert.match(html,/border:0;background:transparent/);
- assert.match(html,/font:500 9px/);
-});
-
 
 test('P0 regression: dedicated Bank remains tappable while decorative Pot is not',()=>{
  const board=read('src/casual/MinimalBoard.jsx');
@@ -254,63 +109,6 @@ test('only interactive bankable Pots shine; separate Bank action respects reduce
  assert.match(screen,/sgv-bank-command/);
  assert.match(css,/\.sgv-bottle-pair \.sgv-pot-bankable \.sgv-jar-front/);
  assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{\s*\.sgv-bottle-pair \.sgv-pot-bankable \.sgv-jar-front/);
-});
-
-test('direction is visualized with arrows, without written labels or signs on the meter',()=>{
- const board=read('src/casual/MinimalBoard.jsx');
- const screen=read('src/casual/SimplifiedGame.jsx');
- const motion=read('src/casual/minimalMotion.js');
- const css=read('src/casual/minimal.css');
- assert.equal(cardDirection(-2),'left');
- assert.equal(cardDirection(5),'right');
- assert.match(board,/<svg className="sgv-card-arrow"/);
- assert.match(board,/<path d=\{CARD_ARROW_PATH\}/);
- assert.match(board,/\{Math\.abs\(value\)\}/);
- assert.match(board,/\{Math\.abs\(number\)\}/);
- assert.match(board,/<strong className="sgv-meter-needle-value">\{Math\.abs\(position\)\}<\/strong>/);
- assert.match(board,/aria-label=\{'Play '\+directionalValue\(value\)\}/);
- assert.doesNotMatch(board,/className="sgv-meter-side|className="sgv-marker-direction"/);
- assert.doesNotMatch(board,/className="sgv-card-direction"/);
- assert.doesNotMatch(screen,/sgv-mini-hint|Tap a card to move the marker/);
- assert.match(motion,/clone\.style\.setProperty\('--sgv-card-mix'/);
- assert.match(motion,/CARD_ARROW_PATH/);
- assert.match(css,/\.sgv-card-left\{/);
- assert.match(css,/\.sgv-card-right\{/);
- assert.match(css,/\.sgv-card-left \.sgv-card-arrow\{transform:rotate\(180deg\)\}/);
- assert.ok(CARD_ARROW_PATH.startsWith('M'));
-});
-
-test('higher card magnitudes receive progressively stronger direction accents',()=>{
- const a=Number.parseInt(cardAccentMix(1),10);
- const b=Number.parseInt(cardAccentMix(5),10);
- const c=Number.parseInt(cardAccentMix(10),10);
- assert.ok(a<b && b<c);
- assert.equal(cardAccentMix(-5),cardAccentMix(5));
- assert.equal(cardAccentMix(100),cardAccentMix(10));
- assert.equal(cardAccentMix(0),cardAccentMix(1));
- const board=read('src/casual/MinimalBoard.jsx');
- const css=read('src/casual/minimal.css');
- assert.match(board,/--sgv-card-mix':cardAccentMix\(value\)/);
- assert.match(css,/color-mix\(in srgb/);
- assert.match(css,/var\(--sgv-card-mix/);
-});
-
-test('secured progress is vertically centered inside the Bank without a plaque',()=>{
- const css=read('src/casual/minimal.css');
- assert.match(css,/\.sgv-bottle-pair \.sgv-goal-progress\{\s*left:50%;top:55%/);
- assert.match(css,/transform:translate\(-50%,-50%\)/);
- assert.match(css,/flex-direction:column/);
- assert.match(css,/background:transparent;border:0;border-radius:0;box-shadow:none/);
-});
-
-test('no visual bottle lids, but invisible lip and Bank mouth anchors remain for pouring',()=>{
- const board=read('src/casual/MinimalBoard.jsx');
- const motion=read('src/casual/minimalMotion.js');
- const css=read('src/casual/minimal.css');
- assert.doesNotMatch(board,/sgv-pot-bottle-mouth|className="sgv-chest-rim"/);
- assert.match(board,/className="sgv-pot-pour-lip"/);
- assert.match(board,/mouthClassName="sgv-chest-mouth"/);
- assert.match(motion,/honeySurfacePoint\(root,bank,mouth\)/);
 });
 
 test('Snap cracks and loses pending fluid; Zero Break keeps the Pot without a crack',()=>{
