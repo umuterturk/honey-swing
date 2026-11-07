@@ -64,7 +64,7 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
                ((dock==='swing'&&kind==='swing')||(dock==='flip-pill'&&kind==='flip')||
                 (dock==='jackpot'&&kind==='jackpot')?' sgv-dock':'')}
              data-factor={kind} title={label}
-             aria-label={canInfo?label+' info':label+': times '+value}
+             aria-label={canInfo?label+' info, times '+value:label+': times '+value}
              disabled={canInfo?!factorInfoEnabled:undefined}
              onClick={canInfo&&factorInfoEnabled?()=>onFactorInfo(infoKind):undefined}>
              <span className="sgv-multiplier-value">×{value}</span>

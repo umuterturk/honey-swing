@@ -77,7 +77,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-multipliers{position:absolute;z-index:5;left:9%;right:9%;top:76px;display:flex;align-items:flex-start;justify-content:flex-start;gap:clamp(6px,2vw,12px)}
 .sgv-multiplier-pill{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:clamp(48px,13vw,59px);height:31px;padding:2px 7px 3px;border-radius:18px;border:3px solid #fff8e9;box-shadow:0 4px 0 var(--pill-rim),0 6px 8px #776a8040,inset 0 2px #ffffffa1;background:linear-gradient(#fff5e0,var(--pill-color));font-size:clamp(16px,4.3vw,21px);font-weight:1000;color:var(--pill-text);text-shadow:0 1px #fff9;font-variant-numeric:tabular-nums;white-space:nowrap;transform-origin:50% 0%}
 .sgv-multiplier-pill::before{content:"";position:absolute;z-index:-1;left:50%;top:-19px;width:3px;height:19px;border-radius:2px;background:#f2e0cbd9;box-shadow:0 0 2px #8e6179;transform:translateX(-50%)}
-button.sgv-multiplier-pill{font:inherit;color:inherit;appearance:none;cursor:pointer}
+button.sgv-multiplier-pill{appearance:none;cursor:pointer}
 button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-multiplier-swing{--pill-color:#efc4ee;--pill-rim:#b688c3;--pill-text:#744c9b;min-width:clamp(58px,16vw,72px);padding-left:8px;padding-right:4px}
 .sgv-multiplier-flip{--pill-color:#c9eaff;--pill-rim:#7eb8db;--pill-text:#3f73a9;margin-left:auto;min-width:clamp(58px,16vw,72px);padding-left:8px;padding-right:4px}
@@ -1413,9 +1413,8 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-phone[data-factor-info="true"] .sgv-controls{pointer-events:none}
 .sgv-phone[data-factor-info="true"] .sgv-hand{pointer-events:none}
 .sgv-phone[data-factor-info="true"] .sgv-actions{pointer-events:none}
-.sgv-phone[data-factor-info="true"] .sgv-multipliers{
-  position:relative;z-index:41;pointer-events:auto;
-}
+.sgv-phone[data-factor-info="true"] .sgv-meter-section{z-index:41}
+.sgv-phone[data-factor-info="true"] .sgv-multipliers{pointer-events:auto}
 .sgv-feature-intro{
   --fs-xl:clamp(28px,6vw,36px);--fs-s:14px;
   position:absolute;z-index:40;inset:0;display:grid;place-items:center;

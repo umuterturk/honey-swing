@@ -126,3 +126,23 @@ test('factor info pills stay disabled during intro gate',async()=>{
   assert.ok(host.querySelector('.sgv-feature-intro'));
   assert.equal(host.querySelector('.sgv-factor-info'),null);
 });
+
+test('pill is disabled before level-start is dismissed and tapping does not open factor-info',async()=>{
+  win.localStorage.clear();
+  prepareOnboardingJump(win.localStorage,16,{
+    levelCount:ONBOARDING_COUNT,
+    introUnlocks:derivedFeatureUnlocks()
+  });
+  const host=document.createElement('div');
+  document.body.appendChild(host);
+  const root=createRoot(host);
+  await act(async()=>{
+    root.render(createElement(StrictMode,null,createElement(SimplifiedGame)));
+  });
+  // Do NOT dismiss level-start — pills should be disabled.
+  const swingPill=host.querySelector('.sgv-multiplier-pill[data-factor="swing"]');
+  assert.ok(swingPill,'Swing pill exists at Level 16');
+  assert.equal(swingPill.disabled,true,'Swing pill is disabled before level-start dismiss');
+  await act(async()=>{tap(swingPill);});
+  assert.equal(host.querySelector('.sgv-factor-info'),null,'Factor info must not open while pill is disabled');
+});

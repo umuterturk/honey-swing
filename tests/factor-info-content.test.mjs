@@ -42,5 +42,5 @@ test('data-factor-info locks controls and keeps multiplier pills tappable',()=>{
   assert.match(css,/\.sgv-phone\[data-factor-info="true"\] \.sgv-hand\{[^}]*pointer-events:none/);
   assert.match(css,/\.sgv-phone\[data-factor-info="true"\] \.sgv-actions\{[^}]*pointer-events:none/);
   assert.match(css,/\.sgv-phone\[data-factor-info="true"\] \.sgv-multipliers\{[^}]*pointer-events:\s*auto/);
-  assert.match(css,/\.sgv-phone\[data-factor-info="true"\] \.sgv-multipliers\{[^}]*z-index:\s*41/);
+  assert.match(css,/\.sgv-phone\[data-factor-info="true"\] \.sgv-meter-section\{[^}]*z-index:\s*41/);
 });
