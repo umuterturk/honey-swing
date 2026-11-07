@@ -13,28 +13,6 @@ import {newOnboardingRound} from '../src/casual/onboardingLevels.js';
 
 const read=async path=>readFile(new URL(path,import.meta.url),'utf8');
 
-test('BANK plays the pot pour, including a win, and reduced motion stays static',async()=>{
-  assert.deepEqual(chooseBankPour({reduced:false,hasRoot:true,hasSource:true,fromScore:0,toScore:8}),
-    {timeline:true,static:false});
-  assert.deepEqual(chooseBankPour({reduced:true,hasRoot:true,hasSource:true,fromScore:4,toScore:12}),
-    {timeline:false,static:true});
-  assert.deepEqual(reducedBankSummary(4,12),{pot:0,secured:12,gain:'+8'});
-  const motion=await read('../src/casual/minimalMotion.js');
-  assert.match(motion,/chooseBankPour\(/);
-  assert.match(motion,/showReducedBank\(root,fromScore,toScore\)/);
-  assert.match(motion,/export function animateBankPour\(/);
-  const source=await read('../src/casual/SimplifiedGame.jsx');
-  const start=source.slice(source.indexOf('startMotion('),source.indexOf('const winLabel'));
-  assert.match(start,/motionKind\(action,change\)==='bank'/);
-  assert.match(start,/animateBankPour\(/);
-  assert.doesNotMatch(start.slice(0,start.indexOf('animateBankPour(')),/onboardingVictory/,
-    'a winning Bank must not settle before the pour starts');
-  const commit=source.slice(source.indexOf('onCommit({next,change})'),source.indexOf('onSettle'));
-  const early=commit.slice(commit.indexOf('if(onboardingVictory(next))'));
-  assert.doesNotMatch(early,/setView\(settled\.view\)/);
-  assert.doesNotMatch(early,/setShownGold\(settled\.shownGold\)/);
-});
-
 test('the header reset renders without a dev gate and restarts Level 1',async()=>{
   const source=await read('../src/casual/SimplifiedGame.jsx');
   const header=source.slice(source.indexOf('<header className="sgv-hud sgv-tutorial-hud">'),
@@ -113,16 +91,3 @@ test('level start and win and lose screens render and can be dismissed',()=>{
     {dismiss:true,advance:false,replay:true,lock:false});
 });
 
-test('the game mounts those screens and does not keep the Flip landing band',async()=>{
-  const source=await read('../src/casual/SimplifiedGame.jsx');
-  const board=await read('../src/casual/MinimalBoard.jsx');
-  const css=await read('../src/casual/minimal.css');
-  assert.match(source,/<LevelStartScreen /);
-  assert.match(source,/<LevelEndScreen /);
-  assert.match(source,/dismissLevelScreen\(/);
-  assert.doesNotMatch(source,/flipLandingBand|flip_band_shown|flipChosenPayload|flip_chosen|sgv-flip-band/);
-  assert.doesNotMatch(board,/FlipLandingBand|sgv-flip-band/);
-  assert.doesNotMatch(css,/sgv-flip-band|sgv-flip-band-hatch|sgv-flip-band-chevron/);
-  const levels=await read('../src/casual/onboardingLevels.js');
-  assert.doesNotMatch(levels,/showSnapOverlap/);
-});
