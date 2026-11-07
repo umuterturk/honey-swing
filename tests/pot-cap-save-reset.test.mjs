@@ -107,3 +107,13 @@ test('Save resets visible multipliers and the helper detects it',()=>{
   assert.equal(saveResetsVisibleFactors(before,[]),false);
 });
 
+test('PendingPot shows amount only; cap still wired for fill',()=>{
+  const source=readFileSync(new URL('../src/casual/MinimalBoard.jsx',import.meta.url),'utf8');
+  assert.doesNotMatch(source,/sgv-pot-cap/);
+  assert.match(source,/hasCap/);
+  assert.match(source,/fillTarget=hasCap\?cap:target/);
+  const game=readFileSync(new URL('../src/casual/SimplifiedGame.jsx',import.meta.url),'utf8');
+  assert.match(game,/cap=\{level\.rules\.potCap\}/);
+  assert.match(game,/Multipliers reset\./);
+  assert.match(game,/saveResetsVisibleFactors/);
+});

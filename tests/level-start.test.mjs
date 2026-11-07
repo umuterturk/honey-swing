@@ -126,6 +126,114 @@ after(()=>{
   win.happyDOM.abort();
 });
 
+test('the 0.300s micro-arrival is replaced and the start screen stays mounted',async()=>{
+  const css=await read('../src/casual/minimal.css');
+  const source=await read('../src/casual/SimplifiedGame.jsx');
+  const motion=await read('../src/casual/levelStartMotion.js');
+  assert.doesNotMatch(css,/sgv-arrive-badge|sgv-arrive-target|sgv-arrive-hand/);
+  assert.match(css,/\.sgv-level-banner\{/);
+  assert.doesNotMatch(source,/sgv-arrive/);
+  assert.match(source,/playLevelStart\(/);
+  assert.match(source,/fxRef\.current\.settle\(\)/);
+  assert.match(source,/<LevelStartScreen /);
+  assert.match(source,/<LevelEndScreen /);
+  assert.match(source,/className="sgv-reset-progress"/);
+  assert.match(source,/animateBankPour\(/);
+  assert.doesNotMatch(motion,/external\/engines|landing_band|sgv-flip-band/);
+  assert.doesNotMatch(source,/landing_band|sgv-flip-band/);
+  assert.equal(LEVEL_START.cap,2.5);
+  assert.equal(levelStartPlan(1).idleHint,'after-dismiss');
+});
+
+test('playLevelStart settles by 2.5s, skips through the bus, and stays visible',async()=>{
+  const {playLevelStart}=await import('../src/casual/levelStartMotion.js');
+  const sounds=[];
+  const bus=createFxBus({
+    reducedMotion:()=>false,
+    audio:{play(id){sounds.push(id);return true;}}
+  });
+  const banner=document.createElement('div');
+  const jar=document.createElement('div');
+  const goal=document.createElement('div');
+  const hand=document.createElement('div');
+  document.body.append(banner,jar,goal,hand);
+  banner.textContent='Level 4';
+  const handle=playLevelStart({
+    banner,jar,goal,board:[hand],reduced:false,bus,levelId:4
+  });
+  assert.equal(handle.motion,true);
+  assert.ok(handle.timeline);
+  assert.ok(handle.timeline.totalDuration()>=0.880);
+  assert.ok(handle.timeline.totalDuration()<=2.5);
+  assert.equal(bus.liveParticles(),0);
+  handle.timeline.pause();
+  handle.timeline.time(0.10);
+  assert.ok(scaleOf(banner)>0.85&&scaleOf(banner)<=1.06);
+  assert.ok(yOf(banner)>-24&&yOf(banner)<=0);
+  assert.ok(Math.abs(opacityOf(hand)-0.35)<0.05);
+  handle.timeline.time(0.30);
+  assert.ok(scaleOf(jar)>1.15&&scaleOf(jar)<=1.36);
+  assert.equal(bus.liveParticles(),0);
+  handle.timeline.time(0.48);
+  assert.ok(Math.abs(scaleOf(jar)-1)<0.08);
+  assert.ok(Math.abs(yOf(jar))<1);
+  handle.timeline.time(0.70);
+  assert.ok(Math.abs(opacityOf(hand)-1)<0.05);
+  assert.ok(Math.abs(yOf(hand))<1);
+  assert.ok(sounds.includes('level.whoosh'));
+  assert.ok(sounds.includes('level.chime'));
+  handle.timeline.time(0.15);
+  assert.ok(opacityOf(hand)<0.95,'arrival is still in progress before the skip');
+  bus.settle();
+  assert.equal(bus.tweenCount(),0);
+  assert.equal(bus.liveParticles(),0);
+  assert.equal(banner.isConnected,false);
+  assert.ok(Math.abs(opacityOf(hand)-1)<0.001);
+  assert.ok(Math.abs(opacityOf(jar)-1)<0.001);
+  assert.ok(Math.abs(scaleOf(jar)-1)<0.02);
+  assert.ok(Math.abs(yOf(jar))<0.5);
+  assert.doesNotMatch(jar.style.transform||'',/scale\(0/);
+  assert.equal(handle.timeline.totalDuration()<=2.5,true);
+  banner.remove();
+  jar.remove();
+  goal.remove();
+  hand.remove();
+});
+
+test('reduced-motion level start is static and emits 0 particles',async()=>{
+  const {playLevelStart}=await import('../src/casual/levelStartMotion.js');
+  const bus=createFxBus({reducedMotion:()=>false});
+  const banner=document.createElement('div');
+  const jar=document.createElement('div');
+  const goal=document.createElement('div');
+  const hand=document.createElement('div');
+  document.body.append(banner,jar,goal,hand);
+  const handle=playLevelStart({
+    banner,jar,goal,board:[hand],reduced:true,bus,levelId:2
+  });
+  assert.equal(handle.motion,false);
+  assert.equal(handle.timeline,null);
+  assert.equal(bus.liveParticles(),0);
+  assert.equal(bus.tweenCount(),0);
+  assert.equal(gsap.getTweensOf(banner).length,0);
+  assert.equal(gsap.getTweensOf(jar).length,0);
+  assert.equal(gsap.getTweensOf(hand).length,0);
+  assert.equal(banner.isConnected,true);
+  assert.doesNotMatch(banner.style.transform||'',/scale\(/);
+  assert.ok(Math.abs(opacityOf(jar)-1)<0.001);
+  assert.ok(Math.abs(opacityOf(hand)-1)<0.001);
+  assert.ok(Math.abs(scaleOf(jar)-1)<0.02);
+  assert.equal(handle.bannerHold,LEVEL_START.reducedBanner);
+  assert.ok(handle.bannerHold<=0.400);
+  handle.cancel();
+  assert.equal(banner.isConnected,false);
+  assert.equal(bus.liveParticles(),0);
+  assert.ok(Math.abs(opacityOf(hand)-1)<0.001);
+  jar.remove();
+  goal.remove();
+  hand.remove();
+});
+
 test('a fresh level plays arrival within 2.5s and the start screen stays until a tap',async()=>{
   resetStorage();
   seeBank();
@@ -154,6 +262,31 @@ test('a fresh level plays arrival within 2.5s and the start screen stays until a
   });
   await act(async()=>{card.dispatchEvent(pointer);});
   assert.equal(pointer.defaultPrevented,false);
+  await view.unmount();
+});
+
+test('a tap during arrival settles through the bus and leaves the final state visible',async()=>{
+  resetStorage();
+  seeBank();
+  const view=await mount();
+  const jar=view.host.querySelector('.sgv-chest-area');
+  const hand=view.host.querySelector('.sgv-hand');
+  const timeline=arrivalTimeline(hand)||arrivalTimeline(jar);
+  assert.ok(timeline);
+  timeline.pause();
+  timeline.time(0.12);
+  assert.ok(opacityOf(hand)<0.9);
+  await act(async()=>{tap(view.host.querySelector('.sgv-level-start'));});
+  assert.equal(view.host.querySelector('.sgv-level-start'),null);
+  assert.equal(view.host.querySelector('.sgv-level-banner'),null);
+  assert.equal(gsap.getTweensOf(jar).length,0);
+  assert.equal(gsap.getTweensOf(hand).length,0);
+  assert.ok(Math.abs(opacityOf(jar)-1)<0.001);
+  assert.ok(Math.abs(opacityOf(hand)-1)<0.001);
+  assert.ok(Math.abs(scaleOf(jar)-1)<0.02);
+  assert.doesNotMatch(jar.style.opacity||'',/^0(\.|$)/);
+  assert.doesNotMatch(hand.style.opacity||'',/^0(\.|$)/);
+  assert.equal(view.host.querySelector('.sgv-phone').getAttribute('aria-busy'),'false');
   await view.unmount();
 });
 
@@ -245,3 +378,116 @@ test('the idle hint timer starts only after the start screen is dismissed',async
   }
 });
 
+test('NEW! finishes before the level-start arrival',async()=>{
+  resetStorage();
+  const view=await mount();
+  const jar=view.host.querySelector('.sgv-chest-area');
+  assert.ok(view.host.querySelector('.sgv-feature-intro'));
+  assert.equal(view.host.querySelector('.sgv-level-start'),null);
+  assert.equal(view.host.querySelector('.sgv-level-banner'),null);
+  assert.equal(gsap.getTweensOf(jar).length,0);
+  await act(async()=>{tap(view.host.querySelector('.sgv-feature-intro-play'));});
+  assert.equal(view.host.querySelector('.sgv-feature-intro'),null);
+  assert.ok(view.host.querySelector('.sgv-level-start'));
+  assert.ok(view.host.querySelector('.sgv-level-banner'));
+  assert.ok(arrivalTimeline(jar));
+  await view.unmount();
+});
+
+test('a mounted settle at the entry frame does not leave the board invisible',async()=>{
+  resetStorage();
+  seeBank();
+  const view=await mount();
+  const jar=view.host.querySelector('.sgv-chest-area');
+  const hand=view.host.querySelector('.sgv-hand');
+  const timeline=arrivalTimeline(hand);
+  assert.ok(timeline);
+  timeline.pause();
+  timeline.time(0.01);
+  assert.ok(opacityOf(hand)<0.5);
+  await act(async()=>{
+    view.host.querySelector('.sgv-card').dispatchEvent(new win.PointerEvent('pointerdown',{
+      bubbles:true,cancelable:true,pointerId:1
+    }));
+  });
+  assert.equal(!!view.host.querySelector('.sgv-level-start'),false);
+  assert.equal(gsap.getTweensOf(jar).length,0);
+  assert.equal(gsap.getTweensOf(hand).length,0);
+  assert.equal(!!view.host.querySelector('.sgv-level-banner'),false);
+  assert.ok(Math.abs(opacityOf(jar)-1)<0.001);
+  assert.ok(Math.abs(opacityOf(hand)-1)<0.001);
+  assert.ok(Math.abs(scaleOf(jar)-1)<0.02);
+  assert.doesNotMatch(jar.style.opacity||'',/^0/);
+  assert.doesNotMatch(hand.style.opacity||'',/^0/);
+  assert.equal(!!view.host.querySelector('.sgv-skip-surface'),false);
+  await view.unmount();
+});
+
+function assertStylesheetTransform(node){
+  const probe=document.createElement('div');
+  probe.className=node.className;
+  node.parentElement.appendChild(probe);
+  const expected=win.getComputedStyle(probe).transform;
+  const actual=win.getComputedStyle(node).transform;
+  probe.remove();
+  assert.equal(node.style.transform||'','',node.className+' keeps the stylesheet transform');
+  assert.equal(actual,expected,node.className+' computed transform');
+  return expected;
+}
+
+async function withStylesheet(run){
+  const css=await read('../src/casual/minimal.css');
+  const style=document.createElement('style');
+  style.textContent=css;
+  document.head.appendChild(style);
+  try{await run();}
+  finally{style.remove();}
+}
+
+test('the goal keeps its centering transform after dismiss',async()=>{
+  await withStylesheet(async()=>{
+    const painted=['.sgv-chest-area','.sgv-goal-progress','.sgv-meter-section',
+      '.sgv-hand','.sgv-actions','.sgv-pending-pot'];
+    async function check(host){
+      const goal=host.querySelector('.sgv-goal-progress');
+      const expected=assertStylesheetTransform(goal);
+      assert.match(String(expected),/-50%/);
+      for(const selector of painted){
+        if(selector==='.sgv-goal-progress')continue;
+        assertStylesheetTransform(host.querySelector(selector));
+      }
+    }
+    resetStorage();
+    seeBank();
+    useMotion(true);
+    const reduced=await mount();
+    await act(async()=>{tap(reduced.host.querySelector('.sgv-level-start-dismiss'));});
+    await check(reduced.host);
+    await reduced.unmount();
+
+    resetStorage();
+    seeBank();
+    useMotion(false);
+    const skipped=await mount();
+    const skipTimeline=arrivalTimeline(skipped.host.querySelector('.sgv-hand'));
+    assert.ok(skipTimeline);
+    skipTimeline.pause();
+    skipTimeline.time(0.2);
+    assert.notEqual(skipped.host.querySelector('.sgv-goal-progress').style.transform||'','');
+    await act(async()=>{tap(skipped.host.querySelector('.sgv-level-start-dismiss'));});
+    await check(skipped.host);
+    await skipped.unmount();
+
+    resetStorage();
+    seeBank();
+    const finished=await mount();
+    const done=arrivalTimeline(finished.host.querySelector('.sgv-chest-area'));
+    assert.ok(done);
+    done.pause();
+    await act(async()=>{done.progress(1);});
+    assert.ok(finished.host.querySelector('.sgv-level-start'));
+    await act(async()=>{tap(finished.host.querySelector('.sgv-level-start-dismiss'));});
+    await check(finished.host);
+    await finished.unmount();
+  });
+});

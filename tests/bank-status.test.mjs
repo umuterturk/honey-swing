@@ -76,3 +76,10 @@ test('auto-Bank only when every legal action is Bank',()=>{
   assert.equal(shouldAutoBank(null),false);
 });
 
+test('the Bank button does not overlay a second BANK label',async()=>{
+  const {readFileSync}=await import('node:fs');
+  const screen=readFileSync(new URL('../src/casual/SimplifiedGame.jsx',import.meta.url),'utf8');
+  assert.match(screen,/shouldAutoBank\(available\)/);
+  assert.doesNotMatch(screen,/sgv-ack/);
+  assert.doesNotMatch(screen,/setAck\(\{kind:'bank'/);
+});

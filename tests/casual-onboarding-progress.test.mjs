@@ -17,6 +17,27 @@ function testStorage(entries){
   };
 }
 
+test('development reset clears current and legacy onboarding progress only',()=>{
+  const storage=testStorage({
+    [ONBOARDING_SESSION_KEY]:JSON.stringify(newOnboardingRound(8)),
+    [ONBOARDING_PROGRESS_KEY]:'9',
+    'swing-casual-onboarding-session-v1':'old-session',
+    'swing-casual-onboarding-session-v2':'older-garden',
+    'swing-casual-onboarding-unlocked-v1':'10',
+    [SEEN_FEATURE_INTROS_KEY]:'["bank"]',
+    'music-volume':'55',
+    'other-game-progress':'keep'
+  });
+  assert.equal(clearOnboardingProgress(storage),true);
+  for(const key of [ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,SEEN_FEATURE_INTROS_KEY,
+    'swing-casual-onboarding-session-v1','swing-casual-onboarding-session-v2',
+    'swing-casual-onboarding-unlocked-v1']){
+    assert.equal(storage.has(key),false);
+  }
+  assert.equal(storage.getItem('music-volume'),'55');
+  assert.equal(storage.getItem('other-game-progress'),'keep');
+});
+
 test('reset is repeatable and freshly starts the real Level 1 hand',()=>{
   const storage=testStorage({[ONBOARDING_PROGRESS_KEY]:'10'});
   for(let i=0;i<3;i++){
@@ -32,3 +53,26 @@ test('reset is repeatable and freshly starts the real Level 1 hand',()=>{
   assert.equal(storage.has(ONBOARDING_PROGRESS_KEY),false);
 });
 
+test('storage failure does not throw or block the interactive reset',()=>{
+  assert.equal(clearOnboardingProgress(null),false);
+  assert.equal(clearOnboardingProgress({removeItem(){throw new Error('blocked');}}),false);
+});
+
+test('reset is in the header and on the end card, not a level gate',async()=>{
+  const source=await readFile(new URL('../src/casual/SimplifiedGame.jsx',import.meta.url),'utf8');
+  const screens=await readFile(new URL('../src/casual/levelScreens.js',import.meta.url),'utf8');
+  const header=source.slice(source.indexOf('<header className="sgv-hud sgv-tutorial-hud">'),
+    source.indexOf('</header>'));
+  assert.match(header,/<button type="button" className="sgv-reset-progress"/);
+  assert.doesNotMatch(header,/import\.meta\.env\.DEV/);
+  assert.match(header,/onClick=\{resetProgress\}/);
+  assert.match(header,/aria-label="Reset onboarding progress and restart Level 1"/);
+  assert.doesNotMatch(header,/level\.id>=\d+&&<button type="button" className="sgv-reset-progress"/);
+  assert.match(source,/onReset=\{resetProgress\}/);
+  assert.match(screens,/className:'sgv-end-reset',onClick:onReset/);
+  const reset=source.slice(source.indexOf('function resetProgress(){'),
+    source.indexOf('function nextLevel(){'));
+  assert.match(reset,/clearOnboardingProgress\(window\.localStorage\)/);
+  assert.match(reset,/startLevel\(1\)/);
+  assert.match(source,/setDevMenuOpen\(false\)/);
+});

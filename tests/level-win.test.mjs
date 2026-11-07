@@ -266,6 +266,160 @@ test('star thresholds match Appendix A for all 20 levels',()=>{
   assert.equal(honeyTier(9,17),3);
 });
 
+test('praise and bursts follow the star tier and never change the engine score',()=>{
+  assert.deepEqual(praiseFor(1),{tier:1,text:'Nectar!',sound:'praise.nectar'});
+  assert.deepEqual(praiseFor(2),{tier:2,text:'Amber!',sound:'praise.amber'});
+  assert.deepEqual(praiseFor(3),{tier:3,text:'Hiveful!',sound:'praise.hiveful'});
+  assert.equal(praiseFor(0),null);
+  assert.equal(burstParticles(0),0);
+  assert.equal(burstParticles(1),16);
+  assert.equal(burstParticles(2),20);
+  assert.equal(burstParticles(3),24);
+  assert.ok(burstParticles(3)<=24);
+  let round=newOnboardingRound(1);
+  round=stepOnboarding(round,{type:'steer',index:0});
+  round=stepOnboarding(round,{type:'steer',index:0});
+  round=stepOnboarding(round,{type:'bank'});
+  const secured=round.game.deal.T;
+  assert.ok(secured>=onboardingLevel(1).target);
+  assert.equal(honeyTier(1,secured),3);
+  assert.equal(praiseFor(honeyTier(1,secured)).text,'Hiveful!');
+  assert.equal(round.game.deal.T,secured);
+  const sweet=successPlan({victory:true,levelId:4,secured:11});
+  assert.equal(sweet.tier,1);
+  assert.equal(sweet.flight.size,16);
+  assert.equal(sweet.praise.text,'Nectar!');
+  assert.equal(sweet.burst.particles,16);
+  assert.equal(sweet.count.to,11);
+  const tasty=successPlan({victory:true,levelId:4,secured:18});
+  assert.equal(tasty.tier,2);
+  assert.equal(tasty.flight.size,18);
+  assert.equal(tasty.praise.text,'Amber!');
+  assert.equal(tasty.burst.particles,20);
+  const divine=successPlan({victory:true,levelId:11,secured:32});
+  assert.equal(divine.tier,3);
+  assert.equal(divine.flight.size,20);
+  assert.equal(divine.praise.text,'Hiveful!');
+  assert.equal(divine.count.to,32);
+  assert.equal(divine.burst.particles,24);
+  assert.equal(divine.ctaAt,0);
+  assert.equal(divine.scoreAt,0);
+  const lost=successPlan({victory:false,levelId:11,secured:32,bank:true});
+  assert.equal(lost.effects,false);
+  assert.equal(lost.tier,0);
+  assert.equal(lost.star,null);
+  assert.equal(lost.praise,null);
+  assert.equal(lost.particles,0);
+  assert.equal(lost.burst,null);
+  assert.equal(lost.count,null);
+  const reduced=successPlan({victory:true,levelId:1,secured:8,reduced:true});
+  assert.equal(reduced.motion,false);
+  assert.equal(reduced.particles,0);
+  assert.equal(reduced.tier,3);
+  assert.equal(reduced.flight.count,0);
+  assert.equal(reduced.praise.text,'Hiveful!');
+  assert.equal(reduced.count.to,8);
+});
+
+test('the count-up duration follows the digit cap and ends on the engine integer',()=>{
+  assert.equal(countUpDuration(5),0.45);
+  assert.equal(countUpDuration(32),0.45);
+  assert.equal(countUpDuration(100),0.45);
+  assert.equal(displayedCount(0.5,5),2);
+  for(const value of [1,5,6,7,8,9,11,13,17,24,30,32,41,56,87]){
+    assert.equal(displayedCount(0,value),0);
+    assert.equal(displayedCount(1,value),value);
+    assert.equal(displayedCount(1.0000000002,value),value);
+    for(let step=0;step<=20;step++){
+      const shown=displayedCount(step/20,value);
+      assert.equal(Number.isInteger(shown),true);
+      assert.ok(shown>=0&&shown<=value);
+    }
+  }
+});
+
+test('skip and settle land on the exact secured score, a full jar, and 0 particles',()=>{
+  const secured=32;
+  const stage=makeStage();
+  stage.praise.textContent='Hiveful!';
+  const sounds=[];
+  const bus=createFxBus({
+    reducedMotion:()=>false,
+    audio:{play(id){sounds.push(id);return true;}}
+  });
+  const handle=playWinCelebration({
+    victory:true,secured,target:9,tier:3,praise:stage.praise,liquid:stage.liquid,
+    scoreboard:stage.board,targetRow:stage.targetRow,tally:stage.tally,cta:stage.cta,card:stage.card,
+    reduced:false,bus
+  });
+  assert.equal(handle.motion,true);
+  assert.equal(handle.timeline.totalDuration(),2);
+  handle.timeline.pause();
+  handle.timeline.time(0);
+  assert.equal(stage.tally.textContent,'0');
+  handle.timeline.time(0.5);
+  assert.equal(stage.tally.textContent,'0');
+  const mid=Number.parseFloat(stage.liquid.style.height);
+  assert.ok(mid>0&&mid<78,String(mid));
+  handle.timeline.time(1.05);
+  assert.equal(stage.liquid.style.height,'78%');
+  handle.timeline.time(1.1);
+  assert.ok(opacityOf(stage.praise)>0);
+  assert.equal(bus.liveParticles(),0);
+  assert.ok(sounds.includes('praise.hiveful'));
+  assert.equal(sounds.includes('fx.confetti'),false);
+  bus.settle();
+  assert.equal(bus.tweenCount(),0);
+  assert.equal(bus.liveParticles(),0);
+  assert.equal(stage.tally.textContent,String(secured));
+  assert.equal(stage.praise.style.opacity,'1');
+  assert.equal(stage.liquid.style.height,'78%');
+  assert.ok(stage.targetRow.classList.contains('is-met'));
+  assert.equal(gsap.getTweensOf(stage.praise).length,0);
+  assert.equal(stage.cta.disabled,false);
+  stage.remove();
+});
+
+test('a killed tween at the hidden frame still shows the final card',()=>{
+  const stage=makeStage();
+  stage.praise.textContent='Hiveful!';
+  const bus=createFxBus({reducedMotion:()=>false});
+  const handle=playWinCelebration({
+    victory:true,secured:8,target:5,tier:3,praise:stage.praise,liquid:stage.liquid,
+    scoreboard:stage.board,targetRow:stage.targetRow,tally:stage.tally,cta:stage.cta,card:stage.card,reduced:false,bus
+  });
+  handle.timeline.pause();
+  handle.timeline.time(0.05);
+  assert.notEqual(stage.tally.textContent,'8');
+  bus.settle();
+  assert.equal(bus.tweenCount(),0);
+  assert.equal(bus.liveParticles(),0);
+  assert.equal(stage.tally.textContent,'8');
+  assert.equal(stage.praise.style.opacity,'1');
+  assert.equal(stage.liquid.style.height,'78%');
+  assert.doesNotMatch(stage.praise.style.transform||'',/scale\(0/);
+  stage.remove();
+});
+
+test('reduced motion shows the final card and emits 0 particles',()=>{
+  const stage=makeStage();
+  stage.praise.textContent='Amber!';
+  const bus=createFxBus({reducedMotion:()=>false});
+  const handle=playWinCelebration({
+    victory:true,secured:18,target:11,tier:2,praise:stage.praise,liquid:stage.liquid,
+    scoreboard:stage.board,targetRow:stage.targetRow,tally:stage.tally,cta:stage.cta,card:stage.card,reduced:true,bus
+  });
+  assert.equal(handle.motion,false);
+  assert.equal(handle.timeline,null);
+  assert.equal(bus.liveParticles(),0);
+  assert.equal(bus.tweenCount(),0);
+  assert.equal(gsap.getTweensOf(stage.praise).length,0);
+  assert.equal(stage.tally.textContent,'18');
+  assert.equal(stage.praise.style.opacity,'1');
+  assert.equal(stage.liquid.style.height,'78%');
+  stage.remove();
+});
+
 test('a fail plays no praise, stars, count-up, or particles',()=>{
   const stage=makeStage(3);
   const bus=createFxBus({reducedMotion:()=>false});
@@ -348,6 +502,78 @@ async function withStylesheet(run){
   finally{style.remove();}
 }
 
+test('a mounted settle mid-celebration leaves 0 tweens and a visible final card',async()=>{
+  await withStylesheet(async()=>{
+    resetStorage();
+    const round=bankedLevel1();
+    const secured=round.game.deal.T;
+    assert.ok(secured>=5);
+    assert.equal(honeyTier(1,secured),3);
+    saveRound(round);
+    const view=await mount();
+    const host=view.host;
+    const praise=host.querySelector('.sgv-win-praise');
+    const liquid=host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill');
+    const tally=host.querySelector('.sgv-win-tally');
+    const targetRow=host.querySelector('.sgv-honey-scoreboard-target');
+    const cta=host.querySelector('.sgv-end-cta');
+    const goal=host.querySelector('.sgv-goal-progress');
+    const bus=host.querySelector('.sgv-fx-layer').__fxBus;
+    assert.equal(host.querySelector('.sgv-win-star'),null);
+    assert.ok(liquid);
+    assert.equal(praise.textContent,'Hiveful!');
+    assert.ok(host.querySelector('.sgv-honey-scoreboard-art'));
+    assert.match(host.querySelector('.sgv-honey-scoreboard-label').textContent,/Honey Collected/);
+    assert.match(targetRow.textContent,/Target:\s*5/);
+    assert.equal(host.querySelector('.sgv-honey-subline'),null);
+    assert.equal(cta.disabled,false);
+    assert.equal(cta.textContent,'NEXT');
+    const reset=host.querySelector('.sgv-honey-reset');
+    const resetStyle=win.getComputedStyle(reset);
+    assert.equal(resetStyle.height,'44px');
+    assert.equal(reset.getAttribute('aria-label'),'Reset progress');
+    assert.match(reset.textContent,/Reset/);
+    assert.equal(resetStyle.borderTopWidth,'2px');
+    assert.equal(resetStyle.fontSize,'15px');
+    const timeline=timelineOf(praise);
+    assert.ok(timeline,'the win card plays a celebration timeline');
+    timeline.pause();
+    timeline.time(0.90);
+    assert.equal(tally.textContent,'0');
+    const mid=Number.parseFloat(liquid.style.height);
+    assert.ok(mid>0&&mid<=78,String(mid));
+    assert.equal(bus.liveParticles(),0);
+    assert.match(targetRow.textContent,/Target:\s*5/);
+    const overlay=host.querySelector('.sgv-end-overlay');
+    await act(async()=>{
+      overlay.dispatchEvent(new win.PointerEvent('pointerdown',{
+        bubbles:true,cancelable:true,pointerId:1
+      }));
+    });
+    assert.ok(host.querySelector('.sgv-end-overlay'),'backdrop settles and stays on the card');
+    assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
+    assert.match(host.querySelector('.sgv-honey-scoreboard-target').textContent,/Target:\s*5/);
+    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Hiveful!');
+    assert.equal(host.querySelector('.sgv-win-star'),null);
+    assert.equal(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill').style.height,'78%');
+    const shownPraise=host.querySelector('.sgv-win-praise');
+    assert.equal(shownPraise.style.opacity,'1');
+    assert.equal(win.getComputedStyle(shownPraise).opacity,'1');
+    assert.doesNotMatch(shownPraise.style.transform||'',/scale\(0/);
+    assert.equal(gsap.getTweensOf(shownPraise).length,0);
+    assert.equal(bus.tweenCount(),0);
+    assert.equal(bus.liveParticles(),0);
+    assert.equal(host.querySelector('.sgv-end-cta').textContent,'NEXT');
+    assert.equal(host.querySelector('.sgv-end-cta').disabled,false);
+    assert.ok(host.querySelector('.sgv-honey-final'));
+    assert.ok(host.querySelector('.sgv-success-settled'));
+    assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'skip-settled');
+    const expected=assertStylesheetTransform(goal);
+    assert.match(String(expected),/-50%/);
+    await view.unmount();
+  });
+});
+
 test('the CTA advances during the celebration',async()=>{
   resetStorage();
   const round=bankedLevel1();
@@ -395,3 +621,103 @@ test('a mounted loss shows the quiet end card',async()=>{
   });
 });
 
+test('the settled timeline keeps a computed full jar',async()=>{
+  await withStylesheet(async()=>{
+    resetStorage();
+    saveRound(bankedLevel1());
+    const view=await mount();
+    const host=view.host;
+    const timeline=timelineOf(host.querySelector('.sgv-win-praise'));
+    assert.ok(timeline);
+    await act(async()=>{timeline.time(1.75);});
+    assert.ok(host.querySelector('.sgv-success-settled'));
+    assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'settled');
+    await view.unmount();
+  });
+});
+
+test('reduced motion mounts the static final card with 0 particles',async()=>{
+  await withStylesheet(async()=>{
+    resetStorage();
+    useMotion(true);
+    const round=bankedLevel1();
+    const secured=round.game.deal.T;
+    saveRound(round);
+    const view=await mount();
+    const host=view.host;
+    const bus=host.querySelector('.sgv-fx-layer').__fxBus;
+    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Hiveful!');
+    assert.equal(host.querySelector('.sgv-win-star'),null);
+    assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
+    assert.match(host.querySelector('.sgv-honey-scoreboard-target').textContent,/Target:\s*5/);
+    assert.match(host.querySelector('.sgv-honey-scoreboard-label').textContent,/Honey Collected/);
+    assert.equal(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill').style.height,'78%');
+    assert.ok(host.querySelector('.sgv-win-static'));
+    assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'reduced-motion');
+    assert.equal(bus.liveParticles(),0);
+    assert.equal(bus.tweenCount(),0);
+    assert.equal(gsap.getTweensOf(host.querySelector('.sgv-win-praise')).length,0);
+    assert.equal(host.querySelector('.sgv-end-cta').textContent,'NEXT');
+    await view.unmount();
+  });
+});
+
+test('win FX stacks above the end card, under NEW!, and the CTA still receives the tap',async()=>{
+  await withStylesheet(async()=>{
+    const phone=document.createElement('div');
+    phone.className='sgv-phone';
+    phone.innerHTML=[
+      '<div class="sgv-fx-layer"><canvas class="sgv-fx-canvas"></canvas></div>',
+      '<div class="sgv-end-overlay"><button class="sgv-end-cta" type="button">NEXT</button></div>',
+      '<div class="sgv-feature-intro"></div>'
+    ].join('');
+    document.body.appendChild(phone);
+    const fx=win.getComputedStyle(phone.querySelector('.sgv-fx-layer'));
+    const end=win.getComputedStyle(phone.querySelector('.sgv-end-overlay'));
+    const intro=win.getComputedStyle(phone.querySelector('.sgv-feature-intro'));
+    const canvas=win.getComputedStyle(phone.querySelector('.sgv-fx-canvas'));
+    assert.ok(Number(fx.zIndex)>Number(end.zIndex),
+      'fx z-index '+fx.zIndex+' is not above the end overlay '+end.zIndex);
+    assert.ok(Number(fx.zIndex)<Number(intro.zIndex),
+      'fx z-index '+fx.zIndex+' covers the NEW! overlay '+intro.zIndex);
+    assert.equal(fx.pointerEvents,'none');
+    assert.equal(canvas.pointerEvents,'none');
+    phone.remove();
+
+    resetStorage();
+    const round=bankedLevel1();
+    saveRound(round);
+    const view=await mount();
+    const host=view.host;
+    host.style.width='390px';
+    host.style.height='844px';
+    const timeline=timelineOf(host.querySelector('.sgv-win-praise'));
+    assert.ok(timeline);
+    timeline.pause();
+    timeline.time(0.90);
+    const bus=host.querySelector('.sgv-fx-layer').__fxBus;
+    const fxLayer=host.querySelector('.sgv-fx-layer');
+    const overlay=host.querySelector('.sgv-end-overlay');
+    assert.equal(bus.liveParticles(),0);
+    const liveFx=win.getComputedStyle(fxLayer);
+    const liveEnd=win.getComputedStyle(overlay);
+    assert.ok(Number(liveEnd.zIndex)>=Number(liveFx.zIndex),
+      'honey overlay z-index '+liveEnd.zIndex+' must sit on or above FX '+liveFx.zIndex);
+    assert.equal(liveFx.pointerEvents,'none');
+    assert.equal(win.getComputedStyle(fxLayer.querySelector('canvas')).pointerEvents,'none');
+    const cta=host.querySelector('.sgv-end-cta');
+    const blockers=[...host.querySelector('.sgv-phone').children].filter(node=>{
+      if(node===overlay||overlay.contains(node)||node.contains(cta))return false;
+      const style=win.getComputedStyle(node);
+      const covers=style.position==='absolute'&&style.inset==='0';
+      const z=Number(style.zIndex);
+      return covers&&style.pointerEvents!=='none'&&Number.isFinite(z)&&z>=Number(liveEnd.zIndex);
+    });
+    assert.deepEqual(blockers.map(node=>node.className),[],
+      'a full-screen layer above the card must not take the CTA tap');
+    await act(async()=>{tap(cta);});
+    assert.equal(host.querySelector('.sgv-end-overlay'),null);
+    assert.match(host.textContent,/Level 2/);
+    await view.unmount();
+  });
+});

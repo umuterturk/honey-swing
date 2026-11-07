@@ -72,6 +72,31 @@ test('an unseen Level 1 shows the Bank card once',()=>{
   }
 });
 
+test('PLAY or a scrim tap marks the Bank card seen and settles fx',()=>{
+  for(const via of ['play','scrim']){
+    const storage=testStorage();
+    const bus=createFxBus({reducedMotion:()=>false});
+    bus.emit({particles:4,tween:true});
+    assert.ok(bus.liveParticles()>0);
+    assert.ok(bus.tweenCount()>0);
+    const result=dismissFeatureIntro({levelId:1,storage,via,fx:bus});
+    assert.equal(result.dismissed,true);
+    assert.equal(result.id,'bank');
+    assert.equal(result.handoff,'level-start');
+    assert.equal(result.phase,'level-start');
+    assert.equal(readSeenFeatureIntros(storage).has('bank'),true);
+    assert.match(storage.getItem(SEEN_FEATURE_INTROS_KEY),/"bank"/);
+    assert.equal(bus.liveParticles(),0);
+    assert.equal(bus.tweenCount(),0);
+    assert.equal(bus.queued(),0);
+  }
+  const storage=testStorage();
+  const blocked=dismissFeatureIntro({levelId:1,storage,via:'board',fx:{settle(){throw new Error('settle');}}});
+  assert.equal(blocked.dismissed,false);
+  assert.equal(blocked.gate,true);
+  assert.equal(readSeenFeatureIntros(storage).has('bank'),false);
+});
+
 test('restoring a mid-level round skips the intro card',()=>{
   const storage=testStorage();
   const mid=freshLevel(1);
@@ -84,6 +109,38 @@ test('restoring a mid-level round skips the intro card',()=>{
   const played=freshLevel(3);
   played.game={...played.game,deal:{...played.game.deal,plays:1}};
   assert.equal(featureIntroForEntry({round:played,storage}).show,false);
+});
+
+test('the feature intro registry matches the level unlocks',()=>{
+  const rows=validateFeatureIntroRegistry();
+  assert.deepEqual(rows.map(row=>[row.id,row.unlockLevel,row.registered]),[
+    ['bank',1,true],
+    ['swing',3,false],
+    ['flip',5,false],
+    ['flip_mult',6,false],
+    ['zero',10,false],
+    ['snap',11,false]
+  ]);
+  assert.deepEqual(Object.keys(FEATURE_INTROS),['bank']);
+  assert.equal(FEATURE_INTROS.bank.unlockLevel,1);
+  assert.equal(FEATURE_INTROS.bank.icon,'bank-jar');
+  assert.equal(FEATURE_INTROS.bank.copyKey,'intro.bank');
+  assert.equal(FEATURE_INTROS.bank.highlightTarget,'bank');
+  assert.equal(FEATURE_INTROS.bank.demoScript.duration,1.4);
+  assert.equal(FEATURE_INTROS.bank.demoScript.cycles,2);
+  assert.equal(FEATURE_INTROS.bank.demoScript.frames.length,3);
+  assert.deepEqual(introFeatureIdsForLevel(onboardingLevel(1),null),['bank']);
+  assert.deepEqual(introFeatureIdsForLevel(onboardingLevel(5),onboardingLevel(4)),['flip']);
+  assert.equal(introFeatureIdsForLevel(onboardingLevel(5),onboardingLevel(4)).includes('landing_band'),false);
+  assert.throws(()=>validateFeatureIntroRegistry(undefined,{
+    nope:{id:'nope',unlockLevel:1,name:'Nope',copy:'Nope.'}
+  }),/Unknown feature intro: nope/);
+  assert.throws(()=>validateFeatureIntroRegistry(undefined,{
+    bank:{...FEATURE_INTROS.bank,unlockLevel:4}
+  }),/unlock/);
+  assert.throws(()=>validateFeatureIntroRegistry(undefined,{
+    landing_band:{id:'landing_band',unlockLevel:5,name:'Band',copy:'A band.'}
+  }),/Unknown feature intro: landing_band|landing band/i);
 });
 
 test('the board ignores taps while the intro gate is up',()=>{
@@ -151,3 +208,95 @@ test('a veteran who already passed Level 1 skips Bank through the seen-set',()=>
   assert.equal(fresh.has(SEEN_FEATURE_INTROS_KEY),false);
 });
 
+test('reduced motion shows the Bank card as a still storyboard with no tweens',()=>{
+  const storage=testStorage();
+  const entry=featureIntroForEntry({round:freshLevel(1),storage,reduced:true});
+  assert.equal(entry.show,true);
+  assert.equal(entry.motion,false);
+  const bus=createFxBus({reducedMotion:()=>true});
+  const scrim={style:{}};
+  const card={style:{}};
+  const handle=playFeatureIntroEnter({scrim,card,reduced:true,bus});
+  assert.equal(handle.motion,false);
+  assert.equal(bus.tweenCount(),0);
+  assert.equal(bus.liveParticles(),0);
+  assert.equal(scrim.style.opacity,'0.55');
+  assert.equal(card.style.opacity,'1');
+  assert.equal(card.style.transform,'none');
+  const html=renderToStaticMarkup(createElement(FeatureIntroOverlay,{
+    intro:FEATURE_INTROS.bank,reduced:true,onDismiss(){}
+  }));
+  assert.match(html,/sgv-feature-intro-static/);
+  assert.match(html,/data-feature="bank"/);
+  assert.match(html,/NEW!/);
+  assert.match(html,/>Save</);
+  assert.match(html,/Save honey into your Savings\./);
+  assert.match(html,/>PLAY</);
+  assert.doesNotMatch(html,/disabled=/);
+  assert.equal((html.match(/sgv-feature-intro-frame/g)||[]).length,3);
+  assert.doesNotMatch(html,/sgv-feature-intro-motion|landing|flip-band|\+\d/);
+});
+
+test('the intro card eases in under the fx bus and never scales past 1.04',()=>{
+  const bus=createFxBus({reducedMotion:()=>false});
+  const scrim={opacity:1};
+  const card={opacity:1,scale:2};
+  const handle=playFeatureIntroEnter({scrim,card,reduced:false,bus});
+  assert.equal(handle.motion,true);
+  assert.equal(bus.tweenCount(),1);
+  assert.ok(Math.abs(handle.timeline.duration()-INTRO_MOTION.card.end)<0.001);
+  let maxScale=0;
+  for(let step=0;step<=40;step++){
+    handle.timeline.progress(step/40);
+    maxScale=Math.max(maxScale,Number(card.scale)||0);
+  }
+  assert.ok(maxScale<=INTRO_MOTION.card.maxScale);
+  assert.ok(maxScale>=1);
+  handle.timeline.progress(1);
+  assert.ok(Math.abs(Number(scrim.opacity)-0.55)<0.001);
+  bus.settle();
+  assert.equal(bus.tweenCount(),0);
+  assert.equal(bus.liveParticles(),0);
+});
+
+test('the Bank overlay is the only intro and the in-level acknowledgement stays',async()=>{
+  const html=renderToStaticMarkup(createElement(FeatureIntroOverlay,{
+    intro:FEATURE_INTROS.bank,reduced:false,onDismiss(){}
+  }));
+  assert.match(html,/class="sgv-feature-intro sgv-feature-intro-motion"/);
+  assert.match(html,/sgv-feature-intro-play/);
+  assert.match(html,/sgv-feature-intro-scrim/);
+  assert.match(html,/aria-modal="true"/);
+  assert.doesNotMatch(html,/Swing|Flip|Zero|Snap|landing/);
+  assert.equal(introCopy('bank',5),'SAVE 5');
+  assert.equal(introCopy('cross'),'CROSS');
+  assert.equal(introCopy('flip'),'FLIP');
+  assert.equal(introCopy('flipFactor',2),'×2');
+  assert.equal(introCopy('zero'),'Pot safe.');
+  assert.equal(introCopy('snap'),'Pot lost. Savings safe.');
+  const seen=new Set();
+  assert.equal(takeFirstOutcome(seen,'bank').kind,'bank');
+  assert.equal(takeFirstOutcome(seen,'bank'),null);
+  const source=await read('../src/casual/SimplifiedGame.jsx');
+  const registry=await read('../src/casual/featureIntroRegistry.js');
+  const overlay=await read('../src/casual/FeatureIntroOverlay.jsx');
+  const css=await read('../src/casual/minimal.css');
+  assert.doesNotMatch(registry,/external\/engines/);
+  assert.doesNotMatch(overlay,/external\/engines|landing_band|sgv-flip-band/);
+  assert.match(source,/takeFirstOutcome\(seenFactorsRef\.current,'bank'\)/);
+  assert.doesNotMatch(source,/introCopy\('bank',overswingPayout/);
+  assert.match(source,/function play\(action,source\)\{\s*if\(finished\)return;\s*if\(!boardTapDuringIntro\(introGateRef\.current\)\.play\)return;/);
+  assert.match(source,/introPointerDecision\(/);
+  assert.match(source,/dismissFeatureIntro\(/);
+  assert.match(source,/fx:fxRef\.current/);
+  const introAt=source.indexOf('<FeatureIntroOverlay');
+  const startAt=source.indexOf('<LevelStartScreen');
+  assert.ok(introAt>0&&startAt>introAt);
+  assert.match(source,/startOpen&&!introGate&&!finished&&!animating&&<LevelStartScreen/);
+  assert.match(source,/data-intro-gate=\{introGate\?true:undefined\}/);
+  assert.match(css,/\.sgv-phone\[data-intro-gate="true"\] \.sgv-controls\{[^}]*pointer-events:none/);
+  assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{[^}]*\.sgv-feature-intro/);
+  assert.doesNotMatch(source,/landing_band|sgv-flip-band|createActionPresentation\(\{[^}]*intro/);
+  assert.match(source,/clearOnboardingProgress\(window\.localStorage\)/);
+  assert.match(source,/<button type="button" className="sgv-reset-progress"/);
+});
