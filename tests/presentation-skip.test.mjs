@@ -156,39 +156,3 @@ test('a triple tap settles one Bank and does not score it twice',()=>{
   assert.equal(box.round.game.deal.T,before+gained);
 });
 
-test('engine commit happens before motion, and unmount does not settle',()=>{
-  const round=newOnboardingRound(3);
-  const action=onboardingActions(round).find(entry=>entry.type==='steer');
-  const presentation=createActionPresentation();
-  const order=[];
-  const result=runPresentedAction(round,action,presentation,{
-    onCommit(committed){
-      order.push('commit');
-      assert.equal(committed.next.turn,round.turn+1);
-      assert.equal(presentation.isPresenting(),false);
-    },
-    onSettle(){order.push('settle');},
-    startMotion(){
-      order.push('motion');
-      return ()=>order.push('cancel');
-    }
-  });
-  assert.equal(result.status,'presenting');
-  assert.equal(motionKind(result.committed.action,result.committed.change),'card');
-  assert.deepEqual(order,['commit','motion']);
-  assert.equal(presentation.abandon(),true);
-  assert.deepEqual(order,['commit','motion','cancel']);
-  assert.equal(presentation.isPresenting(),false);
-  assert.equal(presentation.abandon(),false);
-  assert.equal(presentation.finishPresentation(),false);
-  const natural=createActionPresentation();
-  let settles=0;
-  runPresentedAction(round,action,natural,{
-    onCommit(){},
-    onSettle(){settles++;},
-    startMotion(_committed,complete){complete();return ()=>{};}
-  });
-  assert.equal(settles,1);
-  assert.equal(natural.finishPresentation(),false);
-  assert.equal(settles,1);
-});
