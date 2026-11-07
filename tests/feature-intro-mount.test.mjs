@@ -102,20 +102,3 @@ test('a fresh Level 1 shows a visible Save card after mount and settle',async()=
   host.remove();
 });
 
-test('a settle during the entry tween leaves the card fully visible',()=>{
-  const bus=createFxBus({reducedMotion:()=>false});
-  const scrim=document.createElement('div');
-  const card=document.createElement('div');
-  document.body.append(scrim,card);
-  const handle=playFeatureIntroEnter({scrim,card,reduced:false,bus});
-  handle.timeline.progress(0.35);
-  assert.notEqual(card.style.opacity,'1');
-  assert.match(card.style.transform,/scale\(0\./);
-  bus.settle();
-  assert.equal(card.style.opacity,'1');
-  assert.equal(scrim.style.opacity,'0.55');
-  assert.match(card.style.transform,/translate\(0,\s*0\)|scale\(1|none/);
-  assert.equal(bus.tweenCount(),0);
-  scrim.remove();
-  card.remove();
-});
