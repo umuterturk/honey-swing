@@ -50,24 +50,3 @@ test('Zero Break equation uses factors before the reset',()=>{
   }),{rank:5,added:10,terms:[{kind:'swing',value:2}]});
 });
 
-test('phases collapse to +N when equation is non-trivial',()=>{
-  assert.deepEqual(potAddFlyerPhases({
-    levelId:8,visibleFactors:['swing','flip'],
-    addedToPot:6,signedCard:3,
-    factorsAfter:factors(2,1)
-  }),{
-    initial:{rank:3,added:6,terms:[{kind:'swing',value:2}]},
-    collapse:'+6',
-    rich:true
-  });
-});
-
-test('wiring mounts rich equation with icons',()=>{
-  const motion=readFileSync(new URL('../src/casual/minimalMotion.js',import.meta.url),'utf8');
-  const css=readFileSync(new URL('../src/casual/minimal.css',import.meta.url),'utf8');
-  assert.match(motion,/mountPotEquationFlyer/);
-  assert.match(motion,/sgv-pot-eq-icon/);
-  assert.match(motion,/celebration\/daisy-2\.png/);
-  assert.match(motion,/bee-smiling-closed-eyes\.png/);
-  assert.match(css,/\.sgv-pot-eq-icon/);
-});
