@@ -1,7 +1,7 @@
 # Swing Meter Visual Redesign
 
 **Date:** 7 November 2026  
-**Status:** Draft (awaiting user review)  
+**Status:** Approved  
 **Scope:** In-level swing meter visual styling only (not win scoreboard, not engine rules)
 
 ## Goal
