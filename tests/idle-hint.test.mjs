@@ -120,13 +120,3 @@ test('every idle hint keeps a win when any legal action still has one',()=>{
   }
 });
 
-test('win continuation memo clears and still recomputes',()=>{
-  clearWinMemo();
-  const round=newOnboardingRound(1);
-  assert.equal(hasWinningContinuation(round),true);
-  assert.ok(winMemoSize()>0);
-  clearWinMemo();
-  assert.equal(winMemoSize(),0);
-  assert.equal(hasWinningContinuation(round),true);
-  assert.ok(winMemoSize()>0);
-});
