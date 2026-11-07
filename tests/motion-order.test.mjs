@@ -149,6 +149,14 @@ test('Swing flyer starts at zeroCross; Flip flyer at faceEnd; both may coexist',
   assert.ok(both.flipFlyer<both.swingFlyer);
 });
 
+test('factors update after the last Flower/Bee flyer arrives',()=>{
+  const both=cardMotionMarks({
+    type:'flip',rewards:crossingFlip,from:3,to:-2
+  });
+  assert.ok(both.factors>=both.swingFlyer+0.45);
+  assert.ok(both.factors>=both.flipFlyer+0.45);
+});
+
 test('Swing without a zero cross falls back to meterStart',()=>{
   const marks=cardMotionMarks({
     type:'steer',rewards:[{kind:'swing',value:2}],from:2,to:5
