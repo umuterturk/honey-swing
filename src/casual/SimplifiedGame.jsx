@@ -447,14 +447,11 @@ export default function SimplifiedGame(){
           });
           return cancelAll;
         }
-        const firstFactorAwards=change.rewards
-          .filter(({kind})=>!seenFactorsRef.current.has(kind)).map(({kind})=>kind);
         change.rewards.forEach(({kind})=>seenFactorsRef.current.add(kind));
         cancelRef.current=animateCardAction({
           root,source,action,view:{...change,firstTap:round.levelId===1&&round.turn===0,
             meterLimit:level.rules.snapLimit,showChances:!!level.showChances,
             potTarget:level.target},
-          firstFactorAwards,
           onMeter:position=>{
             setView(v=>({...v,position}));
             if(change.snap)setFeedback('snap');

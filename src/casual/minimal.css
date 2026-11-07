@@ -85,8 +85,6 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-multiplier-value{position:relative;z-index:1;line-height:1}
 .sgv-factor-flyer{position:absolute;z-index:25;display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:4px 10px 5px;border-radius:17px;border:3px solid #fff8cd;background:linear-gradient(#fff6bb,#ffd35f);box-shadow:0 3px 0 #d69b42,0 5px 10px #a8764d70;color:#885326;font-size:13px;font-weight:1000;line-height:1;white-space:nowrap;pointer-events:none;transform-origin:center;will-change:transform,opacity}
 .sgv-factor-flyer img{width:20px;height:20px;object-fit:contain;flex:none;pointer-events:none}
-.sgv-factor-flyer-swing{}
-.sgv-factor-flyer-flip{}
 .sgv-event-snap .sgv-meter-track{animation:sgv-meter-shake .4s ease}
 @keyframes sgv-meter-shake{0%,100%{translate:0 0}20%,60%{translate:-7px 0}40%,80%{translate:7px 0}}
 .sgv-flight-center{position:absolute;left:50%;top:41%;width:1px;height:1px;pointer-events:none}

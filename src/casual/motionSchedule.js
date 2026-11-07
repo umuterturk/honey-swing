@@ -3,6 +3,12 @@
 // face/meter callback. Steer keeps the existing 0.080s meter and 0.160s reward.
 const thirds=n=>Math.round(n*1000)/1000;
 export const STATIC_OUTCOME_MS=1100;
+export const NEEDLE_GLIDE_EASE='power2.out';
+
+function inverseNeedleGlideEase(progress){
+  const p=Math.max(0,Math.min(1,progress));
+  return 1-Math.sqrt(1-p);
+}
 
 export function zeroCrossMark({from,to,meterStart,meterEnd}){
   if(!Number.isFinite(from)||!Number.isFinite(to)||
@@ -12,7 +18,7 @@ export function zeroCrossMark({from,to,meterStart,meterEnd}){
   if(!crosses)return null;
   const span=from-to;
   if(span===0)return thirds(meterStart);
-  const t=Math.max(0,Math.min(1,from/span));
+  const t=inverseNeedleGlideEase(from/span);
   return thirds(meterStart+(meterEnd-meterStart)*t);
 }
 
