@@ -21,3 +21,38 @@ export function clearOnboardingProgress(storage){
     return false;
   }
 }
+
+// Debug/recovery: unlock through `levelId` and mark every intro at or before
+// that level as seen so a jump lands in play, not on a NEW! card.
+export function prepareOnboardingJump(storage,levelId,{
+  levelCount,introUnlocks
+}={}){
+  if(!storage||!Number.isInteger(levelId)||levelId<1)return null;
+  const max=Number.isInteger(levelCount)&&levelCount>=1?levelCount:levelId;
+  const id=Math.min(levelId,max);
+  try{
+    storage.setItem(ONBOARDING_PROGRESS_KEY,String(id));
+    storage.removeItem(ONBOARDING_SESSION_KEY);
+    if(Array.isArray(introUnlocks)){
+      const seen=introUnlocks
+        .filter(row=>Number.isInteger(row?.unlockLevel)&&row.unlockLevel<=id)
+        .map(row=>row.id)
+        .filter(name=>typeof name==='string');
+      storage.setItem(SEEN_FEATURE_INTROS_KEY,JSON.stringify([...new Set(seen)]));
+    }else{
+      storage.removeItem(SEEN_FEATURE_INTROS_KEY);
+    }
+    return id;
+  }catch{
+    return null;
+  }
+}
+
+export function readUnlockedOnboardingLevel(storage,levelCount=1){
+  if(!storage)return 1;
+  try{
+    const value=Number(storage.getItem(ONBOARDING_PROGRESS_KEY));
+    if(Number.isInteger(value)&&value>=1&&value<=levelCount)return value;
+  }catch{/* broken progress → Level 1 */}
+  return 1;
+}

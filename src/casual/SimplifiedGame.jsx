@@ -15,10 +15,14 @@ import {clearWinMemo,idleHintAction} from './idleHint.js';
 import {LevelEndScreen,LevelStartScreen,dismissLevelScreen} from './levelScreens.js';
 import {bankAssistiveMessage,nextBankAnnouncement,shouldAutoBank} from './bankStatus.js';
 import {focusTargetAfterSkip,isSkipKey,rememberFocus} from './skipFocus.js';
-import {ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress} from './onboardingProgress.js';
+import {
+  ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress,
+  prepareOnboardingJump,readUnlockedOnboardingLevel
+} from './onboardingProgress.js';
 import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
 import {
-  boardTapDuringIntro,dismissFeatureIntro,featureIntroForEntry,introPointerDecision
+  boardTapDuringIntro,dismissFeatureIntro,featureIntroForEntry,introPointerDecision,
+  derivedFeatureUnlocks
 } from './featureIntroRegistry.js';
 import {
   newOnboardingRound,onboardingLevel,onboardingActions,onboardingFinished,
@@ -47,7 +51,8 @@ function initialRound(){
       Number.isInteger(state.snaps)&&Number.isInteger(state.flipCount)&&
       Number.isInteger(state.zeroBreakCount))return state;
   }catch{}
-  return newOnboardingRound(1);
+  // No mid-level session: open at the unlocked level (debug jump / recovery).
+  return newOnboardingRound(readUnlockedOnboardingLevel(browserStorage(),ONBOARDING_COUNT));
 }
 export default function SimplifiedGame(){
   const [round,setRound]=useState(initialRound);
@@ -121,6 +126,31 @@ export default function SimplifiedGame(){
     const emit=spec=>fxRef.current.emit(spec);
     window.__swingFxEmit=emit;
     return ()=>{if(window.__swingFxEmit===emit)delete window.__swingFxEmit;};
+  },[]);
+  const startLevelRef=useRef(null);
+  useEffect(()=>{
+    if(typeof window==='undefined')return;
+    // Recovery/debug: __swingGoToLevel(15) or __swingGoToLevel(15,{reload:true})
+    window.__swingGoToLevel=(levelId,options={})=>{
+      const id=prepareOnboardingJump(browserStorage(),Number(levelId),{
+        levelCount:ONBOARDING_COUNT,
+        introUnlocks:derivedFeatureUnlocks()
+      });
+      if(id==null){
+        console.warn('__swingGoToLevel: need an integer 1..'+ONBOARDING_COUNT);
+        return false;
+      }
+      event('debug_goto_level',{level:id});
+      if(options.reload){
+        window.location.reload();
+        return id;
+      }
+      startLevelRef.current?.(id);
+      return id;
+    };
+    return ()=>{
+      if(window.__swingGoToLevel)delete window.__swingGoToLevel;
+    };
   },[]);
   useEffect(()=>{
     fxRef.current.settle();
@@ -345,6 +375,7 @@ export default function SimplifiedGame(){
     setDevMenuOpen(false);
     seenFactorsRef.current=new Set();
   }
+  startLevelRef.current=startLevel;
   function dismissIntro(via){
     if(!introGateRef.current)return;
     introGateRef.current=false;
@@ -369,6 +400,24 @@ export default function SimplifiedGame(){
     setDevMenuOpen(false);
     startLevel(1);
     event('onboarding_reset',{level:1});
+  }
+  function goToLevelPrompt(){
+    const raw=typeof window!=='undefined'
+      ?window.prompt('Go to level (1–'+ONBOARDING_COUNT+')',String(round.levelId))
+      :null;
+    if(raw==null)return;
+    const wanted=Number.parseInt(String(raw).trim(),10);
+    const id=prepareOnboardingJump(browserStorage(),wanted,{
+      levelCount:ONBOARDING_COUNT,
+      introUnlocks:derivedFeatureUnlocks()
+    });
+    if(id==null){
+      setDevMenuOpen(false);
+      return;
+    }
+    setDevMenuOpen(false);
+    event('debug_goto_level',{level:id});
+    startLevel(id);
   }
   function nextLevel(){
     if(round.levelId>=ONBOARDING_COUNT)return startLevel(ONBOARDING_COUNT);
@@ -614,20 +663,21 @@ export default function SimplifiedGame(){
               <span aria-hidden="true" className="sgv-reset-icon">↺</span>
               <span className="sgv-reset-label">Reset</span>
             </button>
-            {level.id>=4&&<>
-              <button type="button" className="sgv-dev-menu-toggle"
-                onClick={()=>setDevMenuOpen(open=>!open)}
-                aria-label="More onboarding tools" aria-expanded={devMenuOpen}>⋯</button>
-              {devMenuOpen&&<div className="sgv-dev-menu" role="group" aria-label="Onboarding tools">
-                <button type="button" onClick={()=>{setHelp(value=>!value);setDevMenuOpen(false);}}>
-                  {help?'Hide help':'Show help'}
-                </button>
-                {level.id<GARDEN_2_START&&<button type="button"
-                  onClick={()=>{setDevMenuOpen(false);skip();}}>
-                  Skip to Level 13
-                </button>}
-              </div>}
-            </>}
+            <button type="button" className="sgv-dev-menu-toggle"
+              onClick={()=>setDevMenuOpen(open=>!open)}
+              aria-label="More onboarding tools" aria-expanded={devMenuOpen}>⋯</button>
+            {devMenuOpen&&<div className="sgv-dev-menu" role="group" aria-label="Onboarding tools">
+              <button type="button" onClick={goToLevelPrompt}>
+                Go to level…
+              </button>
+              <button type="button" onClick={()=>{setHelp(value=>!value);setDevMenuOpen(false);}}>
+                {help?'Hide help':'Show help'}
+              </button>
+              {level.id<GARDEN_2_START&&<button type="button"
+                onClick={()=>{setDevMenuOpen(false);skip();}}>
+                Skip to Level 13
+              </button>}
+            </div>}
           </div>
         </div>
       </header>
