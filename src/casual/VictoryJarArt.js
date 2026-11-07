@@ -1,4 +1,5 @@
 import {createElement} from 'react';
+import {publicUrl} from './publicUrl.js';
 
 export function VictoryJarArt({
   fillPercent=0,
@@ -13,7 +14,7 @@ export function VictoryJarArt({
   },
   createElement('img',{
     className:'sgv-jar-layer sgv-jar-back',
-    src:'/empty-complete-jar.png',alt:'',draggable:false
+    src:publicUrl('empty-complete-jar.png'),alt:'',draggable:false
   }),
   createElement('div',{className:'sgv-jar-mask sgv-jar-honey-layer'},
     createElement('div',{className:'sgv-fluid-fill',style:{height:fill+'%',opacity:fill>0?1:0}},
@@ -30,7 +31,7 @@ export function VictoryJarArt({
   ),
   createElement('img',{
     className:'sgv-jar-layer sgv-jar-front',
-    src:'/empty-front-jar.png',alt:'',draggable:false
+    src:publicUrl('empty-front-jar.png'),alt:'',draggable:false
   }),
   showIdleStars?createElement('div',{className:'sgv-honey-idle-stars','aria-hidden':'true'},
     createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-a'},'✦'),

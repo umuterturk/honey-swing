@@ -3,7 +3,7 @@ import {overswingPayout,signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
 import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour,animateBankTargetCelebrate} from './minimalMotion.js';
-import {rawPotValue,visiblePotPayout,displayOf,settledPresentation} from './presentation.js';
+import {rawPotValue,visiblePotPayout,displayOf,settledPresentation,saveResetsVisibleFactors} from './presentation.js';
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
 import {applyHoneyLayout} from './honeyWin.js';
 import {playWinCelebration} from './winMotion.js';
@@ -491,6 +491,8 @@ export default function SimplifiedGame(){
         };
         if(!root||!source){complete();return cancelAll;}
         if(motionKind(action,change)==='bank'){
+          const showReset=saveResetsVisibleFactors(change,level.visibleFactors);
+          if(showReset)setBeat('Multipliers reset.');
           const afterPour=()=>{
             if(change.securedAfter<level.target){complete();return;}
             cancelRef.current=animateBankTargetCelebrate({root,onComplete:complete});
@@ -500,7 +502,14 @@ export default function SimplifiedGame(){
             fromScore:change.securedBefore,toScore:change.securedAfter,
             fillTarget:level.target,
             onPourProgress:rawPot=>setView(v=>({...v,rawPot})),
-            onTake:()=>setView(v=>({...v,rawPot:0,resonance:0})),
+            onTake:()=>{
+              setView(v=>({...v,rawPot:0,resonance:0,
+                factors:showReset?change.factorsAfter:v.factors}));
+              if(showReset){
+                resetMotionRef.current?.();
+                resetMotionRef.current=animateFactorReset(root);
+              }
+            },
             onCount:setShownGold,onComplete:afterPour
           });
           return cancelAll;
@@ -509,7 +518,7 @@ export default function SimplifiedGame(){
         cancelRef.current=animateCardAction({
           root,source,action,view:{...change,firstTap:round.levelId===1&&round.turn===0,
             meterLimit:level.rules.snapLimit,showChances:!!level.showChances,
-            potTarget:level.target},
+            potTarget:level.rules.potCap||level.target},
           onMeter:position=>{
             setView(v=>({...v,position}));
             if(change.snap)setFeedback('snap');
@@ -704,7 +713,7 @@ export default function SimplifiedGame(){
           }}/>
         <span className="sgv-flight-center" aria-hidden="true"/>
         <div className="sgv-bottle-pair" aria-label="Pending Pot and secured glass">
-          <PendingPot value={potDisplay} target={level.target}
+          <PendingPot value={potDisplay} cap={level.rules.potCap} target={level.target}
             bankable={canBank} interactive={false}/>
           <GlassChest banked={shownGold} target={level.target}/>
         </div>

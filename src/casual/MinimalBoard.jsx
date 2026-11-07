@@ -3,6 +3,7 @@ import {meterPercent,meterMarks} from './meterScale.js';
 import {fluidFillPercent} from './presentation.js';
 import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from './cardDirection.js';
 import {VictoryJarArt} from './VictoryJarArt.js';
+import {publicUrl} from './publicUrl.js';
 
 export const signedValue=n=>n>0?'+'+n:String(n);
 export const directionLabel=n=>n<0?'LEFT':n>0?'RIGHT':'CENTER';
@@ -26,7 +27,7 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
  return <section className="sgv-meter-section" aria-label="Swing meter and multipliers">
    <div className="sgv-meter" role="group" data-value={position}
      aria-label={'Swing at '+directionalValue(position)+(showDanger?'; Snap beyond '+limit+' left or '+limit+' right':'')}>
-     <img className="sgv-honeycomb" src="/honeycomb.png" alt="" aria-hidden="true" draggable="false"/>
+     <img className="sgv-honeycomb" src={publicUrl('honeycomb.png')} alt="" aria-hidden="true" draggable="false"/>
      <div className="sgv-meter-track" role="img" data-edge-danger={showDanger&&Math.abs(position)>=limit-2}
        aria-label={'Swing position '+directionalValue(position)}>
        <div className="sgv-meter-scale" aria-hidden="true">
@@ -37,19 +38,19 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
          </div>
        </div>
      </div>
-     <img className="sgv-meter-wasp sgv-meter-wasp-left" src="/wasp-looking-right.png"
+     <img className="sgv-meter-wasp sgv-meter-wasp-left" src={publicUrl('wasp-looking-right.png')}
        alt="" aria-hidden="true" draggable="false"/>
-     <img className="sgv-meter-wasp sgv-meter-wasp-right" src="/wasp-looking-right.png"
+     <img className="sgv-meter-wasp sgv-meter-wasp-right" src={publicUrl('wasp-looking-right.png')}
        alt="" aria-hidden="true" draggable="false"/>
      <div className="sgv-meter-marker-rail" aria-hidden="true">
        <span className="sgv-meter-marker" style={{left:percentage+'%'}}>
          <span className="sgv-meter-needle">
-           <img className="sgv-meter-needle-art" src="/needle-honeycomb-cell.png" alt="" draggable="false"/>
+           <img className="sgv-meter-needle-art" src={publicUrl('needle-honeycomb-cell.png')} alt="" draggable="false"/>
            <strong className="sgv-meter-needle-value">{Math.abs(position)}</strong>
          </span>
        </span>
      </div>
-     <img className="sgv-honey-tap" src="/honey-tap.png" alt="" aria-hidden="true" draggable="false"/>
+     <img className="sgv-honey-tap" src={publicUrl('honey-tap.png')} alt="" aria-hidden="true" draggable="false"/>
      <div className="sgv-multipliers" role="group" aria-label="Swing, Flip, Jackpot multipliers">
        {multipliers
          .filter(({kind})=>!visibleFactors||visibleFactors.includes(kind))
@@ -68,9 +69,9 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
              disabled={canInfo?!factorInfoEnabled:undefined}
              onClick={canInfo&&factorInfoEnabled?()=>onFactorInfo(infoKind):undefined}>
              <span className="sgv-multiplier-value">×{value}</span>
-             {kind==='swing'?<img className="sgv-multiplier-icon sgv-multiplier-daisy" src="/celebration/daisy-2.png"
+             {kind==='swing'?<img className="sgv-multiplier-icon sgv-multiplier-daisy" src={publicUrl('celebration/daisy-2.png')}
                alt="" aria-hidden="true" draggable="false"/>:null}
-             {kind==='flip'?<img className="sgv-multiplier-icon sgv-multiplier-bee" src="/bee-smiling-closed-eyes.png"
+             {kind==='flip'?<img className="sgv-multiplier-icon sgv-multiplier-bee" src={publicUrl('bee-smiling-closed-eyes.png')}
                alt="" aria-hidden="true" draggable="false"/>:null}
            </Tag>;
          })}
@@ -82,21 +83,32 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
 
 // The Pot shows the engine's prospective Bank payout, not raw card value.
 // Its shine is the tappable affordance, replacing the separate Bank chip.
-export function PendingPot({value,target=24,bankable=false,onBank,className='',interactive=true}){
- const fill=fluidFillPercent(value,target,{max:76,smooth:true});
+// When cap is set, fill and label track that soft ceiling (value / cap).
+export function PendingPot({value,cap=null,target=24,bankable=false,onBank,className='',interactive=true}){
+ const showCap=Number.isInteger(cap)&&cap>0;
+ const fillTarget=showCap?cap:target;
+ const fill=fluidFillPercent(value,fillTarget,{max:76,smooth:true});
  const Tag=interactive?'button':'div';
+ const amountLabel=showCap?value+' of '+cap:String(value);
  return <Tag type={interactive?'button':undefined}
-   className={'sgv-pending-pot sgv-pot-bottle'+(bankable&&interactive?' sgv-pot-bankable':'')+(!interactive?' sgv-pot-display':'')+' '+className}
+   className={'sgv-pending-pot sgv-pot-bottle'+(bankable&&interactive?' sgv-pot-bankable':'')+(!interactive?' sgv-pot-display':'')+(showCap&&value>=cap?' sgv-pot-full':'')+' '+className}
    disabled={interactive?!bankable:undefined}
    onClick={interactive?event=>onBank?.(event.currentTarget):undefined}
-   aria-label={!interactive?'Pot has '+value+' pending drops':bankable
+   aria-label={!interactive?'Pot has '+amountLabel+' pending drops':bankable
      ?'Tap Pot to save '+value+' drops'
-     :'Pot has '+value+' potential drops. Saving not yet available'}>
+     :'Pot has '+amountLabel+' potential drops. Saving not yet available'}>
    <span className="sgv-jar-pad" aria-hidden="true"/>
    <VictoryJarArt fillPercent={fill} className="sgv-pot-victory-art" mouthClassName="sgv-pot-art-mouth"/>
    <span className="sgv-pot-pour-lip" aria-hidden="true"/>
    <span className="sgv-pot-label">POT</span>
-   <span className="sgv-pot-amount"><DropletIcon className="sgv-pot-drop"/>{value}</span>
+   <span className="sgv-pot-amount">
+     <DropletIcon className="sgv-pot-drop"/>
+     {showCap
+       ?<><span className="sgv-pot-value">{value}</span>
+         <span className="sgv-pot-cap-sep" aria-hidden="true">/</span>
+         <span className="sgv-pot-cap">{cap}</span></>
+       :value}
+   </span>
  </Tag>;
 }
 

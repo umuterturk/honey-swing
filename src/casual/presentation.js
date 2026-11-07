@@ -16,8 +16,9 @@ export function fluidFillPercent(amount,target,{max=78,smooth=false}={}){
   if(!Number.isFinite(amount)||!Number.isFinite(target)||target<=0||max<=0)return 0;
   if(amount<=0)return 0;
   const percent=Math.min(max,(amount/target)*max);
-  // Float height for real-time pouring; retain existing discrete display for normal play.
-  return smooth?percent:Math.max(5,Math.round(percent));
+  // Any positive amount keeps a readable meniscus (even 1 drop in a tall jar).
+  // Discrete play rounds; smooth pours keep the float but never dip below the floor.
+  return smooth?Math.max(5,percent):Math.max(5,Math.round(percent));
 }
 
 // Both displayed volumes derive from one clamped animation progress value.
@@ -30,6 +31,19 @@ export function visiblePotPayout(enginePayout,rawTotal,rawRemaining){
      !Number.isFinite(rawTotal)||rawTotal<=0)return 0;
   const remaining=Number.isFinite(rawRemaining)?Math.max(0,Math.min(rawTotal,rawRemaining)):rawTotal;
   return Math.ceil(enginePayout*(remaining/rawTotal));
+}
+
+// True when Save drops a multiplier the player can currently see on the HUD.
+export function saveResetsVisibleFactors(change,visibleFactors){
+  if(!change||!Array.isArray(change.factorsBefore)||!Array.isArray(change.factorsAfter))
+    return false;
+  const visible=Array.isArray(visibleFactors)?visibleFactors:[];
+  if(!visible.length)return false;
+  return change.factorsBefore.some((factor,index)=>{
+    if(!visible.includes(factor.kind))return false;
+    const after=change.factorsAfter[index];
+    return !!after&&factor.value>after.value;
+  });
 }
 
 export function bankPourAmounts(rawPot,securedBefore,securedAfter,progress){

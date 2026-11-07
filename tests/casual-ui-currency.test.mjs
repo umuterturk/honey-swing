@@ -73,6 +73,9 @@ test('fluid fill is stable, monotone, capped and zero when empty',()=>{
  assert.equal(fluidFillPercent(0,24,{max:76}),0);
  assert.equal(fluidFillPercent(24,24,{max:76}),76);
  assert.equal(fluidFillPercent(5,0),0);
+ // Even 1 drop in a tall jar must paint a readable meniscus.
+ assert.ok(fluidFillPercent(1,82,{max:76,smooth:true})>=5);
+ assert.equal(fluidFillPercent(0,82,{max:76,smooth:true}),0);
  let last=0;
  for(let n=0;n<=100;n++){
    const current=fluidFillPercent(n,24);
@@ -144,7 +147,7 @@ test('Pot physically approaches the Bank lip, streams briefly, then returns home
  assert.match(motion,/export function animateSnapHeartLoss\(/);
  assert.match(motion,/export function animateTapPour\(/);
  assert.match(motion,/tapSpoutPoint|sgv-honey-tap/);
- assert.match(screen,/potTarget:level\.target/);
+ assert.match(screen,/potTarget:level\.rules\.potCap\|\|level\.target/);
  assert.match(screen,/onChanceLost:\(\)=>setView/);
 });
 

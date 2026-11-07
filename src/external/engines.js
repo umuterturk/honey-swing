@@ -78,7 +78,8 @@ const OVERSWING_BASE_RULES=Object.freeze({
   enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:true,enableResonance:true,
   // Casual Garden only. runningPot pays each card as Pot += M × rank.
   // flipOnly keeps undealt cards out of the hand so they stay Flip plays.
-  runningPot:false,flipOnly:false
+  // potCap soft-clamps running Pot deposits; null keeps uncapped campaign math.
+  runningPot:false,flipOnly:false,potCap:null
 });
 function overswingEffectiveRules(input={}){
   const rules={...OVERSWING_BASE_RULES,...input};
@@ -93,9 +94,19 @@ function overswingEffectiveRules(input={}){
   }))if(!allowed.includes(rules[name]))throw new RangeError('Invalid Overswing rule: '+name);
   if(rules.maxFlips!==null&&(!Number.isInteger(rules.maxFlips)||rules.maxFlips<1||rules.maxFlips>40))
     throw new RangeError('Invalid Overswing rule: maxFlips');
+  if(rules.potCap!==null&&(!Number.isInteger(rules.potCap)||rules.potCap<1))
+    throw new RangeError('Invalid Overswing rule: potCap');
   if(!Number.isInteger(rules.maxConsecutiveSummons)||rules.maxConsecutiveSummons<1||
      rules.maxConsecutiveSummons>3)throw new RangeError('Invalid Overswing rule: maxConsecutiveSummons');
   return rules;
+}
+function clampedRunningPotAdd(current,desired,potCap){
+  const before=Number.isFinite(current)?Math.max(0,current):0;
+  const want=Number.isFinite(desired)?Math.max(0,desired):0;
+  if(!Number.isInteger(potCap)||potCap<1)return {added:want,overflow:false};
+  const room=Math.max(0,potCap-before);
+  const added=Math.min(want,room);
+  return {added,overflow:want>added};
 }
 export function overswingActions(s,rules={}){
   if(s.status!=='playing'||(s.mode==='tutorial'&&!s.tutorialIntroDone))return [];
@@ -131,7 +142,12 @@ export function overswingPayout(s,rules={}){
   const effective=overswingEffectiveRules(rules),d=s.deal;
   // Casual Garden banks the accrued total as-is. Campaign Overswing still
   // revalues the whole Pot by the live multiplier, then applies Crown and tax.
-  if(effective.runningPot)return d.potValue||0;
+  if(effective.runningPot){
+    const value=d.potValue||0;
+    if(Number.isInteger(effective.potCap)&&effective.potCap>0)
+      return Math.min(value,effective.potCap);
+    return value;
+  }
   const base=(d.pot.reduce((a,c)=>a+rank(c),0)+(d.resonancePoints||0))*overswingMultiplier(d);
   const crown=d.hand.some(id=>royalRank(id)==='K')?(d.crownBonus||0):0;
   const gross=Math.floor(base*(100+crown)/100);
@@ -291,8 +307,12 @@ export function stepOverswing(s,a,rules={}){
       if(zeroBreak)resetMultipliers(d);
       if(royalRank(c)==='J'&&d.pos<d.deck.length)d.scoutNext=d.deck[d.pos];
       let addedToPot=destination==='pot'?rank(c):0;
+      let potOverflow=false;
       if(effective.runningPot&&destination==='pot'){
-        addedToPot=payoutMultiplier*rank(c);
+        const deposit=clampedRunningPotAdd(
+          d.potValue||0,payoutMultiplier*rank(c),effective.potCap);
+        addedToPot=deposit.added;
+        potOverflow=deposit.overflow;
         d.potValue=(d.potValue||0)+addedToPot;
       }
       const resonanceGained=(d.resonancePoints||0)-(s.deal.resonancePoints||0);
@@ -303,7 +323,7 @@ export function stepOverswing(s,a,rules={}){
         gain:zeroBreak?0:outcome.gain+(a.type==='steer'&&outcome.swung?effective.steerCrossSwingBonus:0),
         swingPenalty:!outcome.swung&&!zeroBreak&&d.W<previousW,
         destination,
-        openingSteer:opening&&a.type==='steer',addedToPot,resonanceGained,scouted:royalRank(c)==='J'?d.scoutNext:null,
+        openingSteer:opening&&a.type==='steer',addedToPot,potOverflow,resonanceGained,scouted:royalRank(c)==='J'?d.scoutNext:null,
         flipStreak:d.flipStreak,flipFactor:d.flipFactor,
         jackpotFactor:d.jackpotFactor,multiplier:overswingMultiplier(d),
         swingTierGained:d.W>previousW,flipTierGained:d.flipFactor>previousFlipFactor,

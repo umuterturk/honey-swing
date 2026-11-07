@@ -382,8 +382,8 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  .sgv-pot-label{position:relative;z-index:1;font-size:clamp(11px,2.9vw,14px);font-weight:1000;letter-spacing:1px;line-height:1.1;
  text-shadow:0 2px #995631}
  .sgv-pot-amount{position:relative;z-index:1;display:flex;gap:4px;align-items:center;font-size:clamp(23px,6vw,30px);font-weight:1000;
- font-variant-numeric:tabular-nums;line-height:1.04;text-shadow:0 2px #9c632b}
-.sgv-pot-amount span{font-size:19px;color:#ffe574;filter:drop-shadow(0 1px #c38939)}
+ font-variant-numeric:tabular-nums;line-height:1.04;color:#754b35;text-shadow:0 2px 2px #fffce8,0 0 7px #fff7d1}
+.sgv-pot-amount .sgv-pot-drop{font-size:19px;color:#ffe574;filter:drop-shadow(0 1px #c38939)}
 .sgv-pot-coins{position:absolute;z-index:-1;top:-19px;right:8px;color:#ffe985;
  text-shadow:0 2px #ca863e;font-size:16px;letter-spacing:-4px;opacity:.75}
 .sgv-goal-progress{
@@ -817,10 +817,22 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-bottle-pair .sgv-pot-amount{
  position:absolute;z-index:5;left:0;right:0;top:54%;
  margin:0;display:flex;align-items:center;justify-content:center;
- gap:3px;font-size:clamp(22px,6vw,31px);
- line-height:1;font-variant-numeric:tabular-nums;
- color:#8d5a38;text-shadow:0 1px #fffbd9;
+ gap:2px;font-size:clamp(18px,5.2vw,26px);
+ line-height:1;font-variant-numeric:tabular-nums;font-weight:1000;
+ color:#754b35;text-shadow:0 2px 2px #fffce8,0 0 7px #fff7d1;
 }
+.sgv-bottle-pair .sgv-pot-amount .sgv-pot-value,
+.sgv-bottle-pair .sgv-pot-amount .sgv-pot-cap,
+.sgv-bottle-pair .sgv-pot-amount .sgv-pot-cap-sep{
+ color:inherit;text-shadow:inherit;filter:none;opacity:1;
+}
+.sgv-pot-cap-sep{
+ font-size:.78em;font-weight:1000;margin:0 1px;opacity:.7;
+}
+.sgv-pot-cap{
+ font-size:.86em;font-weight:1000;opacity:.85;
+}
+.sgv-pot-full .sgv-pot-cap{opacity:1;}
 
 
 .sgv-bottle-pair .sgv-pot-resonance{
@@ -1567,8 +1579,9 @@ img.sgv-feature-intro-icon{object-fit:contain;display:block}
   object-fit:fill;display:block;user-select:none;
 }
 .sgv-jar-mask{
-  mask-image:url('/honey-fill-mask.png');
-  -webkit-mask-image:url('/honey-fill-mask.png');
+  /* Relative to bundled CSS in dist/assets/ — survives GitHub Pages project base. */
+  mask-image:url('../honey-fill-mask.png');
+  -webkit-mask-image:url('../honey-fill-mask.png');
   mask-size:100% 100%;
   -webkit-mask-size:100% 100%;
   mask-position:50% 50%;

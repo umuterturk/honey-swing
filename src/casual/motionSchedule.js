@@ -4,6 +4,8 @@
 const thirds=n=>Math.round(n*1000)/1000;
 export const STATIC_OUTCOME_MS=1100;
 export const NEEDLE_GLIDE_EASE='power2.out';
+// Shared with minimalMotion factor flyers — keep factors/end marks in sync.
+export const FACTOR_FLYER_FLIGHT=0.95;
 
 function inverseNeedleGlideEase(progress){
   const p=Math.max(0,Math.min(1,progress));
@@ -59,21 +61,22 @@ export function cardMotionMarks({type='steer',snap=false,rewards=[],from,to}={})
   const rewardStarts=[swingFlyer,flipFlyer].filter(t=>t!=null);
   const rewardStart=rewardStarts.length?Math.min(...rewardStarts):meterEnd;
   const shift=rewardStart-0.16;
+  const flyerDone=Math.max(
+    0,
+    ...(hasSwing?[swingFlyer+FACTOR_FLYER_FLIGHT]:[]),
+    ...(hasFlip?[flipFlyer+FACTOR_FLYER_FLIGHT]:[])
+  );
   return {
     ...base,
     rewards:rewardStart,
     swingFlyer,
     flipFlyer,
     pourStart,pourEnd,
-    factors:thirds(Math.max(
-      ...(hasSwing?[swingFlyer+0.45]:[]),
-      ...(hasFlip?[flipFlyer+0.45]:[]),
-      0.58+shift
-    )),
+    factors:thirds(Math.max(flyerDone,0.58+shift)),
     add:pourStart,
     travel:thirds(0.64+swingHold+shift),
     pot:pourEnd,
-    end:thirds(Math.max(1.08+swingHold+shift,pourEnd+0.08))
+    end:thirds(Math.max(1.08+swingHold+shift,pourEnd+0.08,flyerDone+0.06))
   };
 }
 

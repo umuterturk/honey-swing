@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
-  STATIC_OUTCOME_MS,cardMotionMarks,flyerOrigin,reducedBankSummary,reducedCardSummary,
+  STATIC_OUTCOME_MS,FACTOR_FLYER_FLIGHT,cardMotionMarks,flyerOrigin,reducedBankSummary,reducedCardSummary,
   zeroCrossMark
 } from '../src/casual/motionSchedule.js';
 
@@ -153,8 +153,8 @@ test('factors update after the last Flower/Bee flyer arrives',()=>{
   const both=cardMotionMarks({
     type:'flip',rewards:crossingFlip,from:3,to:-2
   });
-  const afterSwing=Math.round((both.swingFlyer+0.45)*1000)/1000;
-  const afterFlip=Math.round((both.flipFlyer+0.45)*1000)/1000;
+  const afterSwing=Math.round((both.swingFlyer+FACTOR_FLYER_FLIGHT)*1000)/1000;
+  const afterFlip=Math.round((both.flipFlyer+FACTOR_FLYER_FLIGHT)*1000)/1000;
   assert.ok(both.factors>=afterSwing);
   assert.ok(both.factors>=afterFlip);
 });

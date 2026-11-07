@@ -1,5 +1,6 @@
 import {createElement} from 'react';
 import {VictoryJarArt} from './VictoryJarArt.js';
+import {publicUrl} from './publicUrl.js';
 
 // Screens are visual. They never take the presentation lock, so a card, Bank,
 // or Snap skip from the first frame still settles in that same tap.
@@ -77,7 +78,7 @@ function praiseMark(text,tier){
     ),
     createElement('img',{
       className:'sgv-honey-slogan-underline',
-      src:'/victory-slogan-underline.png',alt:'',draggable:'false','aria-hidden':'true'
+      src:publicUrl('victory-slogan-underline.png'),alt:'',draggable:'false','aria-hidden':'true'
     }),
     // Mirror lives on the right wrapper only — GSAP animates the inner art, never the flip.
     createElement('span',{
@@ -85,7 +86,7 @@ function praiseMark(text,tier){
     },
       createElement('img',{
         className:'sgv-honey-slogan-drops-art',
-        src:'/victory-slogan-side-drops-left.png',alt:'',draggable:'false'
+        src:publicUrl('victory-slogan-side-drops-left.png'),alt:'',draggable:'false'
       })
     ),
     createElement('span',{
@@ -93,7 +94,7 @@ function praiseMark(text,tier){
     },
       createElement('img',{
         className:'sgv-honey-slogan-drops-art',
-        src:'/victory-slogan-side-drops-left.png',alt:'',draggable:'false'
+        src:publicUrl('victory-slogan-side-drops-left.png'),alt:'',draggable:'false'
       })
     )
   );
@@ -101,7 +102,7 @@ function praiseMark(text,tier){
 
 function celeImg(name,file){
   return createElement('img',{
-    className:'sgv-cele '+name,src:'/celebration/'+file,alt:'',draggable:'false'
+    className:'sgv-cele '+name,src:publicUrl('celebration/'+file),alt:'',draggable:'false'
   });
 }
 
@@ -137,7 +138,7 @@ function scoreboard(score,target,staticCard){
   const met=Number(score)>=Number(target);
   return createElement('div',{className:'sgv-honey-scoreboard','aria-hidden':'true'},
     createElement('img',{
-      className:'sgv-honey-scoreboard-art',src:'/score-board.png',alt:'',draggable:'false'
+      className:'sgv-honey-scoreboard-art',src:publicUrl('score-board.png'),alt:'',draggable:'false'
     }),
     createElement('p',{className:'sgv-honey-scoreboard-label'},'Honey Collected'),
     createElement('p',{className:'sgv-win-tally'},staticCard?String(score):'0'),

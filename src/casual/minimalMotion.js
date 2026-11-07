@@ -3,9 +3,10 @@ import {bankPourAmounts,fluidFillPercent} from './presentation.js';
 import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from './cardDirection.js';
 import {meterPercent} from './meterScale.js';
 import {
-  NEEDLE_GLIDE_EASE,STATIC_OUTCOME_MS,cardMotionMarks,flyerOrigin,
+  FACTOR_FLYER_FLIGHT,NEEDLE_GLIDE_EASE,STATIC_OUTCOME_MS,cardMotionMarks,flyerOrigin,
   reducedBankSummary,reducedCardSummary
 } from './motionSchedule.js';
+import {publicUrl} from './publicUrl.js';
 
 // All motions are presentation only. The game transaction is calculated once
 // before this module is called; interrupting an animation never changes rules.
@@ -64,15 +65,15 @@ function placeStatic(root,className,text,origin){
 const FACTOR_FLYER=Object.freeze({
   swing:Object.freeze({
     copy:'More Flower',
-    src:'/celebration/daisy-2.png',
+    src:publicUrl('celebration/daisy-2.png'),
     alt:'',
-    flight:0.45
+    flight:FACTOR_FLYER_FLIGHT
   }),
   flip:Object.freeze({
     copy:'More Bee',
-    src:'/bee-smiling-closed-eyes.png',
+    src:publicUrl('bee-smiling-closed-eyes.png'),
     alt:'',
-    flight:0.45
+    flight:FACTOR_FLYER_FLIGHT
   })
 });
 function makeFactorFlyer(kind){
@@ -334,12 +335,12 @@ export function animateCardAction({
   const centerDur=marks.centerAt||0.22;
   const diveDur=Math.max(0.12,(marks.cardArrive||0.42)-centerDur);
   const fadeDur=Math.min(0.12,diveDur*0.35);
-  // Part 1: rise to center and grow. Part 2: dive to the current needle and shrink;
-  // opacity drops only in the late end of that landing.
-  tl.fromTo(clone,{scale:.94,opacity:1},
-    {x:centerX,y:centerY,scale:1.38,rotation:action.type==='flip'?160:-6,
+  // Part 1: rise to center and grow. Part 2: dive to the current needle and shrink.
+  // Flip uses the same path as a hand card — no spin.
+  tl.fromTo(clone,{scale:.94,opacity:1,rotation:0},
+    {x:centerX,y:centerY,scale:1.38,rotation:-6,
       duration:centerDur,ease:'power2.out'},0);
-  tl.to(clone,{x:aimX,y:aimY,scale:.16,rotation:action.type==='flip'?200:-2,
+  tl.to(clone,{x:aimX,y:aimY,scale:.16,rotation:-2,
     duration:diveDur,ease:'power2.out'},centerDur);
   tl.to(clone,{opacity:0,duration:fadeDur,ease:'power2.out'},centerDur+diveDur-fadeDur);
   const needleArt=marker?.querySelector('.sgv-meter-needle');
@@ -470,19 +471,22 @@ export function flyFactorLabels({root,plan}){
       left:startPoint.x+'px',top:startPoint.y+'px'
     });
     const flight=FACTOR_FLYER[kind].flight;
+    const appear=0.18;
+    const fade=0.16;
+    const travel=Math.max(0.40,flight-appear-fade);
     const tl=gsap.timeline({onComplete:()=>flyer.remove()});
-    tl.fromTo(flyer,{opacity:0,scale:.82,xPercent:-50,yPercent:-50},
-      {opacity:1,scale:1.06,duration:.10},start);
+    tl.fromTo(flyer,{opacity:0,scale:.7,xPercent:-50,yPercent:-50},
+      {opacity:1,scale:1.18,duration:appear,ease:'back.out(1.8)'},start);
     tl.to(flyer,{
-      x:end.x-startPoint.x,y:end.y-startPoint.y,scale:.72,
-      duration:flight-0.20,ease:'power2.inOut'
-    },start+0.10);
-    tl.to(flyer,{opacity:0,scale:.35,duration:.10},start+flight-0.10);
+      x:end.x-startPoint.x,y:end.y-startPoint.y,scale:1,
+      duration:travel,ease:'power2.inOut'
+    },start+appear);
+    tl.to(flyer,{opacity:0,scale:.55,duration:fade,ease:'power1.in'},start+appear+travel);
     tl.call(()=>{
-      const bounce=gsap.fromTo(target,{scale:.88},
-        {scale:1,duration:.26,ease:'back.out(2.1)'});
+      const bounce=gsap.fromTo(target,{scale:.82},
+        {scale:1,duration:.34,ease:'back.out(2.4)'});
       tweens.push(bounce);
-    },[],start+flight-0.10);
+    },[],start+appear+travel);
     tweens.push(tl);
   }
   return ()=>{

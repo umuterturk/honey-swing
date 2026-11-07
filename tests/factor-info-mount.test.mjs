@@ -97,7 +97,7 @@ test('tapping Swing and Flip pills opens matching info; Got it and scrim dismiss
   assert.match(host.querySelector('#sgv-factor-info-title').textContent,/More Flower/);
   assert.match(host.querySelector('.sgv-factor-info .sgv-feature-intro-copy').textContent,
     /Cross 0 for more flowers/);
-  assert.ok(host.querySelector('.sgv-factor-info img.sgv-feature-intro-icon[src="/celebration/daisy-2.png"]'));
+  assert.ok(host.querySelector('.sgv-factor-info img.sgv-feature-intro-icon[src$="celebration/daisy-2.png"]'));
 
   await act(async()=>{tap(beePill);});
   assert.match(host.querySelector('#sgv-factor-info-title').textContent,/More Bee/);

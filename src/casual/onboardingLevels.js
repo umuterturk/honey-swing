@@ -1,4 +1,5 @@
 import {newOverswing,stepOverswing,overswingActions,applySwing,signed} from '../external/engines.js';
+import {STAR_THRESHOLDS} from './starThresholds.js';
 
 // Garden 1 is the game. Garden 2 (13–20) is a playable stub: same scoring,
 // real refill, no new mechanics, so Level 12 opens a door instead of a replay.
@@ -11,7 +12,10 @@ const SWING=Object.freeze(['swing']);
 const SWING_FLIP=Object.freeze(['swing','flip']);
 export const GARDEN_2_START=13;
 
-const make=spec=>Object.freeze({
+const make=spec=>{
+  const stars=STAR_THRESHOLDS[spec.id];
+  if(!stars)throw new RangeError('Missing star thresholds for level '+spec.id);
+  return Object.freeze({
   id:spec.id,name:spec.name,target:spec.target,
   deck:Object.freeze(spec.deck.slice()),
   initialHandSize:spec.hand,
@@ -23,6 +27,9 @@ const make=spec=>Object.freeze({
   visibleFactors:Object.freeze(spec.factors.slice()),
   rules:Object.freeze({
     ...CASUAL_RULES,
+    // Soft Pot ceiling: at least 2× Hiveful (and 2× target) so gift/overscore
+    // banks still fit, while runaway multiplier pours stop counting past the rim.
+    potCap:Math.max(stars.star3*2,stars.target*2),
     enableSwingFactor:spec.factors.includes('swing'),
     enableFlipFactor:spec.factors.includes('flip'),
     enableJackpotFactor:spec.factors.includes('jackpot'),
@@ -37,6 +44,7 @@ const make=spec=>Object.freeze({
   garden:spec.id>=GARDEN_2_START?2:1,
   lesson:''
 });
+};
 
 export const ONBOARDING_LEVELS=Object.freeze([
   make({id:1,name:'Honey Drop',target:5,deck:[1,2,12],hand:3,factors:[]}),
