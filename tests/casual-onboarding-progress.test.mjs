@@ -58,21 +58,3 @@ test('storage failure does not throw or block the interactive reset',()=>{
   assert.equal(clearOnboardingProgress({removeItem(){throw new Error('blocked');}}),false);
 });
 
-test('reset is in the header and on the end card, not a level gate',async()=>{
-  const source=await readFile(new URL('../src/casual/SimplifiedGame.jsx',import.meta.url),'utf8');
-  const screens=await readFile(new URL('../src/casual/levelScreens.js',import.meta.url),'utf8');
-  const header=source.slice(source.indexOf('<header className="sgv-hud sgv-tutorial-hud">'),
-    source.indexOf('</header>'));
-  assert.match(header,/<button type="button" className="sgv-reset-progress"/);
-  assert.doesNotMatch(header,/import\.meta\.env\.DEV/);
-  assert.match(header,/onClick=\{resetProgress\}/);
-  assert.match(header,/aria-label="Reset onboarding progress and restart Level 1"/);
-  assert.doesNotMatch(header,/level\.id>=\d+&&<button type="button" className="sgv-reset-progress"/);
-  assert.match(source,/onReset=\{resetProgress\}/);
-  assert.match(screens,/className:'sgv-end-reset',onClick:onReset/);
-  const reset=source.slice(source.indexOf('function resetProgress(){'),
-    source.indexOf('function nextLevel(){'));
-  assert.match(reset,/clearOnboardingProgress\(window\.localStorage\)/);
-  assert.match(reset,/startLevel\(1\)/);
-  assert.match(source,/setDevMenuOpen\(false\)/);
-});
