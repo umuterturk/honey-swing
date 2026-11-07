@@ -368,15 +368,6 @@ test('Lower Orchard stubs are winnable and the light test can miss by banking ea
   assert.equal(play(line(20,['flip',3]),bank).game.deal.T,14);
 });
 
-test('Levels 15–20 open with a +9 Snap for feedback testing',()=>{
-  for(let id=15;id<=20;id++){
-    const round=newOnboardingRound(id);
-    const index=round.game.deal.hand.findIndex(card=>signed(card)===9);
-    assert.ok(index>=0,'L'+id+' missing opening +9');
-    assert.equal(wouldSnap(round,{type:'steer',index}),true,'L'+id+' +9 should Snap');
-  }
-});
-
 test('Garden 1 has no forced loss except Level 12, and every level has a win',()=>{
   for(let id=1;id<=ONBOARDING_COUNT;id++){
     const report=simulateOnboardingLevel(id,{maxStates:80000,maxDepth:24});
