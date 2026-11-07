@@ -16,9 +16,9 @@ import {LevelEndScreen,LevelStartScreen,dismissLevelScreen} from './levelScreens
 import {bankAssistiveMessage,nextBankAnnouncement,shouldAutoBank} from './bankStatus.js';
 import {focusTargetAfterSkip,isSkipKey,rememberFocus} from './skipFocus.js';
 import {
-  ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress,
-  prepareOnboardingJump,readUnlockedOnboardingLevel
+  clearOnboardingProgress,prepareOnboardingJump
 } from './onboardingProgress.js';
+import {browserStorage,loadOnboardingRound,saveOnboardingRound,unlockOnboardingLevel} from './onboardingSession.js';
 import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
 import {FactorInfoOverlay} from './FactorInfoOverlay.jsx';
 import {factorInfoFor} from './factorInfoContent.js';
@@ -31,33 +31,17 @@ import {
   onboardingVictory,wouldSnap,ONBOARDING_COUNT,GARDEN_2_START
 } from './onboardingLevels.js';
 
-const SESSION_KEY=ONBOARDING_SESSION_KEY;
-const PROGRESS_KEY=ONBOARDING_PROGRESS_KEY;
 function prefersReducedMotion(){
   return typeof window!=='undefined'&&
     !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-}
-function browserStorage(){
-  try{return window.localStorage;}catch{return null;}
 }
 const event=(name,details={})=>{
   if(typeof window==='undefined')return;
   window.dispatchEvent(new CustomEvent('swing-casual-event',{detail:{name,...details}}));
 };
-function save(round){try{localStorage.setItem(SESSION_KEY,JSON.stringify(round));}catch{}}
-function initialRound(){
-  try{
-    const state=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
-    if(state&&Number.isInteger(state.levelId)&&state.levelId>=1&&state.levelId<=ONBOARDING_COUNT&&
-      state.game?.game==='overswing'&&state.game.deal&&Number.isInteger(state.turn)&&
-      Number.isInteger(state.snaps)&&Number.isInteger(state.flipCount)&&
-      Number.isInteger(state.zeroBreakCount))return state;
-  }catch{}
-  // No mid-level session: open at the unlocked level (debug jump / recovery).
-  return newOnboardingRound(readUnlockedOnboardingLevel(browserStorage(),ONBOARDING_COUNT));
-}
+
 export default function SimplifiedGame(){
-  const [round,setRound]=useState(initialRound);
+  const [round,setRound]=useState(loadOnboardingRound);
   const openingRef=useRef(null);
   if(openingRef.current===null)openingRef.current=featureIntroForEntry({
     round,storage:browserStorage(),reduced:prefersReducedMotion()
@@ -373,7 +357,7 @@ export default function SimplifiedGame(){
     cancelRef.current=null;resetMotionRef.current=null;
     lossMotionRef.current=null;breakMotionRef.current=null;
     const next=newOnboardingRound(id);
-    save(next);
+    saveOnboardingRound(next);
     setRound(next);setView(displayOf(next));setShownGold(0);
     setAnimating(false);setFeedback(null);setPulse(false);setBeat('');setHelp(false);
     setDocking(Boolean(onboardingLevel(id).dock));
@@ -441,7 +425,7 @@ export default function SimplifiedGame(){
   }
   function skip(){
     event('tutorial_skip',{level:level.id});
-    try{localStorage.setItem(PROGRESS_KEY,String(GARDEN_2_START));}catch{}
+    unlockOnboardingLevel(GARDEN_2_START);
     startLevel(GARDEN_2_START);
   }
 
@@ -468,7 +452,7 @@ export default function SimplifiedGame(){
         if(onboardingVictory(next)){
           event('level_complete',{level:level.id,actions:next.turn});
           if(level.id===ONBOARDING_COUNT)event('onboarding_complete');
-          try{localStorage.setItem(PROGRESS_KEY,String(Math.min(ONBOARDING_COUNT,level.id+1)));}catch{}
+          unlockOnboardingLevel(Math.min(ONBOARDING_COUNT,level.id+1));
         }
         const outcome=change.snap?'snap':change.zeroBreak?'zero':
           change.rewards.some(reward=>reward.kind==='swing')?'cross':
