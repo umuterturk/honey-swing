@@ -11,7 +11,7 @@ import {
   flightDropletSize,flightDroplets,honeyTier,praiseFor
 } from '../src/casual/starThresholds.js';
 import {
-  HONEY_MOTION,HONEY_TOKENS,applyHoneyLayout,burstDiameter,burstOffset,compositeBacking,
+  HONEY_MOTION,HONEY_TOKENS,SCOREBOARD_ART_ASPECT,applyHoneyLayout,burstDiameter,burstOffset,compositeBacking,
   contrastRatio,countFrame,fillFrame,flightEmitTime,flightOpacity,flightPosition,
   honeyLayout,honeyParticles,overflowMarks,power2Out
 } from '../src/casual/honeyWin.js';
@@ -137,34 +137,41 @@ test('fillFrame drives the jar; countFrame drives the score and never overflows'
 
 test('layout centers the jar and keeps scoreboard between jar and CTA',()=>{
   const small=honeyLayout(320,568,{top:0,right:0,bottom:0,left:0});
-  assert.ok(Math.abs(small.jar.w-198.4)<1e-9);
-  assert.ok(Math.abs(small.jar.h-130)<1e-9);
+  assert.ok(Math.abs(small.jar.w-179.2)<1e-9);
+  assert.ok(small.jar.h>=110);
+  assert.ok(small.praise.y>=12);
   assert.ok(small.praise.y+small.praise.h<=small.jar.y);
-  assert.equal(small.scoreboard.y,small.jar.y+small.jar.h+8);
-  assert.ok(small.scoreboard.h>=180&&small.scoreboard.h<=200);
+  assert.equal(small.scoreboard.y,small.jar.y+small.jar.h+14);
+  assert.ok(Math.abs(small.scoreboard.w/small.scoreboard.h-SCOREBOARD_ART_ASPECT)<1e-6);
   assert.ok(small.scoreboard.w>0);
   assert.equal(small.reset.x,260);
   assert.equal(small.reset.y,16);
   const mid=honeyLayout(390,844,{top:0,right:0,bottom:0,left:0});
   const midJarCenter=mid.jar.y+mid.jar.h/2;
-  assert.ok(midJarCenter>mid.safeH*0.38&&midJarCenter<mid.safeH*0.58);
+  assert.ok(midJarCenter>mid.safeH*0.36&&midJarCenter<mid.safeH*0.58);
   assert.ok(mid.scoreboard.y>=mid.jar.y+mid.jar.h);
   assert.ok(mid.scoreboard.y+mid.scoreboard.h<=mid.cta.y);
-  assert.ok(mid.scoreboard.w>0&&mid.scoreboard.h>=180&&mid.scoreboard.h<=200);
+  assert.ok(Math.abs(mid.scoreboard.w/mid.scoreboard.h-SCOREBOARD_ART_ASPECT)<1e-6);
   const large=honeyLayout(430,932,{top:0,right:0,bottom:0,left:0});
   assert.equal(large.jar.w,220);
   assert.equal(large.jar.h,275);
   assert.equal(large.praise.font,48);
   assert.equal(large.reset.x,370);
-  assert.ok(large.praise.y>=10);
+  assert.ok(large.praise.y>=12);
   assert.ok(large.scoreboard.y>=large.jar.y+large.jar.h);
   assert.ok(large.scoreboard.y+large.scoreboard.h<=large.cta.y);
+  assert.ok(Math.abs(large.scoreboard.w/large.scoreboard.h-SCOREBOARD_ART_ASPECT)<1e-6);
   const tight=honeyLayout(320,568,{top:44,right:0,bottom:34,left:0});
   assert.equal(tight.safeH,490);
   assert.equal(tight.short,true);
-  assert.ok(tight.praise.y>=44);
-  assert.ok(tight.scoreboard.h>=180&&tight.scoreboard.h<=200);
-  for(const box of [small,mid,large,tight]){
+  assert.ok(tight.praise.y>=44+12);
+  assert.ok(tight.jar.h>=110);
+  assert.ok(Math.abs(tight.scoreboard.w/tight.scoreboard.h-SCOREBOARD_ART_ASPECT)<1e-6);
+  const notched=honeyLayout(390,844,{top:59,right:0,bottom:62,left:0});
+  assert.ok(notched.reset.y>=59+16);
+  assert.ok(notched.praise.y>=59+12);
+  assert.ok(notched.scoreboard.y+notched.scoreboard.h<=notched.cta.y);
+  for(const box of [small,mid,large,tight,notched]){
     const zones=[box.praise,box.jar,box.scoreboard,box.cta,box.reset];
     for(let i=0;i<zones.length;i++){
       for(let j=i+1;j<zones.length;j++){
@@ -622,7 +629,8 @@ test('honey styles are scoped under the end card and FX stays between the card a
   assert.match(css,/object-fit:\s*contain/);
   assert.match(css,/\.sgv-honey-slogan-drops-right\{[^}]*scaleX\(-1\)/);
   assert.match(css,/\.sgv-honey-slogan-drops-art\{/);
-  assert.match(css,/top:calc\(28%\)/);
+  assert.match(css,/\.sgv-honey-scoreboard \.sgv-win-tally\{[^}]*top:\s*28\.6%;[^}]*height:\s*27\.4%/s);
+  assert.match(css,/aspect-ratio:\s*1398\/584/);
   assert.match(css,/--honey-scrim-opacity/);
   assert.match(css,/sgv-fluid-surface/);
   assert.match(css,/mask-position:\s*50% 50%/);
@@ -779,11 +787,13 @@ test('the win scrim, glass jar, and reset icon are styled before any tween',asyn
   const board=host.querySelector('.sgv-honey-scoreboard');
   const boardStyle=win.getComputedStyle(board);
   assert.equal(boardStyle.position,'absolute');
-  assert.equal(boardStyle.height,'188px');
+  assert.match(String(boardStyle.aspectRatio||''),/1398\s*\/\s*584|2\.39/);
   const art=win.getComputedStyle(host.querySelector('.sgv-honey-scoreboard-art'));
-  assert.equal(art.objectFit,'contain');
+  assert.equal(art.objectFit,'fill');
   assert.match(art.maxWidth,/100%/);
-  assert.match(win.getComputedStyle(host.querySelector('.sgv-win-tally')).color,/#5a2d7a|rgb\(90,\s*45,\s*122\)/);
+  const tallyStyle=win.getComputedStyle(host.querySelector('.sgv-win-tally'));
+  assert.match(tallyStyle.color,/#5a2d7a|rgb\(90,\s*45,\s*122\)/);
+  assert.match(tallyStyle.top,/28\.6%/);
   const fill=win.getComputedStyle(host.querySelector('.sgv-fluid-fill'));
   assert.match(fill.backgroundImage,/#fff8c8|#ffe08a|#ffc83d|#ff9d0a|#f07800/i);
   const surface=win.getComputedStyle(host.querySelector('.sgv-fluid-surface'));
@@ -792,7 +802,7 @@ test('the win scrim, glass jar, and reset icon are styled before any tween',asyn
   assert.match(win.getComputedStyle(host.querySelector('.sgv-jar-front')).opacity,/^0?\.78$/);
   const praise=win.getComputedStyle(host.querySelector('.sgv-honey-praise-slot'));
   assert.ok(praise.backgroundColor===''||praise.backgroundColor==='transparent'||praise.backgroundColor==='rgba(0, 0, 0, 0)');
-  assert.match(praise.top,/safe-top\) \+ 2px|2px/);
+  assert.match(praise.top,/safe-top\) \+ 12px|12px/);
   assert.match(resetStyle.top,/safe-top\) \+ 16px|16px/);
   assert.match(resetStyle.right,/safe-right\) \+ 16px|16px/);
   assert.ok(host.querySelector('.sgv-honey-slogan-drops-right'));

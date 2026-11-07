@@ -207,10 +207,12 @@ export default function SimplifiedGame(){
       const width=box?.width||phone.clientWidth||0;
       if(!(height>0)||!(width>0))return;
       const style=getComputedStyle(phone);
-      const top=parseFloat(style.getPropertyValue('--safe-top'))||0;
-      const right=parseFloat(style.getPropertyValue('--safe-right'))||0;
-      const bottom=parseFloat(style.getPropertyValue('--safe-bottom'))||0;
-      const left=parseFloat(style.getPropertyValue('--safe-left'))||0;
+      // padding* already resolves env(safe-area-inset-*); reading --safe-* returns
+      // the unevaluated env() string, so parseFloat was always 0 on real phones.
+      const top=parseFloat(style.paddingTop)||0;
+      const right=parseFloat(style.paddingRight)||0;
+      const bottom=parseFloat(style.paddingBottom)||0;
+      const left=parseFloat(style.paddingLeft)||0;
       phone.classList.toggle('sgv-honey-short',height-top-bottom<520);
       applyHoneyLayout(phone.querySelector('.sgv-honey-win'),width,height,{top,right,bottom,left});
     };
@@ -228,7 +230,12 @@ export default function SimplifiedGame(){
     }
     apply();
     window.addEventListener('resize',apply);
-    return ()=>window.removeEventListener('resize',apply);
+    const ro=typeof ResizeObserver==='function'?new ResizeObserver(apply):null;
+    ro?.observe(phone);
+    return ()=>{
+      window.removeEventListener('resize',apply);
+      ro?.disconnect();
+    };
   },[finished,victory]);
   useEffect(()=>{
     const reduced=typeof window!=='undefined'&&

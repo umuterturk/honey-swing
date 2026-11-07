@@ -5,7 +5,7 @@ body{overscroll-behavior:none}
 button{font:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-page{height:100dvh;min-height:490px;width:100%;overflow:hidden;background:linear-gradient(#70c8f5,#a8e6c2);display:flex;justify-content:center;user-select:none;-webkit-user-select:none}
-.sgv-phone{position:relative;isolation:isolate;display:flex;flex-direction:column;width:min(100%,560px);height:100%;min-width:0;max-width:100%;overflow:hidden;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px calc(env(safe-area-inset-bottom,0px) + 28px);background:linear-gradient(#73cafa,#d8f6df 56%,#78c477)}
+.sgv-phone{position:relative;isolation:isolate;display:flex;flex-direction:column;width:min(100%,560px);height:100%;min-width:0;max-width:100%;overflow:hidden;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 28px);background:linear-gradient(#73cafa,#d8f6df 56%,#78c477)}
 .sgv-phone>.sg-garden{position:absolute;inset:0;z-index:-2;width:100%;height:100%;pointer-events:none}
 .sgv-atmosphere{position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 50% 49%,#faffd96e,transparent 66%);pointer-events:none}
 .sg-cloud-one{animation:sgv-cloud 21s ease-in-out infinite alternate}
@@ -113,10 +113,10 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-chest-mouth{position:absolute;z-index:5;top:13%;left:50%;width:3px;height:3px;transform:translateX(-50%);pointer-events:none}
 
 /* Card shelf and just two actions. */
-.sgv-controls{position:relative;z-index:3;flex:none;width:calc(100% + 32px);min-width:0;margin:0 -16px;padding:8px 16px 0;height:clamp(201px,31dvh,280px);display:flex;flex-direction:column;justify-content:flex-end}
-.sgv-card-shelf{position:absolute;z-index:0;pointer-events:none;left:0;right:0;top:calc(clamp(104px,17dvh,151px) - 10px);height:43px;border:5px solid #f4bc83;border-radius:18px 18px 25px 25px;background:linear-gradient(#efba7f 0%,#e8a05c 42%,#b97040 80%);box-shadow:inset 0 6px #ffe0a5,0 6px 0 #9d623b,0 11px 16px #527b5369}
+.sgv-controls{position:relative;z-index:3;flex:none;width:calc(100% + 32px);min-width:0;margin:0 -16px;padding:8px 16px 0;height:clamp(196px,28.5dvh,248px);display:flex;flex-direction:column;justify-content:flex-end}
+.sgv-card-shelf{position:absolute;z-index:0;pointer-events:none;left:0;right:0;top:calc(clamp(100px,15.5dvh,138px) - 10px);height:43px;border:5px solid #f4bc83;border-radius:18px 18px 25px 25px;background:linear-gradient(#efba7f 0%,#e8a05c 42%,#b97040 80%);box-shadow:inset 0 6px #ffe0a5,0 6px 0 #9d623b,0 11px 16px #527b5369}
 .sgv-card-shelf:before{content:"";position:absolute;top:6px;left:13px;right:13px;height:4px;border-radius:10px;background:#fff4c1a1}
-.sgv-hand{position:relative;z-index:2;flex:none;width:100%;height:clamp(104px,17dvh,151px);display:flex;justify-content:center;align-items:stretch;gap:clamp(7px,2.7vw,17px);padding:0 8px;margin-bottom:clamp(16px,3dvh,28px)}
+.sgv-hand{position:relative;z-index:2;flex:none;width:100%;height:clamp(100px,15.5dvh,138px);display:flex;justify-content:center;align-items:stretch;gap:clamp(7px,2.7vw,17px);padding:0 8px;margin-bottom:clamp(14px,2.6dvh,22px)}
 .sgv-card{position:relative;flex:1;max-width:144px;min-width:0;border:5px solid #fffbe9;border-radius:clamp(18px,5vw,29px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;cursor:pointer;overflow:hidden;box-shadow:0 7px 0 var(--sgv-card-rim),0 11px 12px #6f774958,inset 0 4px 4px #ffffffe0;transition:transform .13s ease,filter .13s ease;color:var(--sgv-card-color)}
 .sgv-card-leaf{--sgv-card-rim:#70b96b;--sgv-card-color:#009f51;background:linear-gradient(145deg,#eaffd9,#b8f8a2 64%,#8fda88)}
 .sgv-card-cloud{--sgv-card-rim:#ca7ca0;--sgv-card-color:#d73574;background:linear-gradient(145deg,#ffedf6,#ffc5df 64%,#f19fc5)}
@@ -193,25 +193,32 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-honey-win .sgv-end-card .sgv-end-reset,
 .sgv-honey-win .sgv-end-card .sgv-honey-reset{pointer-events:auto}
 .sgv-honey-title,.sgv-honey-status{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.sgv-honey-win .sgv-honey-praise-slot{position:absolute;z-index:6;top:var(--honey-praise-top,calc(var(--safe-top) + 2px));left:var(--honey-focus-x,50%);width:0;height:var(--honey-praise-height,64px);display:flex;align-items:center;justify-content:center;overflow:visible;background:transparent;border-radius:0}
+.sgv-honey-win .sgv-honey-praise-slot{position:absolute;z-index:6;top:var(--honey-praise-top,calc(var(--safe-top) + 12px));left:var(--honey-focus-x,50%);width:0;height:var(--honey-praise-height,64px);display:flex;align-items:center;justify-content:center;overflow:visible;background:transparent;border-radius:0}
 .sgv-honey-win .sgv-end-card .sgv-win-praise{opacity:0;transform:scale(.55);transform-origin:50% 50%;flex:none;width:min(78vw,320px);height:96px;overflow:visible;filter:drop-shadow(0 3px 0 #3a1848) drop-shadow(0 4px 12px #f0a51f66)}
 .sgv-honey-win .sgv-win-praise-word{font-family:"Lilita One",ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;font-weight:400;font-size:clamp(56px,14.5vw,72px);letter-spacing:.06em;fill:url(#sgv-praise-fill);stroke:#6b3a9a;stroke-width:14;stroke-linejoin:round;stroke-linecap:round;paint-order:stroke fill}
 .sgv-honey-win .sgv-honey-slogan-underline{position:absolute;z-index:1;top:74%;left:50%;width:min(56vw,240px);height:auto;transform:translateX(-50%);pointer-events:none;user-select:none}
-.sgv-honey-win .sgv-honey-slogan-drops{position:absolute;z-index:1;top:6%;width:min(18vw,72px);height:auto;pointer-events:none;user-select:none;display:block}
+.sgv-honey-win .sgv-honey-slogan-drops{position:absolute;z-index:1;top:8%;width:min(15vw,64px);height:auto;pointer-events:none;user-select:none;display:block}
 .sgv-honey-win .sgv-honey-slogan-drops-art{display:block;width:100%;height:auto;transform-origin:50% 50%;pointer-events:none;user-select:none}
-.sgv-honey-win .sgv-honey-slogan-drops-left{right:50%;margin-right:min(38vw,158px)}
+.sgv-honey-win .sgv-honey-slogan-drops-left{right:50%;margin-right:min(34vw,140px)}
 /* Permanent mirror on the wrapper — never animate this transform with GSAP. */
-.sgv-honey-win .sgv-honey-slogan-drops-right{left:50%;margin-left:min(38vw,158px);transform:scaleX(-1)}
+.sgv-honey-win .sgv-honey-slogan-drops-right{left:50%;margin-left:min(34vw,140px);transform:scaleX(-1)}
+@media(max-width:365px){
+ .sgv-honey-win .sgv-honey-slogan-drops{width:min(13vw,48px)}
+ .sgv-honey-win .sgv-honey-slogan-drops-left{margin-right:min(30vw,108px)}
+ .sgv-honey-win .sgv-honey-slogan-drops-right{margin-left:min(30vw,108px)}
+}
 .sgv-win-static .sgv-honey-slogan-drops-right,
 .sgv-honey-final .sgv-honey-slogan-drops-right,
 .sgv-success-settled .sgv-honey-slogan-drops-right{transform:scaleX(-1)}
 .sgv-honey-win .sgv-honey-stage{position:absolute;z-index:2;inset:0;pointer-events:none}
-.sgv-honey-win .sgv-honey-scoreboard{position:absolute;z-index:5;left:var(--honey-scoreboard-left,12px);top:var(--honey-scoreboard-top,352px);width:var(--honey-scoreboard-width,calc(100% - 24px));height:var(--honey-scoreboard-height,188px);overflow:visible;pointer-events:none}
-.sgv-honey-win .sgv-honey-scoreboard-art{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none}
-.sgv-honey-win .sgv-honey-scoreboard-label{position:absolute;left:14%;right:14%;top:14%;margin:0;text-align:center;font:800 clamp(13px,3.6vw,16px)/1.1 ui-rounded,system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#6b3a9a;pointer-events:none}
-/* Sit the tally in the yellow banner pocket (slightly below the slot midpoint). */
-.sgv-honey-win .sgv-honey-scoreboard .sgv-win-tally{position:absolute;left:18%;right:18%;top:calc(28%);margin:0;height:auto;display:flex;align-items:center;justify-content:center;text-align:center;font-size:var(--honey-count-font,40px);font-size:clamp(34px,9vw,48px);font-weight:900;line-height:1;font-variant-numeric:tabular-nums;color:#5a2d7a;-webkit-text-stroke:0;paint-order:normal;text-shadow:0 2px 0 #fff6c8;background:transparent;pointer-events:none;overflow:hidden;white-space:nowrap}
-.sgv-honey-win .sgv-honey-scoreboard-target{position:absolute;left:12%;right:12%;bottom:14%;margin:0;display:flex;align-items:center;justify-content:center;gap:6px;font:800 clamp(14px,3.8vw,18px)/1 ui-rounded,system-ui,sans-serif;color:#6b3a9a;pointer-events:none}
+/* Box aspect must match score-board.png (1398×584) so contain fills 1:1 and
+   % slots land on the measured yellow ribbon (≈28.6%–56%). */
+.sgv-honey-win .sgv-honey-scoreboard{position:absolute;z-index:5;left:var(--honey-scoreboard-left,12px);top:var(--honey-scoreboard-top,352px);width:var(--honey-scoreboard-width,calc(100% - 24px));height:var(--honey-scoreboard-height,auto);aspect-ratio:1398/584;overflow:visible;pointer-events:none}
+.sgv-honey-win .sgv-honey-scoreboard-art{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:fill;object-position:center;pointer-events:none;user-select:none}
+.sgv-honey-win .sgv-honey-scoreboard-label{position:absolute;left:12%;right:12%;top:8%;height:18%;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;font:800 clamp(13px,3.6vw,16px)/1.1 ui-rounded,system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#6b3a9a;pointer-events:none}
+/* Ribbon band measured from score-board.png: y 167–327 of 584. */
+.sgv-honey-win .sgv-honey-scoreboard .sgv-win-tally{position:absolute;left:16%;right:16%;top:28.6%;height:27.4%;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:var(--honey-count-font,40px);font-size:clamp(34px,9vw,48px);font-weight:900;line-height:1;font-variant-numeric:tabular-nums;color:#5a2d7a;-webkit-text-stroke:0;paint-order:normal;text-shadow:0 2px 0 #fff6c8;background:transparent;pointer-events:none;overflow:visible;white-space:nowrap}
+.sgv-honey-win .sgv-honey-scoreboard-target{position:absolute;left:12%;right:12%;top:62%;height:26%;margin:0;display:flex;align-items:center;justify-content:center;gap:6px;font:800 clamp(14px,3.8vw,18px)/1 ui-rounded,system-ui,sans-serif;color:#6b3a9a;pointer-events:none}
 .sgv-honey-win .sgv-honey-target-check{display:inline-flex;align-items:center;justify-content:center;width:1.1em;height:1.1em;border-radius:50%;background:#2fbf5a;color:#fff;font-size:.95em;line-height:1;opacity:0;transform:scale(.7)}
 .sgv-honey-win .sgv-honey-scoreboard-target.is-met .sgv-honey-target-check,
 .sgv-win-static .sgv-honey-scoreboard-target.is-met .sgv-honey-target-check,
@@ -250,8 +257,8 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-honey-win .sgv-honey-drip{top:8px;border-radius:40% 40% 50% 50%}
 .sgv-honey-win .sgv-honey-cta-wrap{
   position:absolute;z-index:10;left:50%;
-  bottom:calc(var(--safe-bottom) + 16px + 70px);
-  width:50%;max-width:280px;min-width:148px;
+  bottom:calc(var(--safe-bottom) + 20px + 70px);
+  width:min(56%,280px);min-width:148px;
   transform:translateX(-50%);pointer-events:none;
 }
 .sgv-honey-win .sgv-honey-cta-wrap .sgv-end-cta{
@@ -271,6 +278,14 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
     inset 0 3px 0 #ffffffcc,
     inset 0 -3px 0 #e0781088;
   animation:sgv-honey-cta-pulse 1.6s ease-in-out infinite;
+}
+@media(max-height:730px){
+ .sgv-honey-win .sgv-honey-cta-wrap{bottom:calc(var(--safe-bottom) + 14px + 64px)}
+ .sgv-honey-win .sgv-honey-cta-wrap .sgv-end-cta{height:64px;min-height:64px}
+}
+@media(max-height:580px){
+ .sgv-honey-win .sgv-honey-cta-wrap{bottom:calc(var(--safe-bottom) + 12px + 36px)}
+ .sgv-honey-win .sgv-honey-cta-wrap .sgv-end-cta{height:58px;min-height:58px;font-size:clamp(18px,5.5vw,24px)}
 }
 .sgv-honey-win .sgv-honey-cta-wrap .sgv-end-cta:active{
   transform:translateY(4px) scale(.98);
@@ -327,16 +342,16 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  .sgv-flip-next{padding-left:5px;margin-left:2px}
 }
 @media(max-height:730px){
- .sgv-phone{padding-top:calc(env(safe-area-inset-top,0px) + 5px)}
+ .sgv-phone{padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
  .sgv-hud{min-height:43px}
  .sgv-level{height:42px}
  .sgv-mini-hint{height:21px;min-height:21px;margin-top:4px}
  .sgv-meter-section{height:auto;min-height:clamp(108px,17dvh,136px);padding-top:1px}
  .sgv-chest-art{height:clamp(145px,25dvh,200px)}
- .sgv-controls{height:clamp(184px,30dvh,219px);padding-top:3px}
- .sgv-hand{height:clamp(90px,16dvh,123px);margin-bottom:clamp(11px,2dvh,16px)}
- .sgv-card-shelf{top:calc(clamp(90px,16dvh,123px) - 9px)}
- .sgv-action{height:clamp(58px,9dvh,67px)}
+ .sgv-controls{height:clamp(172px,28dvh,204px);padding-top:3px}
+ .sgv-hand{height:clamp(84px,14.5dvh,114px);margin-bottom:clamp(10px,1.8dvh,14px)}
+ .sgv-card-shelf{top:calc(clamp(84px,14.5dvh,114px) - 9px)}
+ .sgv-action{height:clamp(56px,8.5dvh,64px)}
 }
 @media(max-height:580px){
  .sgv-level{height:36px}.sgv-hud{min-height:36px}
@@ -344,9 +359,9 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  .sgv-meter-section{height:auto;min-height:102px}
  .sgv-mini-hint{display:none}
  .sgv-chest-art{height:133px}
- .sgv-controls{height:173px}
- .sgv-hand{height:83px;margin-bottom:9px}
- .sgv-card-shelf{top:74px}
+ .sgv-controls{height:168px}
+ .sgv-hand{height:80px;margin-bottom:8px}
+ .sgv-card-shelf{top:71px}
  .sgv-card strong{font-size:36px}
  .sgv-card-glyph{font-size:22px}
  .sgv-action{height:55px}
@@ -753,13 +768,30 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-bottle-pair{
  position:relative;z-index:2;flex:1;min-height:0;min-width:0;
  width:100%;max-width:480px;
- /* Stage height must fit Bank jar; Pot/Bank share top edge */
+ /* Stage height must fit Bank jar; Pot/Bank share top edge.
+    Bottom-bias jars into spare stage (no transform — GSAP owns x/y).
+    --jar-h stays in sync with .sgv-bank-bottle; sink capped for pour length. */
+ --jar-h:clamp(130px,24dvh,184px);
+ --jar-top:min(56px,max(8px,calc(100% - var(--jar-h) - clamp(10px,2.2dvh,22px))));
  min-height:clamp(150px,28dvh,230px);
  padding:4px 0 clamp(8px,2dvh,18px);
  display:block;
 }
+@media(max-width:365px){
+ .sgv-bottle-pair{--jar-h:118px}
+}
+@media(max-height:730px){
+ .sgv-bottle-pair{
+  --jar-top:min(36px,max(8px,calc(100% - var(--jar-h) - clamp(8px,1.8dvh,16px))));
+ }
+}
+@media(max-height:580px){
+ .sgv-bottle-pair{
+  --jar-top:min(20px,max(4px,calc(100% - var(--jar-h) - 8px)));
+ }
+}
 .sgv-bottle-pair .sgv-pending-pot{
- position:absolute;left:50%;top:0;
+ position:absolute;left:50%;top:var(--jar-top);
  transform:translateX(-50%);
  width:clamp(96px,27vw,130px);
  height:clamp(120px,22dvh,162px);
@@ -839,7 +871,7 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  top:14%;right:-5px;font-size:9px;
 }
 .sgv-bottle-pair .sgv-bank-bottle{
- position:absolute;left:-12px;top:0;
+ position:absolute;left:-12px;top:var(--jar-top);
  width:clamp(104px,30.4vw,156px); /* 0.8× prior bank size */
  height:clamp(130px,24dvh,184px);
  z-index:2;
@@ -1106,8 +1138,8 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 
 /* The meter's location already conveys left versus right, so only magnitudes
    remain. Removing the hint restores space for the bottles and later abilities. */
-/* Pull the whole meter chrome (honeycomb + track + tap + pills) toward the HUD. */
-.sgv-meter-section{margin-top:clamp(-36px,-5.5dvh,-18px)}
+/* Keep honeycomb clear of the HUD on phones; never pull the meter upward. */
+.sgv-meter-section{margin-top:clamp(6px,1.4dvh,14px)}
 .sgv-meter-side,.sgv-marker-direction{display:none}
 
 /* Center the secured progress inside the glass, away from the platform lip.
@@ -1136,7 +1168,7 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  .sgv-bottle-pair .sgv-goal-progress strong{font-size:clamp(21px,5.5vw,25px)}
 }
 @media(max-height:580px){
- .sgv-meter-section{margin-top:0}
+ .sgv-meter-section{margin-top:8px}
  .sgv-card-arrow{width:35px;height:27px}
  .sgv-card:has(.sgv-card-arrow) strong{font-size:clamp(31px,8.4vw,39px)}
  .sgv-bottle-pair .sgv-goal-progress strong{font-size:clamp(20px,5.5vw,24px)}
@@ -1265,7 +1297,7 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  .sgv-onboarding .sgv-tutorial-links button{padding:5px}
 }
 @media(max-height:620px){
- .sgv-onboarding .sgv-meter-section{height:auto;min-height:102px;margin-top:0}
+ .sgv-onboarding .sgv-meter-section{height:auto;min-height:102px;margin-top:4px}
  .sgv-onboarding .sgv-tutorial-controls:has(.sgv-tutorial-actions),
  .sgv-onboarding-1 .sgv-tutorial-controls,
  .sgv-onboarding-2 .sgv-tutorial-controls{height:205px}

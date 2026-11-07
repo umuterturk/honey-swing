@@ -160,6 +160,9 @@ export function contrastRatio(hex,background){
 const FILL_MAX=78;
 const HUD_PAD=10;
 const HUD_H=54;
+// Native score-board.png size. Box must match this aspect or object-fit:contain
+// letterboxes and % text misses the yellow ribbon.
+export const SCOREBOARD_ART_ASPECT=1398/584;
 
 export function honeyLayout(width,height,insets={}){
   const top=Number(insets.top)||0;
@@ -169,38 +172,50 @@ export function honeyLayout(width,height,insets={}){
   const safeW=width-left-right;
   const safeH=height-top-bottom;
   const short=safeH<520;
+  const compact=safeH<700;
   const hud={x:left,y:top+HUD_PAD,w:safeW,h:HUD_H,bottom:top+HUD_PAD+HUD_H};
   const praiseH=64;
-  const praiseY=top+2;
+  // Keep slogan + side drops clear of the notch and Reset hit target.
+  const praiseFloor=top+12;
   const praiseX=left+16;
   const reset={x:width-right-16-44,y:top+16,w:44,h:44};
   let praiseW=safeW-32;
-  if(praiseY<reset.y+reset.h&&praiseX+praiseW>reset.x)
+  if(praiseFloor<reset.y+reset.h&&praiseX+praiseW>reset.x)
     praiseW=Math.max(120,reset.x-8-praiseX);
-  const jarW=Math.min(220,0.62*safeW);
+  const jarW=Math.min(compact?200:220,(compact?0.56:0.62)*safeW);
   const naturalH=jarW*1.25;
-  const scoreboardH=188;
-  const praiseGap=8;
-  const jarGap=8;
+  const contentW=safeW-32;
+  // Prefer full-width board; height follows the art aspect exactly.
+  const preferredBoardH=contentW/SCOREBOARD_ART_ASPECT;
+  const boardBudget=short?Math.min(preferredBoardH,136):compact?Math.min(preferredBoardH,160):preferredBoardH;
+  const praiseGap=compact?12:10;
+  const jarGap=compact?14:12;
   const ctaH=70;
-  // Raise NEXT by one button height; chrome packs into the band above it.
-  // Foliage/scrim/warm-light stay pinned to the viewport.
-  const ctaY=height-bottom-16-ctaH-ctaH;
+  // Raise NEXT above the home indicator. Short phones lift less so the jar
+  // stays readable; keep in sync with .sgv-honey-cta-wrap in minimal.css.
+  const ctaLift=short?36:ctaH;
+  const ctaY=height-bottom-16-ctaH-ctaLift;
   const limit=ctaY-12;
   let jarH=naturalH;
-  if(short)jarH=Math.min(jarH,Math.max(96,safeH-348));
-  const minJarY=top+2+praiseH+praiseGap;
-  const maxBody=limit-minJarY-jarGap-scoreboardH;
+  if(short)jarH=Math.min(jarH,Math.max(110,safeH-(boardBudget+praiseH+praiseGap+jarGap+ctaLift+24)));
+  const minJarY=praiseFloor+praiseH+praiseGap;
+  const maxBody=limit-minJarY-jarGap-boardBudget;
   if(maxBody>0)jarH=Math.min(jarH,maxBody);
-  const maxJarY=Math.max(minJarY,limit-scoreboardH-jarGap-jarH);
-  // Prefer the jar's vertical center near mid-screen, then clamp into the free band.
-  const idealJarY=top+safeH*0.46-jarH/2;
+  const maxJarY=Math.max(minJarY,limit-boardBudget-jarGap-jarH);
+  // Prefer the jar's vertical center slightly above mid-screen, then clamp.
+  const idealJarY=top+safeH*0.44-jarH/2;
   const jarY=Math.min(maxJarY,Math.max(minJarY,idealJarY));
-  // Lift the slogan ~1/5 of its slot height above the previous baseline.
-  const praiseTop=Math.max(top,Math.max(top+2,jarY-praiseGap-praiseH)-Math.round(praiseH*0.2));
+  // Sit the slogan just above the jar; never above the safe floor.
+  const praiseTop=Math.max(praiseFloor,jarY-praiseGap-praiseH);
   const scoreboardY=jarY+jarH+jarGap;
-  const contentX=left+16;
-  const contentW=safeW-32;
+  const maxBoardH=Math.max(96,limit-scoreboardY);
+  let scoreboardW=contentW;
+  let scoreboardH=scoreboardW/SCOREBOARD_ART_ASPECT;
+  if(scoreboardH>maxBoardH){
+    scoreboardH=maxBoardH;
+    scoreboardW=scoreboardH*SCOREBOARD_ART_ASPECT;
+  }
+  const scoreboardX=left+(safeW-scoreboardW)/2;
   const jarX=left+(safeW-jarW)/2;
   return {
     safeW,safeH,short,hud,
@@ -210,8 +225,8 @@ export function honeyLayout(width,height,insets={}){
     },
     jar:{x:jarX,y:jarY,w:jarW,h:jarH},
     scoreboard:{
-      x:contentX,y:scoreboardY,w:contentW,h:scoreboardH,
-      font:Math.min(44,Math.max(32,0.11*safeW))
+      x:scoreboardX,y:scoreboardY,w:scoreboardW,h:scoreboardH,
+      font:Math.min(44,Math.max(32,0.11*scoreboardW))
     },
     cta:{
       x:left+(safeW-contentW*0.5)/2,y:ctaY,w:contentW*0.5,h:ctaH
