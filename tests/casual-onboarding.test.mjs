@@ -56,8 +56,8 @@ test('each level docks only the factors it has taught',()=>{
     6:['swing','flip'],7:['swing','flip'],8:['swing','flip'],
     9:['swing'],10:['swing'],11:['swing','flip'],12:['swing','flip'],
     13:['swing','flip'],14:['swing','flip'],15:['swing','flip'],
-    16:['swing'],17:['swing'],18:['swing','flip'],19:['swing','flip'],
-    20:['swing']
+    16:['swing','flip'],17:['swing','flip'],18:['swing','flip'],19:['swing','flip'],
+    20:['swing','flip']
   };
   for(const level of ONBOARDING_LEVELS){
     const factors=expect[level.id];
@@ -394,7 +394,7 @@ test('Lower Orchard stubs are winnable and the light test can miss by banking ea
   assert.equal(onboardingVictory(miss),false);
   assert.equal(play(line(13,[3,2,-6]),bank).game.deal.T>=16,true);
   assert.equal(play(line(19,['flip','flip']),bank).game.deal.T,38);
-  assert.equal(play(line(20,['flip',3]),bank).game.deal.T,7);
+  assert.equal(play(line(20,['flip',3]),bank).game.deal.T,14);
 });
 
 test('Levels 15–20 open with a +9 Snap for feedback testing',()=>{

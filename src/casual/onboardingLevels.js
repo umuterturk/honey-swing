@@ -64,12 +64,13 @@ export const ONBOARDING_LEVELS=Object.freeze([
   make({id:14,name:'Second Row',target:20,deck:[4,1,25],hand:2,factors:SWING_FLIP}),
   // Garden 2 stubs: card 8 (+9) sits in the opening hand for an instant Snap test.
   make({id:15,name:'Light Test',target:30,deck:[3,8,0,25],hand:2,factors:SWING_FLIP}),
-  make({id:16,name:'Easy Row',target:11,deck:[4,8,25],hand:2,factors:SWING}),
-  make({id:17,name:'Known Zero',target:10,deck:[2,8,24,1],hand:3,factors:SWING}),
+  // Flip is in the deck (hand < deck) — keep the Flip pill visible with the button.
+  make({id:16,name:'Easy Row',target:11,deck:[4,8,25],hand:2,factors:SWING_FLIP}),
+  make({id:17,name:'Known Zero',target:10,deck:[2,8,24,1],hand:3,factors:SWING_FLIP}),
   make({id:18,name:'Known Snap',target:9,deck:[1,8,20,4,6,22,2],hand:3,factors:SWING_FLIP}),
   make({id:19,name:'Hard Path',target:24,deck:[3,8,0,25],hand:2,
     factors:SWING_FLIP,telegraph:true}),
-  make({id:20,name:'Gift Jar',target:6,deck:[2,8,3],hand:2,factors:SWING})
+  make({id:20,name:'Gift Jar',target:6,deck:[2,8,3],hand:2,factors:SWING_FLIP})
 ]);
 export const ONBOARDING_COUNT=ONBOARDING_LEVELS.length;
 export function onboardingLevel(id){
