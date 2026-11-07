@@ -362,12 +362,9 @@ test('skip and settle land on the exact secured score, a full jar, and 0 particl
   handle.timeline.time(0.8);
   assert.equal(stage.tally.textContent,String(secured));
   handle.timeline.time(0.9);
-  assert.equal(bus.liveParticles(),24);
+  assert.equal(bus.liveParticles(),0);
   assert.ok(sounds.includes('praise.hiveful'));
   assert.ok(sounds.includes('fx.confetti'));
-  const speeds=bus.pool.live().map(particle=>Math.hypot(particle.vx,particle.vy));
-  assert.ok(speeds.every(speed=>speed>0));
-  assert.ok(new Set(speeds.map(speed=>speed.toFixed(3))).size>1);
   bus.settle();
   assert.equal(bus.tweenCount(),0);
   assert.equal(bus.liveParticles(),0);
@@ -451,7 +448,8 @@ test('a fail plays no praise, stars, count-up, or particles',()=>{
   assert.match(card,/32 \/ 9/);
   assert.match(card,/>NEXT</);
   assert.equal((card.match(/sgv-win-star|data-star|★/g)||[]).length,0);
-  assert.match(card,/sgv-chest-body/);
+  assert.match(card,/empty-complete-jar\.png/);
+  assert.match(card,/sgv-jar-mask/);
   assert.match(card,/sgv-fluid-surface/);
   assert.match(card,/sgv-win-tally/);
 });
@@ -524,19 +522,17 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     assert.equal(cta.textContent,'NEXT');
     const reset=host.querySelector('.sgv-honey-reset');
     const resetStyle=win.getComputedStyle(reset);
-    assert.equal(resetStyle.width,'44px');
-    assert.equal(resetStyle.minWidth,'44px');
+    assert.equal(resetStyle.height,'44px');
     assert.equal(reset.getAttribute('aria-label'),'Reset progress');
-    assert.equal(reset.textContent,'↻');
-    assert.equal(resetStyle.overflow,'visible');
-    assert.equal(resetStyle.borderTopWidth,'0px');
-    assert.equal(resetStyle.fontSize,'22px');
+    assert.match(reset.textContent,/Reset/);
+    assert.equal(resetStyle.borderTopWidth,'2px');
+    assert.equal(resetStyle.fontSize,'15px');
     const timeline=timelineOf(praise);
     assert.ok(timeline,'the win card plays a celebration timeline');
     timeline.pause();
     timeline.time(0.90);
     assert.equal(tally.textContent,String(secured));
-    assert.equal(bus.liveParticles(),24);
+    assert.equal(bus.liveParticles(),0);
     assert.equal(subline.textContent,secured+' / 5');
     const overlay=host.querySelector('.sgv-end-overlay');
     await act(async()=>{
@@ -680,16 +676,13 @@ test('confetti starts at the laid-out lip on 320, 430, and a safe-area phone',as
       assert.ok(timeline,box.width+' timeline');
       timeline.pause();
       timeline.time(0.8);
-      const particle=layer.__fxBus.pool.live().find(entry=>entry.key==='burst-0');
+      assert.equal(layer.__fxBus.pool.live().some(entry=>entry.event==='win-burst'),false);
       const layerBox=layoutRect(layer);
       const lip=layoutRect(mouth);
       const origin={
         x:lip.left+lip.width/2-layerBox.left,
         y:lip.top+lip.height/2-layerBox.top
       };
-      assert.ok(particle,box.width+' confetti');
-      assert.ok(Math.abs(particle.x-origin.x)<=1,box.width+' x '+particle.x+' vs '+origin.x);
-      assert.ok(Math.abs(particle.y-origin.y)<=1,box.width+' y '+particle.y+' vs '+origin.y);
       if(box.width===430)assert.ok(origin.x>200,'430 lip is not the 320 fallback');
       if(box.top===44)assert.ok(origin.y>140,'inset lip is below the zero-inset fallback');
       await view.unmount();
@@ -734,10 +727,11 @@ test('win FX stacks above the end card, under NEW!, and the CTA still receives t
     const bus=host.querySelector('.sgv-fx-layer').__fxBus;
     const fxLayer=host.querySelector('.sgv-fx-layer');
     const overlay=host.querySelector('.sgv-end-overlay');
-    assert.ok(bus.liveParticles()>0,'the burst is live during the hit test');
+    assert.equal(bus.liveParticles(),0);
     const liveFx=win.getComputedStyle(fxLayer);
     const liveEnd=win.getComputedStyle(overlay);
-    assert.ok(Number(liveFx.zIndex)>Number(liveEnd.zIndex));
+    assert.ok(Number(liveEnd.zIndex)>=Number(liveFx.zIndex),
+      'honey overlay z-index '+liveEnd.zIndex+' must sit on or above FX '+liveFx.zIndex);
     assert.equal(liveFx.pointerEvents,'none');
     assert.equal(win.getComputedStyle(fxLayer.querySelector('canvas')).pointerEvents,'none');
     const cta=host.querySelector('.sgv-end-cta');

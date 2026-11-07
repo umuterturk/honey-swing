@@ -1,7 +1,7 @@
 import {gsap} from 'gsap';
-import {honeyEaseBack,honeyEaseOut,honeyParticles,overflowReveal,fillHeightPercent} from './honeyWin.js';
+import {HONEY_MOTION,honeyEaseBack,honeyEaseOut,honeyParticles,overflowReveal,fillHeightPercent} from './honeyWin.js';
 import {
-  burstParticles,burstRadius,displayedCount,flightDropletSize,flightDroplets,praiseFor
+  burstParticles,burstRadius,displayedCount,praiseFor
 } from './starThresholds.js';
 
 const PEAK=1.14;
@@ -74,6 +74,13 @@ export function playWinCelebration({
         cta.style.removeProperty('--honey-cta-outline');
       }
     }
+    const rear=card?.querySelector?.('.sgv-honey-foliage-rear');
+    const front=card?.querySelector?.('.sgv-honey-foliage-front');
+    for(const layer of [rear,front]){
+      if(!layer?.style)continue;
+      layer.style.opacity='1';
+      layer.style.transform='none';
+    }
     releaseOwned();
   };
   function releaseOwned(){
@@ -116,9 +123,9 @@ export function playWinCelebration({
     const factor=bus.budget?.scale?.()??1;
     const desired=honeyParticles({
       t:time,tier:intensity,scale:factor,source:from,mouth:to,
-      flightCount:flightDroplets(intensity),
-      flightSize:flightDropletSize(intensity),
-      burstCount:burstParticles(intensity),
+      flightCount:0,
+      flightSize:0,
+      burstCount:0,
       burstRadius:burstRadius(intensity)
     });
     const owned=pool.live().filter(particle=>particle.owner==='honey-win');
@@ -144,7 +151,14 @@ export function playWinCelebration({
     liquid.style.transform='none';
   }
   if(subline?.style)subline.style.opacity='0';
-  if(scrim?.style)scrim.style.opacity='1';
+  if(scrim?.style)scrim.style.opacity='0';
+  const rear=card?.querySelector?.('.sgv-honey-foliage-rear')||null;
+  const front=card?.querySelector?.('.sgv-honey-foliage-front')||null;
+  for(const layer of [rear,front]){
+    if(!layer?.style)continue;
+    layer.style.opacity='0';
+    layer.style.transform='translateY('+HONEY_MOTION.foliage.fromY+'px)';
+  }
   if(overflow?.style){
     overflow.style.opacity='0';
     overflow.style.transform='translateY(-8px)';
@@ -190,39 +204,32 @@ export function playWinCelebration({
   const hero=card?.querySelector?.('.sgv-honey-hero-art')||null;
   const surface=liquid?.querySelector?.('.sgv-fluid-surface')||null;
   const gleam=hero?.querySelector?.('.sgv-honey-gleam-sweep')||null;
-  function pxWidth(node){
-    if(!node)return 0;
-    const rect=node.getBoundingClientRect?.();
-    if(rect&&rect.width>0)return rect.width;
-    const declared=parseFloat(node.style?.width||'');
-    return declared>0?declared:0;
-  }
   function paintPretty(time){
     const active=time>=0.2&&time<=0.8;
     const along=active?(time-0.2)/0.6:0;
     if(surface?.style)
       surface.style.transform=active?'translateY('+(Math.sin(along*Math.PI*2)*3)+'px)':'none';
-    if(gleam?.style){
-      if(!active){
-        gleam.style.opacity='0';
-        gleam.style.transform='none';
-      }else{
-        const body=hero?.querySelector?.('.sgv-chest-body')||hero;
-        const bodyW=pxWidth(body);
-        const stripeW=pxWidth(gleam);
-        const x=-stripeW+(bodyW+stripeW)*along;
-        const rise=along<=0.5?along/0.5:(1-along)/0.5;
-        gleam.style.opacity=String(rise*0.55);
-        gleam.style.transform='translateX('+x+'px)';
-      }
-    }
   }
   const clock={t:0};
   timeline.to(clock,{
     t:2.5,duration:2.5,ease:'none',overwrite:'auto',
     onUpdate(){sync(clock.t);paintPretty(clock.t);}
   },0);
-  if(scrim?.style)scrim.style.opacity='1';
+  if(scrim){
+    timeline.fromTo(scrim,{opacity:0},{
+      opacity:HONEY_MOTION.scrim.opacity,
+      duration:HONEY_MOTION.scrim.end-HONEY_MOTION.scrim.start,
+      ease:honeyEaseOut,overwrite:false
+    },HONEY_MOTION.scrim.start);
+  }
+  for(const layer of [rear,front]){
+    if(!layer)continue;
+    timeline.fromTo(layer,{opacity:0,y:HONEY_MOTION.foliage.fromY},{
+      opacity:1,y:0,
+      duration:HONEY_MOTION.foliage.end-HONEY_MOTION.foliage.start,
+      ease:honeyEaseOut,overwrite:false
+    },HONEY_MOTION.foliage.start);
+  }
   if(praise){
     gsap.set(praise,{transformOrigin:'50% 50%'});
     timeline.fromTo(praise,{opacity:0},{
@@ -241,11 +248,7 @@ export function playWinCelebration({
       haptic:intensity>=2?'light':undefined,particles:0
     }),null,0);
   }
-  timeline.call(()=>bus?.emit({
-    id:'honey-flight',sound:'honey.whoosh',
-    haptic:intensity>=2?'light':undefined,particles:0
-  }),null,0.12);
-  const proxy={p:0};
+    const proxy={p:0};
   timeline.to(proxy,{
     p:1,duration:0.6,ease:'power2.out',overwrite:'auto',
     onUpdate(){paintCount(proxy.p);},
@@ -268,6 +271,12 @@ export function playWinCelebration({
       }
     },0.8);
     timeline.to(hero,{scale:1,duration:0.09,ease:honeyEaseOut,overwrite:false},0.89);
+  }
+  if(gleam){
+    gsap.set(gleam,{xPercent:-120,opacity:0});
+    timeline.to(gleam,{xPercent:480,duration:0.76,ease:'power2.out',overwrite:false},0.8);
+    timeline.to(gleam,{opacity:0.65,duration:0.28,ease:'power2.out',overwrite:false},0.8);
+    timeline.to(gleam,{opacity:0,duration:0.48,ease:'power2.out',overwrite:false},1.08);
   }
   timeline.call(()=>bus?.emit({
     id:'fx-confetti',sound:'fx.confetti',

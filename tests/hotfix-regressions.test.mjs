@@ -86,7 +86,8 @@ test('level start and win and lose screens render and can be dismissed',()=>{
   assert.match(win,/sgv-end-overlay/);
   assert.match(win,/Level complete!/);
   assert.match(win,/11 \/ 8/);
-  assert.match(win,/sgv-chest-body/);
+  assert.match(win,/empty-complete-jar\.png/);
+  assert.match(win,/sgv-jar-mask/);
   assert.match(win,/sgv-fluid-surface/);
   assert.doesNotMatch(win,/sgv-win-star|★/);
   assert.match(win,/>NEXT</);

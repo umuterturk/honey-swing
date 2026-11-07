@@ -6,7 +6,8 @@ import {burstParticles,burstRadius as burstTravel,flightDropletSize,flightDrople
 export const HONEY_MOTION=Object.freeze({
   cap:2.5,
   settled:1.3,
-  scrim:Object.freeze({start:0,end:0,opacity:1}),
+  scrim:Object.freeze({start:0,end:0.18,opacity:1}),
+  foliage:Object.freeze({start:0,end:0.25,fromY:12}),
   praise:Object.freeze({
     start:0,peakEnd:0.14,end:0.22,opacityEnd:0.1,
     fromScale:0.55,peakScale:1.14,toScale:1
@@ -40,14 +41,14 @@ export const HONEY_TOKENS=Object.freeze({
   subline:'#fff0cf',
   flight:'#f0c14a',
   flightEdge:'#c47a0a',
-  burst:Object.freeze(['#fff0cf','#f0c14a','#ffe08a','#e8a317']),
+  burst:Object.freeze(['#ff4d7d','#ffd24a','#6ec8ff','#c9a0ff','#ffa24a','#5ee0a8']),
   glassRim:'#acd7f7',
   easeOut:'cubic-bezier(.2,.8,.2,1)',
   easeBack:'cubic-bezier(.34,1.56,.64,1)'
 });
 
-const BURST_DIAMETER=Object.freeze([8,10,12]);
-const CONFETTI_SHAPE=Object.freeze(['circle','rect','drop']);
+const BURST_DIAMETER=Object.freeze([22,28,34]);
+const CONFETTI_SHAPE=Object.freeze(['rect','circle','rect']);
 const OVERFLOW=Object.freeze({
   1:Object.freeze([
     Object.freeze({kind:'bead',x:'65%',w:8,h:10}),
@@ -345,12 +346,12 @@ function scaleFactor(scale){
   return 1;
 }
 
-export function honeyParticles({t,tier=1,scale=1,source,mouth,flightCount=0,flightSize=0,burstCount=0,burstRadius=0}={}){
+export function honeyParticles({t,tier=1,scale=1,source,mouth,flightCount,flightSize=0,burstCount,burstRadius=0}={}){
   const factor=scaleFactor(scale);
   const life=HONEY_MOTION.flight.life;
-  const flightTotal=flightCount>0?flightCount:flightDroplets(tier);
+  const flightTotal=Number.isFinite(flightCount)?Math.max(0,flightCount):flightDroplets(tier);
   const droplet=flightSize>0?flightSize:flightDropletSize(tier);
-  const burstTotal=burstCount>0?burstCount:burstParticles(tier);
+  const burstTotal=Number.isFinite(burstCount)?Math.max(0,burstCount):burstParticles(tier);
   const travel=burstRadius>0?burstRadius:burstTravel(tier);
   const list=[];
   const flights=Math.floor(flightTotal*factor);

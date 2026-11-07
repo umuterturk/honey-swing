@@ -150,29 +150,65 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-end-card .sgv-honey-subline{margin:8px 0 0;height:24px;font-size:18px;font-weight:800;line-height:24px;color:var(--honey-subline)}
 .sgv-end-card button{min-width:80%;margin-top:10px;border:4px solid white;border-radius:22px;padding:15px;color:#fff;background:linear-gradient(#a6e594,#58c178);box-shadow:0 5px 0 #348f67;font-weight:1000;font-size:19px;cursor:pointer}
 
-/* Honey win. The scrim covers the phone. FX stays at z 35, above this card (z 30)
-   and below NEW! (z 40), so --z-overlay:50 is not applied here. */
-.sgv-honey-win{display:block;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;container-type:size}
-.sgv-honey-win .sgv-honey-scrim{position:absolute;inset:0;z-index:0;background:#1a0f12;opacity:var(--honey-scrim-opacity);backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:auto}
-.sgv-honey-win .sgv-end-card{position:absolute;inset:0;z-index:1;width:auto;max-width:none;height:auto;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;pointer-events:none}
+/* Honey win sits above the FX canvas (z 35) so CSS confetti is not covered. */
+.sgv-honey-win{display:block;z-index:36;overflow:visible;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;container-type:size;--honey-focus-x:calc(var(--honey-jar-left,60.8px) + var(--honey-jar-width,198.4px) / 2);--honey-focus-y:calc(var(--honey-jar-top,94px) + var(--honey-jar-height,248px) / 2)}
+.sgv-honey-win .sgv-honey-scrim{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,transparent 62%,rgba(0,0,0,.18) 100%),radial-gradient(ellipse at var(--honey-focus-x) var(--honey-focus-y),transparent 24%,rgba(9,34,43,.44) 68%),radial-gradient(ellipse at 50% 42%,transparent 46%,rgba(0,0,0,.24) 100%);opacity:var(--honey-scrim-opacity);backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:auto}
+.sgv-honey-win .sgv-honey-warm-light,.sgv-honey-win .sgv-honey-foliage-rear,.sgv-honey-win .sgv-honey-foliage-front,.sgv-honey-win .sgv-honey-confetti{position:absolute;inset:0;pointer-events:none}
+.sgv-honey-win .sgv-honey-warm-light{z-index:1;background:radial-gradient(ellipse 72% 58% at var(--honey-focus-x) var(--honey-focus-y),#ffc07073 0%,#ffa8203d 32%,transparent 62%)}
+.sgv-honey-win .sgv-honey-foliage-rear{z-index:2;opacity:0}
+.sgv-honey-win .sgv-honey-foliage-front{z-index:3;opacity:0}
+.sgv-honey-win .sgv-end-card{position:absolute;inset:0;z-index:3;width:auto;max-width:none;height:auto;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;pointer-events:none}
 .sgv-honey-win .sgv-end-card .sgv-end-cta,
-.sgv-honey-win .sgv-end-card .sgv-end-reset{pointer-events:auto}
+.sgv-honey-win .sgv-end-card .sgv-end-reset,
+.sgv-honey-win .sgv-end-card .sgv-honey-reset{pointer-events:auto}
 .sgv-honey-title,.sgv-honey-status{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.sgv-honey-win .sgv-honey-praise-slot{position:absolute;z-index:1;top:var(--honey-praise-top,calc(var(--safe-top) + 24px));left:var(--honey-praise-left,16px);width:var(--honey-praise-width,calc(100% - 32px));height:var(--honey-praise-height,58px);display:flex;align-items:center;justify-content:center;background:transparent;border-radius:0}
-.sgv-honey-win .sgv-win-praise{opacity:0;transform:scale(.55);transform-origin:50% 50%}
-.sgv-honey-win .sgv-honey-stage{position:absolute;z-index:1;inset:0;pointer-events:none}
-.sgv-honey-win .sgv-honey-overflow{position:absolute;left:0;right:0;top:-8px;height:34px;opacity:0;pointer-events:none}
+.sgv-honey-win .sgv-honey-praise-slot{position:absolute;z-index:6;top:var(--honey-praise-top,calc(var(--safe-top) + 24px));left:var(--honey-focus-x,50%);width:0;height:var(--honey-praise-height,58px);display:flex;align-items:center;justify-content:center;overflow:visible;background:transparent;border-radius:0}
+.sgv-honey-win .sgv-end-card .sgv-win-praise{opacity:0;transform:scale(.55);transform-origin:50% 50%;flex:none;width:min(82vw,340px);height:92px;overflow:visible;filter:drop-shadow(0 3px 0 #3a1848) drop-shadow(0 4px 12px #f0a51f66)}
+.sgv-honey-win .sgv-win-praise-word{font-family:"Lilita One",ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;font-weight:400;font-size:62px;letter-spacing:.06em;fill:url(#sgv-praise-fill);stroke:#6b3a9a;stroke-width:16;stroke-linejoin:round;stroke-linecap:round;paint-order:stroke fill}
+.sgv-honey-win .sgv-honey-stage{position:absolute;z-index:2;inset:0;pointer-events:none}
+.sgv-honey-win .sgv-cele{position:absolute;display:block;pointer-events:none;user-select:none;height:auto}
+.sgv-honey-win .sgv-honey-foliage-rear .sgv-cele{filter:brightness(.62) saturate(.8)}
+.sgv-honey-win .sgv-honey-foliage-front .sgv-cele{filter:brightness(.86) saturate(.95)}
+.sgv-honey-win .sgv-cele-bush-long{left:-6%;width:112%;bottom:calc(var(--safe-bottom) + 78px);opacity:.82}
+.sgv-honey-win .sgv-cele-leaf-biggest{left:-12%;top:18%;width:28%;transform:rotate(-18deg)}
+.sgv-honey-win .sgv-cele-leaf-medium{right:-10%;top:22%;width:18%;transform:scaleX(-1) rotate(-12deg)}
+.sgv-honey-win .sgv-cele-bush-big{right:-14%;bottom:calc(var(--safe-bottom) + 72px);width:34%}
+.sgv-honey-win .sgv-cele-plant{left:-8%;bottom:calc(var(--safe-bottom) + 70px);width:28%}
+.sgv-honey-win .sgv-cele-leaf-big{left:-16%;top:48%;width:22%;transform:rotate(22deg)}
+.sgv-honey-win .sgv-cele-daisy-1{left:6%;bottom:calc(var(--safe-bottom) + 86px);width:11%}
+.sgv-honey-win .sgv-cele-daisy-2{right:7%;bottom:calc(var(--safe-bottom) + 90px);width:10%}
+.sgv-honey-win .sgv-cele-daisy-small{left:14%;bottom:calc(var(--safe-bottom) + 78px);width:7%}
+@media(max-width:365px),(max-height:580px){
+  .sgv-honey-win .sgv-cele-leaf-medium,.sgv-honey-win .sgv-cele-leaf-big,.sgv-honey-win .sgv-cele-daisy-small{display:none}
+}
+.sgv-honey-win .sgv-honey-confetti{z-index:12;overflow:visible}
+.sgv-honey-win .sgv-confetti{position:absolute;left:calc(var(--honey-jar-left,60.8px) + var(--honey-jar-width,198.4px) * .5 - 8px);top:calc(var(--honey-jar-top,94px) + var(--honey-jar-height,248px) * .42);width:16px;height:44px;border-radius:999px 4px;opacity:0;pointer-events:none;transform-origin:50% 50%;box-shadow:inset -3px 0 0 #ffffff66,0 2px 3px #00000033;animation:sgv-confetti-burst .9s cubic-bezier(.2,.85,.25,1) both}
+.sgv-honey-win .sgv-confetti-ribbon{border-radius:999px 4px}
+/* Pop → arc up/out → fall. X monotone. Curl = rotateZ + scaleX. No skew. */
+@keyframes sgv-confetti-burst{
+  0%{opacity:0;transform:translate(0,8px) rotate(var(--sgv-c-rot,0deg)) scale(.7,1)}
+  8%{opacity:1;transform:translate(calc(var(--sgv-c-dx) * .35),calc(var(--sgv-c-lift,60px) * -1)) rotate(calc(var(--sgv-c-rot,0deg) + 40deg * var(--sgv-c-flip,1))) scale(1,.85)}
+  35%{opacity:1;transform:translate(calc(var(--sgv-c-dx) * .55),calc(var(--sgv-c-lift,60px) * -.3)) rotate(calc(var(--sgv-c-rot,0deg) + 110deg * var(--sgv-c-flip,1))) scale(.55,1)}
+  65%{opacity:1;transform:translate(calc(var(--sgv-c-dx) * .85),calc(var(--sgv-c-fall,140px) * .45)) rotate(calc(var(--sgv-c-rot,0deg) + 200deg * var(--sgv-c-flip,1))) scale(1,1)}
+  100%{opacity:0;transform:translate(var(--sgv-c-dx),var(--sgv-c-fall,140px)) rotate(calc(var(--sgv-c-rot,0deg) + 280deg * var(--sgv-c-flip,1))) scale(.7,.85)}
+}
+/* Reduced motion only. Settled remount must not kill an in-flight burst. */
+.sgv-win-static .sgv-confetti{animation:none;opacity:0}
+.sgv-honey-win .sgv-honey-overflow{display:none;position:absolute;left:0;right:0;top:-8px;height:34px;opacity:0;pointer-events:none}
 .sgv-honey-win .sgv-honey-mark{position:absolute;top:0;transform:translateX(-50%);border-radius:999px;background:linear-gradient(var(--honey-surface),var(--honey-body))}
 .sgv-honey-win .sgv-honey-drip{top:8px;border-radius:40% 40% 50% 50%}
 .sgv-honey-win .sgv-honey-count-slot{position:absolute;z-index:1;left:16px;right:16px;top:var(--honey-count-top,352px);height:var(--honey-count-height,80px);display:flex;align-items:center;justify-content:center;background:transparent;border-radius:0}
 .sgv-honey-win .sgv-honey-subline{position:absolute;z-index:1;left:16px;right:16px;top:var(--honey-sub-top,440px);height:24px;margin:0;text-align:center;opacity:0}
-.sgv-honey-win .sgv-end-cta{position:absolute;z-index:3;left:calc(var(--safe-left) + 16px);right:calc(var(--safe-right) + 16px);bottom:calc(var(--safe-bottom) + 16px);width:auto;min-width:0;height:56px;min-height:56px;margin:0;box-shadow:0 5px 0 #348f67,0 0 0 3px rgb(240 193 74 / var(--honey-cta-outline,0))}
+.sgv-honey-win .sgv-end-cta{position:absolute;z-index:10;left:calc(var(--safe-left) + 16px);right:calc(var(--safe-right) + 16px);bottom:calc(var(--safe-bottom) + 16px);width:auto;min-width:0;height:56px;min-height:56px;margin:0;box-shadow:0 5px 0 #348f67,0 0 0 3px rgb(240 193 74 / var(--honey-cta-outline,0))}
 .sgv-honey-win .sgv-end-cta:active{transform:scale(.96);box-shadow:0 1px 0 #348f67;transition:transform 80ms,box-shadow 80ms}
-.sgv-honey-win .sgv-end-card .sgv-honey-reset{all:unset;box-sizing:border-box;position:absolute;z-index:3;top:var(--honey-reset-top,calc(var(--safe-top) + 16px));right:var(--honey-reset-right,calc(var(--safe-right) + 16px));width:44px;min-width:44px;max-width:44px;height:44px;margin:0;padding:0;border:0;border-radius:22px;background:#fff0cf;color:#5a3a12;box-shadow:none;font:900 22px/44px ui-rounded,system-ui,sans-serif;text-align:center;overflow:visible;cursor:pointer;pointer-events:auto}
+.sgv-honey-win .sgv-end-card .sgv-honey-reset{all:unset;box-sizing:border-box;position:absolute;z-index:10;top:var(--honey-reset-top,calc(var(--safe-top) + 16px));right:var(--honey-reset-right,calc(var(--safe-right) + 16px));height:44px;min-height:44px;min-width:44px;max-width:none;padding:0 14px 0 10px;margin:0;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:22px;border:2px solid #eadcf399;background:#ffffffc7;color:#8a6b82;box-shadow:0 2px 0 #d5c6e899;font:900 15px/1 ui-rounded,system-ui,sans-serif;white-space:nowrap;cursor:pointer;pointer-events:auto;text-align:center}
+.sgv-honey-win .sgv-end-card .sgv-honey-reset:focus-visible,.sgv-honey-win .sgv-end-cta:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-win-static .sgv-honey-scrim,.sgv-honey-final .sgv-honey-scrim,.sgv-success-settled.sgv-honey-win .sgv-honey-scrim{opacity:var(--honey-scrim-opacity)}
 .sgv-win-static .sgv-win-praise,.sgv-honey-final .sgv-win-praise,.sgv-success-settled .sgv-win-praise{opacity:1;transform:none}
 .sgv-win-static .sgv-honey-subline,.sgv-honey-final .sgv-honey-subline,.sgv-success-settled .sgv-honey-subline{opacity:.9}
 .sgv-win-static .sgv-honey-overflow,.sgv-honey-final .sgv-honey-overflow,.sgv-success-settled .sgv-honey-overflow{opacity:1;transform:none}
+.sgv-win-static .sgv-honey-foliage-rear,.sgv-honey-final .sgv-honey-foliage-rear,.sgv-success-settled .sgv-honey-foliage-rear,
+.sgv-win-static .sgv-honey-foliage-front,.sgv-honey-final .sgv-honey-foliage-front,.sgv-success-settled .sgv-honey-foliage-front{opacity:1;transform:none}
 
 @media(max-width:365px){
  .sgv-phone{padding-left:10px;padding-right:10px}
@@ -1395,23 +1431,95 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-honey-win.sgv-success-settled .sgv-honey-hero-art .sgv-fluid-fill{
   height:78%;opacity:1;
 }
-.sgv-honey-win .sgv-honey-hero-art .sgv-fluid-surface,
+.sgv-honey-win .sgv-honey-hero-art .sgv-fluid-surface{animation:none}
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-bubble,
-.sgv-honey-win .sgv-honey-hero-art .sgv-glass-spark{animation:none}
-.sgv-honey-win .sgv-honey-gleam{
-  width:10px;height:10px;border-radius:50%;background:#fffce5;font-size:0;color:transparent;
-}
+.sgv-honey-win .sgv-honey-hero-art .sgv-glass-spark{display:none}
 .sgv-honey-win .sgv-honey-gleam-sweep{
-  position:absolute;z-index:5;top:10%;bottom:16%;width:28%;left:0;border-radius:40%;
-  background:linear-gradient(90deg,transparent,#ffffffd9,transparent);
+  position:absolute;z-index:auto;top:0;bottom:0;width:22%;left:0;border-radius:40%;
+  background:linear-gradient(90deg,transparent,#ffffffcc,transparent);
   opacity:0;pointer-events:none;transform:translateX(-120%);
 }
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-surface{opacity:1}
-.sgv-phone[data-honey-win="true"]>.sg-garden,
-.sgv-phone[data-honey-win="true"]>.sgv-atmosphere,
 .sgv-phone[data-honey-win="true"]>.sgv-hud,
 .sgv-phone[data-honey-win="true"]>.sgv-middle,
 .sgv-phone[data-honey-win="true"]>.sgv-controls,
 .sgv-phone[data-honey-win="true"]>.sgv-glossary{
   visibility:hidden;pointer-events:none;
+}
+.sgv-phone[data-honey-win="true"] .sgv-glass-spark{display:none!important}
+
+/* ── Layered PNG jar: back → masked honey → masked lights → front glass ── */
+.sgv-honey-win .sgv-honey-hero-art{
+  filter:drop-shadow(0 0 55px #ffa82066) drop-shadow(0 0 12px #68d9ff88);
+  overflow:visible;
+}
+.sgv-honey-win .sgv-jar-layer,
+.sgv-honey-win .sgv-jar-mask{
+  position:absolute;inset:0;width:100%;height:100%;
+  pointer-events:none;
+}
+.sgv-honey-win .sgv-jar-layer{
+  object-fit:fill;display:block;user-select:none;
+}
+.sgv-honey-win .sgv-jar-mask{
+  mask-image:url('/honey-fill-mask.png');
+  -webkit-mask-image:url('/honey-fill-mask.png');
+  mask-size:100% 100%;
+  -webkit-mask-size:100% 100%;
+  mask-position:50% 50%;
+  -webkit-mask-position:50% 50%;
+  mask-repeat:no-repeat;
+  -webkit-mask-repeat:no-repeat;
+  transform-origin:50% 50%;
+  transform:translateY(7%) scale(0.82);
+}
+.sgv-honey-win .sgv-jar-back{z-index:1}
+.sgv-honey-win .sgv-jar-honey-layer{z-index:2}
+.sgv-honey-win .sgv-jar-lights{z-index:3}
+.sgv-honey-win .sgv-jar-front{z-index:4;opacity:.72}
+.sgv-jar-honey-layer .sgv-fluid-fill{
+  border-radius:0;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(ellipse at 50% 82%,#fff06a3d 0%,transparent 46%),
+    radial-gradient(ellipse at 50% 38%,#fff6a838 0%,transparent 58%),
+    radial-gradient(ellipse at 50% 50%,transparent 48%,#9d4e002e 100%),
+    linear-gradient(180deg, #fff2ad 0%, #ffc83d 18%, #ff9d0a 58%, #e97800 100%);
+  box-shadow:none;
+}
+.sgv-honey-win .sgv-honey-hero-art .sgv-fluid-surface{
+  top:-7px;left:10%;right:10%;height:14px;
+  background:radial-gradient(ellipse at 50% 35%,#fff8c7 0%,#f49a00 100%);
+  box-shadow:0 0 14px #ffc83d99;
+}
+.sgv-honey-win .sgv-honey-internal-light{
+  position:absolute;inset:0;pointer-events:none;
+}
+.sgv-honey-win .sgv-honey-reflection{
+  position:absolute;left:14%;top:-18%;width:16%;height:140%;
+  opacity:.18;pointer-events:none;transform:rotate(-14deg);transform-origin:center;
+  background:linear-gradient(90deg,transparent,#fff,transparent);
+}
+.sgv-honey-win .sgv-honey-hero-art .sgv-honey-gleam-sweep{z-index:auto}
+.sgv-honey-win .sgv-honey-hero-art .sgv-chest-mouth{top:10%;z-index:6}
+.sgv-honey-win .sgv-honey-overflow{z-index:7}
+
+/* ── Hide score counter and ratio — the full jar communicates success ── */
+.sgv-honey-win .sgv-honey-count-slot,
+.sgv-honey-win .sgv-honey-subline{display:none}
+
+/* ── Gold / amber CTA button ── */
+.sgv-honey-win .sgv-end-cta{
+  background:linear-gradient(#fff6b0,#ffc83d 46%,#e08a12);
+  color:#5a3a12;text-shadow:0 2px #fff4a0;border-color:#fff6c4;
+  box-shadow:0 5px 0 #c06a10,0 10px 22px #f0a51f66,0 0 0 3px rgb(240 193 74 / var(--honey-cta-outline,0));
+}
+.sgv-honey-win .sgv-end-cta:active{
+  transform:scale(.96);
+  box-shadow:0 1px 0 #c06a10;transition:transform 80ms,box-shadow 80ms;
+}
+@media(prefers-reduced-motion:reduce){
+  .sgv-honey-win .sgv-honey-gleam-sweep{opacity:0!important;transform:none}
+  .sgv-honey-win .sgv-honey-reflection{opacity:.18}
+  .sgv-honey-win .sgv-confetti{animation:none;opacity:0}
+  .sgv-honey-win .sgv-honey-foliage-rear,.sgv-honey-win .sgv-honey-foliage-front{opacity:1;transform:none}
 }

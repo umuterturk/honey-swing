@@ -1,6 +1,6 @@
 const LIFE=0.380;
 const DRAW_CAP=40;
-const BURST_COLORS=Object.freeze(['#e8a23a','#f0c14a','#fff0cf','#ffca4c']);
+const BURST_COLORS=Object.freeze(['#ff4d7d','#ffd24a','#6ec8ff','#c9a0ff','#ffa24a','#5ee0a8']);
 
 // Backing store in device pixels. CSS still stretches the canvas to the layer.
 export function canvasBufferSize(cssWidth,cssHeight,dpr){
@@ -100,16 +100,23 @@ export function createParticleCanvas({
     ctx.fillStyle=particle.color||'#f0c14a';
     ctx.beginPath();
     if(particle.shape==='rect'){
-      const width=radius*2.2;
-      const height=radius*1.4;
-      const corner=Math.min(radius*0.45,4*ratio);
+      const width=radius*2.4;
+      const height=radius*1.15;
+      const corner=Math.min(radius*0.4,5*ratio);
+      const spin=(particle.vx||0)*0.01+(particle.vy||0)*0.008;
+      if(typeof ctx.save==='function'&&typeof ctx.translate==='function'){
+        ctx.save();
+        ctx.translate(x,y);
+        if(typeof ctx.rotate==='function')ctx.rotate(spin);
+        if(typeof ctx.roundRect==='function')ctx.roundRect(-width/2,-height/2,width,height,corner);
+        else ctx.rect(-width/2,-height/2,width,height);
+        ctx.fill();
+        if(typeof ctx.restore==='function')ctx.restore();
+        return;
+      }
       if(typeof ctx.roundRect==='function')
         ctx.roundRect(x-width/2,y-height/2,width,height,corner);
       else ctx.rect(x-width/2,y-height/2,width,height);
-    }else if(particle.shape==='drop'){
-      ctx.moveTo(x,y-radius*1.35);
-      ctx.bezierCurveTo(x+radius,y-radius*0.2,x+radius*0.85,y+radius,x,y+radius*1.15);
-      ctx.bezierCurveTo(x-radius*0.85,y+radius,x-radius,y-radius*0.2,x,y-radius*1.35);
     }else{
       if(particle.edge){
         ctx.fillStyle=particle.edge;
