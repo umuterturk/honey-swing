@@ -43,13 +43,8 @@
 
 **Files:** none
 
-- [ ] **Step 1: Ask the human**
-
-Ask exactly:
-
-> Your working tree already has uncommitted celebration changes (`levelScreens.js`, `winMotion.js`, `honeyWin.js`, `minimal.css`, tests) plus untracked PNG assets. For this plan, should I (A) stash code changes and keep the PNGs, (B) keep working on top of the current dirty tree, or (C) discard the uncommitted code changes and start from `HEAD` (keeping the PNG assets)?
-
-- [ ] **Step 2: Wait for answer; do not edit code until they choose**
+- [x] **Step 1: Ask the human** — resolved by committing WIP to `HEAD`
+- [x] **Step 2: Wait for answer; do not edit code until they choose**
 
 ---
 
@@ -77,7 +72,7 @@ Ask exactly:
   - `overflowMarks(...) → []` always
   - `COUNT_UP_SECONDS === 0.5`
 
-- [ ] **Step 1: Write the failing test assertions**
+- [x] **Step 1: Write the failing test assertions**
 
 In `tests/honey-win.test.mjs`, replace the old count-up timing test body with:
 
@@ -117,13 +112,13 @@ test('fillFrame drives the jar; countFrame drives the score and never overflows'
 
 Add `fillFrame` to the existing `honeyWin.js` import list at the top of the test file. Update the intensity test so it expects `overflowMarks(...).length === 0`.
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `node --test tests/honey-win.test.mjs`
 
 Expected: FAIL on new beat assertions / missing `fillFrame` / overflow length.
 
-- [ ] **Step 3: Implement minimal helpers**
+- [x] **Step 3: Implement minimal helpers**
 
 Replace `HONEY_MOTION` in `src/casual/honeyWin.js` with:
 
@@ -176,13 +171,13 @@ In `starThresholds.js` set `export const COUNT_UP_SECONDS=0.5;`.
 
 Keep `overflowReveal` returning `0` always (or leave unused).
 
-- [ ] **Step 4: Run tests to verify the new beat tests pass**
+- [x] **Step 4: Run tests to verify the new beat tests pass**
 
 Run: `node --test tests/honey-win.test.mjs`
 
 Expected: new beat/fillFrame tests PASS; other tests may still FAIL until later tasks — that is OK if failures are clearly old timing/DOM expectations. If the suite aborts early, run the two new tests by filtering names.
 
-- [ ] **Step 5: Ask human for confirmation before Task 2**
+- [x] **Step 5: Ask human for confirmation before Task 2**
 
 Report: what changed, which tests pass/fail, and wait for “go” / corrections. Do not commit unless asked.
 
@@ -201,13 +196,13 @@ Report: what changed, which tests pass/fail, and wait for “go” / corrections
   - Retains `--honey-jar-*` and `--honey-praise-*`
   - Stops requiring `--honey-sub-top` for win chrome (may keep for back-compat set to scoreboard area or omit)
 
-- [ ] **Step 1: Write failing layout expectations**
+- [x] **Step 1: Write failing layout expectations**
 
 Add/adjust a test that `honeyLayout(390,844)` returns a `scoreboard` rect below `jar` and above `cta`, with positive width/height, and that `applyHoneyLayout` sets `--honey-scoreboard-top`.
 
-- [ ] **Step 2: Run test — expect FAIL**
+- [x] **Step 2: Run test — expect FAIL**
 
-- [ ] **Step 3: Implement layout**
+- [x] **Step 3: Implement layout**
 
 In `honeyLayout`, replace the old `number` + `subline` stack with one scoreboard block (~120–140px tall) between jar and CTA. Keep jar sizing rules that protect jar geometry.
 
@@ -222,9 +217,9 @@ set('--honey-scoreboard-height',layout.scoreboard.h+'px');
 
 Do not change `--honey-jar-left/top/width/height` formulas except as needed to leave vertical room for the scoreboard (jar must still honor prior short-screen clamps).
 
-- [ ] **Step 4: Run layout tests — expect PASS**
+- [x] **Step 4: Run layout tests — expect PASS**
 
-- [ ] **Step 5: Ask human for confirmation before Task 3**
+- [x] **Step 5: Ask human for confirmation before Task 3**
 
 ---
 
@@ -248,7 +243,7 @@ Do not change `--honey-jar-left/top/width/height` formulas except as needed to l
     - `.sgv-honey-scoreboard-target` with checkmark + `Target: {target}` (checkmark visible in static/settled when `score >= target`)
   - No `.sgv-honey-overflow`, `.sgv-honey-mark`, `.sgv-honey-confetti`, `.sgv-honey-subline`
 
-- [ ] **Step 1: Write failing DOM tests**
+- [x] **Step 1: Write failing DOM tests**
 
 Update markup expectations to require scoreboard/slogan assets and forbid confetti/overflow/subline:
 
@@ -264,9 +259,9 @@ assert.doesNotMatch(won,/sgv-honey-confetti|sgv-confetti|sgv-honey-subline|sgv-h
 
 Update `level-win` assertions that read `.sgv-honey-subline` to read scoreboard tally/target instead.
 
-- [ ] **Step 2: Run — expect FAIL**
+- [x] **Step 2: Run — expect FAIL**
 
-- [ ] **Step 3: Implement DOM**
+- [x] **Step 3: Implement DOM**
 
 In `levelScreens.js`:
 
@@ -297,9 +292,9 @@ function scoreboard(score,target,staticCard){
 }
 ```
 
-- [ ] **Step 4: Run DOM-focused tests — expect PASS for new selectors**
+- [x] **Step 4: Run DOM-focused tests — expect PASS for new selectors**
 
-- [ ] **Step 5: Ask human for confirmation before Task 4**
+- [x] **Step 5: Ask human for confirmation before Task 4**
 
 ---
 
@@ -318,15 +313,15 @@ function scoreboard(score,target,staticCard){
 - Remove reliance on confetti keyframes for win acceptance
 - Jar rules untouched (`.sgv-honey-hero-art`, `.sgv-jar-mask`, etc.)
 
-- [ ] **Step 1: Write failing CSS assertion tests** for scoreboard/slogan selectors and absence of required confetti rules in acceptance paths
+- [x] **Step 1: Write failing CSS assertion tests** for scoreboard/slogan selectors and absence of required confetti rules in acceptance paths
 
-- [ ] **Step 2: Run — expect FAIL**
+- [x] **Step 2: Run — expect FAIL**
 
-- [ ] **Step 3: Implement CSS** matching reference positions as closely as possible with the three PNGs; keep Reset/NEXT geometry
+- [x] **Step 3: Implement CSS** matching reference positions as closely as possible with the three PNGs; keep Reset/NEXT geometry
 
-- [ ] **Step 4: Run CSS assertion tests — expect PASS**
+- [x] **Step 4: Run CSS assertion tests — expect PASS**
 
-- [ ] **Step 5: Ask human for visual confirmation**
+- [x] **Step 5: Ask human for visual confirmation**
 
 Ask them to glance at the win screen in their usual local preview (you will not drive a browser). Ask whether label/score/target sit correctly on the ribbon before Task 5.
 
@@ -352,7 +347,7 @@ Ask them to glance at the win screen in their usual local preview (you will not 
 - No `fx.confetti` emit
 - `paintFinal` sets full jar, praise+decor visible, final tally, `.is-met` if earned, CTA enabled
 
-- [ ] **Step 1: Rewrite motion tests**
+- [x] **Step 1: Rewrite motion tests**
 
 Replace “count and jar rise together / confetti at 0.800s” with:
 
@@ -363,9 +358,9 @@ Replace “count and jar rise together / confetti at 0.800s” with:
 - Sounds include praise + score ticks; **do not** require `fx.confetti`
 - Reduced motion still paints final immediately
 
-- [ ] **Step 2: Run — expect FAIL**
+- [x] **Step 2: Run — expect FAIL**
 
-- [ ] **Step 3: Implement timeline** in `winMotion.js` using `HONEY_MOTION` constants only (no magic times duplicated). Accept optional refs:
+- [x] **Step 3: Implement timeline** in `winMotion.js` using `HONEY_MOTION` constants only (no magic times duplicated). Accept optional refs:
 
 ```js
 scoreboard=null, underline=null, drops=null, targetRow=null
@@ -373,11 +368,11 @@ scoreboard=null, underline=null, drops=null, targetRow=null
 
 Wire callers in `SimplifiedGame.jsx` if needed to pass the new nodes from the card querySelector.
 
-- [ ] **Step 4: Run** `node --test tests/honey-win.test.mjs tests/level-win.test.mjs`
+- [x] **Step 4: Run** `node --test tests/honey-win.test.mjs tests/level-win.test.mjs`
 
 Expected: PASS
 
-- [ ] **Step 5: Ask human for confirmation before Task 6**
+- [x] **Step 5: Ask human for confirmation before Task 6**
 
 ---
 
@@ -387,15 +382,15 @@ Expected: PASS
 - Modify: `tests/hotfix-regressions.test.mjs` if it asserts old subline/confetti/timing
 - Modify: any remaining broken assertions in honey/level win tests
 
-- [ ] **Step 1: Run full related suite**
+- [x] **Step 1: Run full related suite**
 
 Run: `node --test tests/honey-win.test.mjs tests/level-win.test.mjs tests/hotfix-regressions.test.mjs`
 
-- [ ] **Step 2: Fix only failures caused by this feature** (no drive-by refactors)
+- [x] **Step 2: Fix only failures caused by this feature** (no drive-by refactors)
 
-- [ ] **Step 3: Re-run until PASS**
+- [x] **Step 3: Re-run until PASS** — full `tests/*.mjs` = 166/166 pass
 
-- [ ] **Step 4: Ask human for final confirmation**
+- [x] **Step 4: Ask human for final confirmation**
 
 Ask whether to commit, and whether they want any visual tweaks after they check the local preview (no browser automation).
 

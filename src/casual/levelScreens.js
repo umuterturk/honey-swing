@@ -1,5 +1,4 @@
 import {createElement} from 'react';
-import {overflowMarks} from './honeyWin.js';
 
 // Screens are visual. They never take the presentation lock, so a card, Bank,
 // or Snap skip from the first frame still settles in that same tap.
@@ -74,6 +73,27 @@ function praiseMark(text,tier){
     createElement('text',{className:'sgv-win-praise-word'},
       createElement('textPath',{href:'#sgv-praise-arc',startOffset:'51%',textAnchor:'middle'},text)
     )
+    ),
+    createElement('img',{
+      className:'sgv-honey-slogan-underline',
+      src:'/victory-slogan-underline.png',alt:'',draggable:'false','aria-hidden':'true'
+    }),
+    // Mirror lives on the right wrapper only — GSAP animates the inner art, never the flip.
+    createElement('span',{
+      className:'sgv-honey-slogan-drops sgv-honey-slogan-drops-left','aria-hidden':'true'
+    },
+      createElement('img',{
+        className:'sgv-honey-slogan-drops-art',
+        src:'/victory-slogan-side-drops-left.png',alt:'',draggable:'false'
+      })
+    ),
+    createElement('span',{
+      className:'sgv-honey-slogan-drops sgv-honey-slogan-drops-right','aria-hidden':'true'
+    },
+      createElement('img',{
+        className:'sgv-honey-slogan-drops-art',
+        src:'/victory-slogan-side-drops-left.png',alt:'',draggable:'false'
+      })
     )
   );
 }
@@ -92,40 +112,6 @@ function rearFoliage(){
   ];
 }
 
-// Pop at the 0.800s gleam. Stagger ≤120ms. Path: up+out → fall. No skew.
-const CONFETTI=[
-  {dx:-168,lift:64,fall:140,rot:-28,bg:'#ff4d7d',delay:'.8s',flip:1},
-  {dx:158,lift:58,fall:132,rot:24,bg:'#ffd24a',delay:'.81s',flip:-1},
-  {dx:-128,lift:72,fall:148,rot:12,bg:'#6ec8ff',delay:'.82s',flip:1},
-  {dx:136,lift:68,fall:144,rot:-18,bg:'#c9a0ff',delay:'.83s',flip:-1},
-  {dx:-188,lift:52,fall:156,rot:36,bg:'#ffa24a',delay:'.84s',flip:1},
-  {dx:180,lift:54,fall:152,rot:-16,bg:'#ff7ab8',delay:'.85s',flip:-1},
-  {dx:-96,lift:70,fall:136,rot:-44,bg:'#fff0a8',delay:'.86s',flip:1},
-  {dx:108,lift:60,fall:160,rot:20,bg:'#5ee0a8',delay:'.87s',flip:-1},
-  {dx:-148,lift:56,fall:142,rot:8,bg:'#ff8ad4',delay:'.88s',flip:1},
-  {dx:152,lift:62,fall:138,rot:-32,bg:'#ffc83d',delay:'.89s',flip:-1},
-  {dx:-120,lift:48,fall:150,rot:28,bg:'#8ad4ff',delay:'.9s',flip:1},
-  {dx:124,lift:50,fall:146,rot:-22,bg:'#e0a0ff',delay:'.91s',flip:-1},
-  {dx:-176,lift:66,fall:134,rot:10,bg:'#ffb347',delay:'.92s',flip:1},
-  {dx:172,lift:64,fall:128,rot:-14,bg:'#ffe08a',delay:'.88s',flip:-1}
-];
-
-function confettiBits(){
-  return CONFETTI.map((piece,i)=>createElement('span',{
-    key:'c'+i,
-    className:'sgv-confetti sgv-confetti-ribbon sgv-confetti-'+i,
-    style:{
-      '--sgv-c-dx':piece.dx+'px',
-      '--sgv-c-lift':piece.lift+'px',
-      '--sgv-c-fall':piece.fall+'px',
-      '--sgv-c-rot':piece.rot+'deg',
-      '--sgv-c-flip':String(piece.flip),
-      background:piece.bg,
-      animationDelay:piece.delay
-    }
-  }));
-}
-
 function frontFoliage(){
   return [
     celeImg('sgv-cele-bush-big','bush-big.png'),
@@ -137,7 +123,18 @@ function frontFoliage(){
   ];
 }
 
-function heroJar(marks){
+function idleStars(){
+  return createElement('div',{className:'sgv-honey-idle-stars','aria-hidden':'true'},
+    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-a'},'✦'),
+    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-b'},'✦'),
+    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-c'},'✦'),
+    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-d'},'✦'),
+    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-e'},'✦'),
+    createElement('span',{className:'sgv-honey-idle-star sgv-honey-idle-star-f'},'✦')
+  );
+}
+
+function heroJar(){
   return createElement('div',{
     className:'sgv-chest-art sgv-honey-hero-art','aria-hidden':'true'
   },
@@ -162,13 +159,25 @@ function heroJar(marks){
     className:'sgv-jar-layer sgv-jar-front',
     src:'/empty-front-jar.png',alt:'',draggable:'false'
   }),
-  createElement('span',{className:'sgv-chest-mouth sgv-honey-mouth'}),
-  marks.length?createElement('div',{className:'sgv-honey-overflow','aria-hidden':'true'},
-    marks.map(mark=>createElement('span',{
-      key:mark.key,className:'sgv-honey-mark sgv-honey-'+mark.kind,
-      style:{left:mark.x,width:mark.w+'px',height:mark.h+'px'}
-    }))
-  ):null
+  idleStars(),
+  createElement('span',{className:'sgv-chest-mouth sgv-honey-mouth'})
+  );
+}
+
+function scoreboard(score,target,staticCard){
+  const met=Number(score)>=Number(target);
+  return createElement('div',{className:'sgv-honey-scoreboard','aria-hidden':'true'},
+    createElement('img',{
+      className:'sgv-honey-scoreboard-art',src:'/score-board.png',alt:'',draggable:'false'
+    }),
+    createElement('p',{className:'sgv-honey-scoreboard-label'},'Honey Collected'),
+    createElement('p',{className:'sgv-win-tally'},staticCard?String(score):'0'),
+    createElement('p',{
+      className:'sgv-honey-scoreboard-target'+(met&&staticCard?' is-met':'')
+    },
+      createElement('span',{className:'sgv-honey-target-check','aria-hidden':'true'},'✓'),
+      'Target: '+target
+    )
   );
 }
 
@@ -195,9 +204,7 @@ export function LevelEndScreen({
   praise=null,reduced=false,onPrimary,onBackdrop,onReset
 }){
   if(!victory)return quietLoss({score,target,label,onPrimary,onBackdrop,onReset});
-  const tier=praise?.tier||0;
   const staticCard=!!(reduced||settled);
-  const marks=overflowMarks(tier,score,target);
   const announcement=(praise?praise.text+' ':'')+score+' honey secured. Target '+target+'.';
   return createElement('div',{
     className:'sgv-end-overlay sgv-level-end sgv-honey-win'+
@@ -217,16 +224,21 @@ export function LevelEndScreen({
     createElement('p',{id:'sgv-honey-status',className:'sgv-honey-status',role:'status'},announcement),
     praise?praiseMark(praise.text,praise.tier):null,
     createElement('div',{className:'sgv-honey-stage'},
-      heroJar(marks),
-      createElement('div',{className:'sgv-honey-count-slot'},
-        createElement('p',{className:'sgv-win-tally','aria-hidden':'true'},
-          staticCard?String(score):'0')
-      ),
-      createElement('p',{className:'sgv-honey-subline','aria-hidden':'true'},score+' / '+target)
+      heroJar(),
+      scoreboard(score,target,staticCard)
     ),
     createElement('div',{className:'sgv-honey-foliage-front','aria-hidden':'true'},...frontFoliage()),
-    createElement('div',{className:'sgv-honey-confetti','aria-hidden':'true'},...confettiBits()),
-    createElement('button',{type:'button',className:'sgv-end-cta',onClick:onPrimary},label),
+    createElement('div',{className:'sgv-honey-cta-wrap'},
+      createElement('button',{type:'button',className:'sgv-end-cta',onClick:onPrimary},label),
+      createElement('div',{className:'sgv-honey-cta-stars','aria-hidden':'true'},
+        createElement('span',{className:'sgv-honey-cta-star sgv-honey-cta-star-a'},'✦'),
+        createElement('span',{className:'sgv-honey-cta-star sgv-honey-cta-star-b'},'✦'),
+        createElement('span',{className:'sgv-honey-cta-star sgv-honey-cta-star-c'},'✦'),
+        createElement('span',{className:'sgv-honey-cta-star sgv-honey-cta-star-d'},'✦'),
+        createElement('span',{className:'sgv-honey-cta-star sgv-honey-cta-star-e'},'✦'),
+        createElement('span',{className:'sgv-honey-cta-star sgv-honey-cta-star-f'},'✦')
+      )
+    ),
     winReset(onReset)
   ));
 }

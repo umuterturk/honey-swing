@@ -27,19 +27,25 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 
 /* Middle is a stable flex column; no popup/button text can alter meter width. */
 .sgv-middle{position:relative;min-width:0;width:100%;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:0}
-.sgv-mini-hint{flex:none;align-self:center;display:flex;align-items:center;justify-content:center;width:min(96%,375px);min-height:26px;height:26px;margin-top:10px;color:#76537f;font-size:clamp(12px,3vw,14px);line-height:1.2;font-weight:900;text-align:center;text-shadow:0 2px #fffee7;white-space:nowrap;overflow:hidden}
-.sgv-meter-section{position:relative;z-index:2;flex:none;width:min(100%,452px);min-width:0;max-width:100%;height:clamp(154px,22.5dvh,202px);padding:7px clamp(14px,4.4vw,22px) 0;display:flex;flex-direction:column;justify-content:center}
-.sgv-meter-caption{display:flex;justify-content:space-between;align-items:center;margin:0 0 19px;padding:0 6px;font-size:clamp(12px,3.25vw,15px);font-weight:1000;color:#77529e;letter-spacing:.5px}
+.sgv-mini-hint{flex:none;align-self:center;display:flex;align-items:center;justify-content:center;width:min(96%,375px);min-height:26px;height:26px;margin-top:4px;color:#76537f;font-size:clamp(12px,3vw,14px);line-height:1.2;font-weight:900;text-align:center;text-shadow:0 2px #fffee7;white-space:nowrap;overflow:hidden}
+.sgv-meter-section{position:relative;z-index:2;flex:none;width:min(100%,508.5px);min-width:0;max-width:100%;height:auto;min-height:clamp(118px,18dvh,168px);padding:4px clamp(14px,4.4vw,22px) 0;display:flex;flex-direction:column;justify-content:flex-end;overflow:visible}
+.sgv-meter-caption{display:none}
 .sgv-meter-name{font-size:clamp(13px,3.5vw,17px);color:#7853aa;text-shadow:0 2px #fff7e5}
 .sgv-meter-current b{color:#e14d8d;font-variant-numeric:tabular-nums;font-size:17px}
-.sgv-meter{position:relative;width:100%;min-width:0;height:132px;flex:none}
-.sgv-meter-track{position:absolute;inset:8px 0 auto;height:42px;border-radius:22px;border:5px solid #f9e4b3;background:linear-gradient(90deg,#ec6e89 0%,#d598c0 22%,#dec7f2 40%,#fff0cf 50%,#dec7f2 60%,#d598c0 78%,#ec6e89 100%);box-shadow:0 6px 0 #9b6e94,0 9px 15px #65599868,inset 0 3px 3px #ffffff91,inset 0 -4px #a4698c63}
+/* margin-top reserves crown room (scales with meter width); honeycomb pulls back into it. */
+.sgv-meter{position:relative;width:100%;min-width:0;height:135px;flex:none;overflow:visible;margin-top:calc(90% * 347 / 1758)}
+.sgv-meter-track{position:absolute;inset:4px 0 auto;height:52.5px;border-radius:30px;border:7px solid #f7b536;background:linear-gradient(90deg,#ec6e89 0%,#d598c0 22%,#dec7f2 40%,#fff0cf 50%,#dec7f2 60%,#d598c0 78%,#ec6e89 100%);box-shadow:0 6px 0 #9b6e94,0 9px 15px #65599868,inset 0 3px 3px #ffffff91,inset 0 -4px #a4698c63}
+/* Honeycomb at 0.9× meter width; bottom 117 native px overlap the track (scaled). Crown = 464-117. */
+.sgv-honeycomb{position:absolute;z-index:3;left:5%;top:4px;width:90%;height:auto;margin-top:calc(-90% * 347 / 1758);display:block;pointer-events:none;user-select:none;-webkit-user-select:none}
+/* Tap at 1/5 asset size (274→54.8); top ~1.6px overlap (8/5) seats it on the track. */
+.sgv-honey-tap{position:absolute;z-index:4;left:50%;top:54.9px;height:54.8px;width:auto;max-width:none;transform:translateX(-50%);pointer-events:none;user-select:none;-webkit-user-select:none;display:block}
 .sgv-meter-centerline{position:absolute;z-index:1;left:50%;top:-8px;width:9px;height:53px;border-radius:5px;background:linear-gradient(#ff8b8b,#e52c51);border:2px solid #ffe2cf;box-shadow:0 0 8px #f134597c,0 1px 3px #aa5362;transform:translateX(-50%)}
-.sgv-meter-marker{position:absolute;z-index:3;top:50%;transform:translate(-50%,-50%);height:42px;min-width:43px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:left .32s cubic-bezier(.17,.72,.31,1.22);pointer-events:none}
+/* Marker rail shares the tick scale inset; z above honeycomb/tap/multipliers. */
+.sgv-meter-marker-rail{position:absolute;z-index:8;left:12px;right:12px;top:4px;height:52.5px;pointer-events:none}
+.sgv-meter-marker{position:absolute;top:50%;transform:translate(-50%,-50%);height:48px;width:44.8px;display:flex;align-items:center;justify-content:center;transition:left .32s cubic-bezier(.17,.72,.31,1.22);pointer-events:none}
 .sgv-meter-marker.sgv-marker-gsap{transition:none}
-.sgv-meter-arrow{position:absolute;left:50%;top:0;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:12px solid #e8498b;filter:drop-shadow(0 3px #f5c7bc) drop-shadow(0 0 3px #fffbcd)}
-.sgv-meter-number{position:absolute;bottom:43px;left:50%;transform:translateX(-50%);min-width:43px;padding:3px 5px 4px;border-radius:13px;border:3px solid #fff7dc;box-shadow:0 3px 0 #d7aa79;background:linear-gradient(#fffcdf,#ffe6bb);text-align:center;color:#b16067;font-size:16px;font-weight:1000;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
 /* Identical inset and percentage scale for the marker and each in-track number.
+   Horizontal inset must stay in sync with METER_SCALE_INSET_X (motionSchedule.js / flyerOrigin).
    No justify-content:space-between (whose endpoint glyph widths caused misalignment). */
 .sgv-meter-scale{position:absolute;z-index:2;inset:0 12px;pointer-events:none}
 .sgv-meter-ticks{position:absolute;z-index:1;inset:0;pointer-events:none}
@@ -51,7 +57,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 }
 .sgv-meter-tick-zero{color:#fffef1;text-shadow:0 1px 2px #a12f51,0 0 2px #a12f51}
 /* Three engine factors, presented as small numeric charms hung from the meter. */
-.sgv-multipliers{position:absolute;z-index:3;left:9%;right:9%;top:69px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;justify-items:center;gap:3px}
+.sgv-multipliers{position:absolute;z-index:5;left:9%;right:9%;top:68.5px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;justify-items:center;gap:3px}
 .sgv-multiplier-pill{position:relative;display:grid;place-items:center;min-width:clamp(48px,13vw,59px);height:31px;padding:2px 7px 3px;border-radius:18px;border:3px solid #fff8e9;box-shadow:0 4px 0 var(--pill-rim),0 6px 8px #776a8040,inset 0 2px #ffffffa1;background:linear-gradient(#fff5e0,var(--pill-color));font-size:clamp(16px,4.3vw,21px);font-weight:1000;color:var(--pill-text);text-shadow:0 1px #fff9;font-variant-numeric:tabular-nums;white-space:nowrap;transform-origin:50% 0%}
 .sgv-multiplier-pill::before{content:"";position:absolute;z-index:-1;left:50%;top:-19px;width:3px;height:19px;border-radius:2px;background:#f2e0cbd9;box-shadow:0 0 2px #8e6179;transform:translateX(-50%)}
 .sgv-multiplier-swing{--pill-color:#efc4ee;--pill-rim:#b688c3;--pill-text:#744c9b}
@@ -154,7 +160,9 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-honey-win{display:block;z-index:36;overflow:visible;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;container-type:size;--honey-focus-x:calc(var(--honey-jar-left,60.8px) + var(--honey-jar-width,198.4px) / 2);--honey-focus-y:calc(var(--honey-jar-top,94px) + var(--honey-jar-height,248px) / 2)}
 .sgv-honey-win .sgv-honey-scrim{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,transparent 62%,rgba(0,0,0,.18) 100%),radial-gradient(ellipse at var(--honey-focus-x) var(--honey-focus-y),transparent 24%,rgba(9,34,43,.44) 68%),radial-gradient(ellipse at 50% 42%,transparent 46%,rgba(0,0,0,.24) 100%);opacity:var(--honey-scrim-opacity);backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:auto}
 .sgv-honey-win .sgv-honey-warm-light,.sgv-honey-win .sgv-honey-foliage-rear,.sgv-honey-win .sgv-honey-foliage-front,.sgv-honey-win .sgv-honey-confetti{position:absolute;inset:0;pointer-events:none}
-.sgv-honey-win .sgv-honey-warm-light{z-index:1;background:radial-gradient(ellipse 72% 58% at var(--honey-focus-x) var(--honey-focus-y),#ffc07073 0%,#ffa8203d 32%,transparent 62%)}
+.sgv-honey-win .sgv-honey-warm-light{z-index:1;background:
+  radial-gradient(ellipse 48% 42% at var(--honey-focus-x) calc(var(--honey-focus-y) - 8%),#fffef6f0 0%,#fff4c8aa 26%,#ffe9a055 50%,transparent 72%),
+  radial-gradient(ellipse 78% 64% at var(--honey-focus-x) var(--honey-focus-y),#fff6d866 0%,#ffe4a033 38%,transparent 68%)}
 .sgv-honey-win .sgv-honey-foliage-rear{z-index:2;opacity:0}
 .sgv-honey-win .sgv-honey-foliage-front{z-index:3;opacity:0}
 .sgv-honey-win .sgv-end-card{position:absolute;inset:0;z-index:3;width:auto;max-width:none;height:auto;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;pointer-events:none}
@@ -162,10 +170,30 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-honey-win .sgv-end-card .sgv-end-reset,
 .sgv-honey-win .sgv-end-card .sgv-honey-reset{pointer-events:auto}
 .sgv-honey-title,.sgv-honey-status{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.sgv-honey-win .sgv-honey-praise-slot{position:absolute;z-index:6;top:var(--honey-praise-top,calc(var(--safe-top) + 24px));left:var(--honey-focus-x,50%);width:0;height:var(--honey-praise-height,58px);display:flex;align-items:center;justify-content:center;overflow:visible;background:transparent;border-radius:0}
-.sgv-honey-win .sgv-end-card .sgv-win-praise{opacity:0;transform:scale(.55);transform-origin:50% 50%;flex:none;width:min(82vw,340px);height:92px;overflow:visible;filter:drop-shadow(0 3px 0 #3a1848) drop-shadow(0 4px 12px #f0a51f66)}
-.sgv-honey-win .sgv-win-praise-word{font-family:"Lilita One",ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;font-weight:400;font-size:62px;letter-spacing:.06em;fill:url(#sgv-praise-fill);stroke:#6b3a9a;stroke-width:16;stroke-linejoin:round;stroke-linecap:round;paint-order:stroke fill}
+.sgv-honey-win .sgv-honey-praise-slot{position:absolute;z-index:6;top:var(--honey-praise-top,calc(var(--safe-top) + 2px));left:var(--honey-focus-x,50%);width:0;height:var(--honey-praise-height,64px);display:flex;align-items:center;justify-content:center;overflow:visible;background:transparent;border-radius:0}
+.sgv-honey-win .sgv-end-card .sgv-win-praise{opacity:0;transform:scale(.55);transform-origin:50% 50%;flex:none;width:min(78vw,320px);height:96px;overflow:visible;filter:drop-shadow(0 3px 0 #3a1848) drop-shadow(0 4px 12px #f0a51f66)}
+.sgv-honey-win .sgv-win-praise-word{font-family:"Lilita One",ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;font-weight:400;font-size:clamp(56px,14.5vw,72px);letter-spacing:.06em;fill:url(#sgv-praise-fill);stroke:#6b3a9a;stroke-width:14;stroke-linejoin:round;stroke-linecap:round;paint-order:stroke fill}
+.sgv-honey-win .sgv-honey-slogan-underline{position:absolute;z-index:1;top:74%;left:50%;width:min(56vw,240px);height:auto;transform:translateX(-50%);pointer-events:none;user-select:none}
+.sgv-honey-win .sgv-honey-slogan-drops{position:absolute;z-index:1;top:6%;width:min(18vw,72px);height:auto;pointer-events:none;user-select:none;display:block}
+.sgv-honey-win .sgv-honey-slogan-drops-art{display:block;width:100%;height:auto;transform-origin:50% 50%;pointer-events:none;user-select:none}
+.sgv-honey-win .sgv-honey-slogan-drops-left{right:50%;margin-right:min(38vw,158px)}
+/* Permanent mirror on the wrapper — never animate this transform with GSAP. */
+.sgv-honey-win .sgv-honey-slogan-drops-right{left:50%;margin-left:min(38vw,158px);transform:scaleX(-1)}
+.sgv-win-static .sgv-honey-slogan-drops-right,
+.sgv-honey-final .sgv-honey-slogan-drops-right,
+.sgv-success-settled .sgv-honey-slogan-drops-right{transform:scaleX(-1)}
 .sgv-honey-win .sgv-honey-stage{position:absolute;z-index:2;inset:0;pointer-events:none}
+.sgv-honey-win .sgv-honey-scoreboard{position:absolute;z-index:5;left:var(--honey-scoreboard-left,12px);top:var(--honey-scoreboard-top,352px);width:var(--honey-scoreboard-width,calc(100% - 24px));height:var(--honey-scoreboard-height,188px);overflow:visible;pointer-events:none}
+.sgv-honey-win .sgv-honey-scoreboard-art{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none}
+.sgv-honey-win .sgv-honey-scoreboard-label{position:absolute;left:14%;right:14%;top:14%;margin:0;text-align:center;font:800 clamp(13px,3.6vw,16px)/1.1 ui-rounded,system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#6b3a9a;pointer-events:none}
+/* Sit the tally in the yellow banner pocket (slightly below the slot midpoint). */
+.sgv-honey-win .sgv-honey-scoreboard .sgv-win-tally{position:absolute;left:18%;right:18%;top:calc(28%);margin:0;height:auto;display:flex;align-items:center;justify-content:center;text-align:center;font-size:var(--honey-count-font,40px);font-size:clamp(34px,9vw,48px);font-weight:900;line-height:1;font-variant-numeric:tabular-nums;color:#5a2d7a;-webkit-text-stroke:0;paint-order:normal;text-shadow:0 2px 0 #fff6c8;background:transparent;pointer-events:none;overflow:hidden;white-space:nowrap}
+.sgv-honey-win .sgv-honey-scoreboard-target{position:absolute;left:12%;right:12%;bottom:14%;margin:0;display:flex;align-items:center;justify-content:center;gap:6px;font:800 clamp(14px,3.8vw,18px)/1 ui-rounded,system-ui,sans-serif;color:#6b3a9a;pointer-events:none}
+.sgv-honey-win .sgv-honey-target-check{display:inline-flex;align-items:center;justify-content:center;width:1.1em;height:1.1em;border-radius:50%;background:#2fbf5a;color:#fff;font-size:.95em;line-height:1;opacity:0;transform:scale(.7)}
+.sgv-honey-win .sgv-honey-scoreboard-target.is-met .sgv-honey-target-check,
+.sgv-win-static .sgv-honey-scoreboard-target.is-met .sgv-honey-target-check,
+.sgv-honey-final .sgv-honey-scoreboard-target.is-met .sgv-honey-target-check,
+.sgv-success-settled .sgv-honey-scoreboard-target.is-met .sgv-honey-target-check{opacity:1;transform:none}
 .sgv-honey-win .sgv-cele{position:absolute;display:block;pointer-events:none;user-select:none;height:auto}
 .sgv-honey-win .sgv-honey-foliage-rear .sgv-cele{filter:brightness(.62) saturate(.8)}
 .sgv-honey-win .sgv-honey-foliage-front .sgv-cele{filter:brightness(.86) saturate(.95)}
@@ -197,10 +225,60 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-honey-win .sgv-honey-overflow{display:none;position:absolute;left:0;right:0;top:-8px;height:34px;opacity:0;pointer-events:none}
 .sgv-honey-win .sgv-honey-mark{position:absolute;top:0;transform:translateX(-50%);border-radius:999px;background:linear-gradient(var(--honey-surface),var(--honey-body))}
 .sgv-honey-win .sgv-honey-drip{top:8px;border-radius:40% 40% 50% 50%}
-.sgv-honey-win .sgv-honey-count-slot{position:absolute;z-index:1;left:16px;right:16px;top:var(--honey-count-top,352px);height:var(--honey-count-height,80px);display:flex;align-items:center;justify-content:center;background:transparent;border-radius:0}
-.sgv-honey-win .sgv-honey-subline{position:absolute;z-index:1;left:16px;right:16px;top:var(--honey-sub-top,440px);height:24px;margin:0;text-align:center;opacity:0}
-.sgv-honey-win .sgv-end-cta{position:absolute;z-index:10;left:calc(var(--safe-left) + 16px);right:calc(var(--safe-right) + 16px);bottom:calc(var(--safe-bottom) + 16px);width:auto;min-width:0;height:56px;min-height:56px;margin:0;box-shadow:0 5px 0 #348f67,0 0 0 3px rgb(240 193 74 / var(--honey-cta-outline,0))}
-.sgv-honey-win .sgv-end-cta:active{transform:scale(.96);box-shadow:0 1px 0 #348f67;transition:transform 80ms,box-shadow 80ms}
+.sgv-honey-win .sgv-honey-cta-wrap{
+  position:absolute;z-index:10;left:50%;
+  bottom:calc(var(--safe-bottom) + 16px + 70px);
+  width:50%;max-width:280px;min-width:148px;
+  transform:translateX(-50%);pointer-events:none;
+}
+.sgv-honey-win .sgv-honey-cta-wrap .sgv-end-cta{
+  position:relative;left:auto;right:auto;bottom:auto;z-index:1;
+  display:flex;align-items:center;justify-content:center;
+  width:100%;min-width:0;height:70px;min-height:70px;margin:0;padding:0 18px;
+  border:4px solid #fff8d6;border-radius:999px;cursor:pointer;pointer-events:auto;
+  font:1000 clamp(22px,6.2vw,28px)/1 ui-rounded,"Arial Rounded MT Bold",system-ui,sans-serif;
+  letter-spacing:.08em;text-transform:uppercase;
+  color:#5a2a08;text-shadow:0 2px 0 #ffe9a8,0 -1px 0 #c06a1088;
+  background:
+    linear-gradient(180deg,#fffef5 0%,#ffe56a 28%,#ffc01f 62%,#f08a00 100%);
+  box-shadow:
+    0 7px 0 #c45e08,
+    0 12px 24px #f0a51f88,
+    0 0 0 3px rgb(255 210 80 / var(--honey-cta-outline,.45)),
+    inset 0 3px 0 #ffffffcc,
+    inset 0 -3px 0 #e0781088;
+  animation:sgv-honey-cta-pulse 1.6s ease-in-out infinite;
+}
+.sgv-honey-win .sgv-honey-cta-wrap .sgv-end-cta:active{
+  transform:translateY(4px) scale(.98);
+  box-shadow:
+    0 2px 0 #c45e08,
+    0 6px 14px #f0a51f66,
+    0 0 0 3px rgb(255 210 80 / var(--honey-cta-outline,.45)),
+    inset 0 2px 0 #ffffffaa;
+  transition:transform 80ms,box-shadow 80ms;
+  animation:none;
+}
+@keyframes sgv-honey-cta-pulse{
+  0%,100%{filter:brightness(1) saturate(1)}
+  50%{filter:brightness(1.1) saturate(1.08)}
+}
+.sgv-honey-win .sgv-honey-cta-stars{position:absolute;inset:-28% -22%;pointer-events:none;overflow:visible}
+.sgv-honey-win .sgv-honey-cta-star{
+  position:absolute;color:#fffef2;line-height:1;pointer-events:none;
+  text-shadow:0 0 8px #fff,0 0 14px #ffe08aaa;
+  animation:sgv-honey-idle-twinkle 2.2s ease-in-out infinite alternate;
+}
+.sgv-honey-win .sgv-honey-cta-star-a{top:0%;left:2%;font-size:16px;animation-duration:1.9s}
+.sgv-honey-win .sgv-honey-cta-star-b{top:-6%;right:4%;font-size:13px;animation-delay:.35s;animation-duration:2.4s}
+.sgv-honey-win .sgv-honey-cta-star-c{top:38%;left:-10%;font-size:12px;animation-delay:.7s;animation-duration:2.1s}
+.sgv-honey-win .sgv-honey-cta-star-d{top:42%;right:-12%;font-size:15px;animation-delay:1s;animation-duration:2.5s}
+.sgv-honey-win .sgv-honey-cta-star-e{bottom:-4%;left:12%;font-size:11px;animation-delay:.5s;animation-duration:2.3s}
+.sgv-honey-win .sgv-honey-cta-star-f{bottom:0%;right:10%;font-size:14px;animation-delay:1.3s;animation-duration:2s}
+@media(prefers-reduced-motion:reduce){
+  .sgv-honey-win .sgv-honey-cta-wrap .sgv-end-cta{animation:none}
+  .sgv-honey-win .sgv-honey-cta-star{animation:none;opacity:.75}
+}
 .sgv-honey-win .sgv-end-card .sgv-honey-reset{all:unset;box-sizing:border-box;position:absolute;z-index:10;top:var(--honey-reset-top,calc(var(--safe-top) + 16px));right:var(--honey-reset-right,calc(var(--safe-right) + 16px));height:44px;min-height:44px;min-width:44px;max-width:none;padding:0 14px 0 10px;margin:0;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:22px;border:2px solid #eadcf399;background:#ffffffc7;color:#8a6b82;box-shadow:0 2px 0 #d5c6e899;font:900 15px/1 ui-rounded,system-ui,sans-serif;white-space:nowrap;cursor:pointer;pointer-events:auto;text-align:center}
 .sgv-honey-win .sgv-end-card .sgv-honey-reset:focus-visible,.sgv-honey-win .sgv-end-cta:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-win-static .sgv-honey-scrim,.sgv-honey-final .sgv-honey-scrim,.sgv-success-settled.sgv-honey-win .sgv-honey-scrim{opacity:var(--honey-scrim-opacity)}
@@ -230,8 +308,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
  .sgv-hud{min-height:43px}
  .sgv-level{height:42px}
  .sgv-mini-hint{height:21px;min-height:21px;margin-top:4px}
- .sgv-meter-section{height:clamp(135px,21dvh,156px);padding-top:1px}
- .sgv-meter-caption{margin-bottom:14px}
+ .sgv-meter-section{height:auto;min-height:clamp(108px,17dvh,136px);padding-top:1px}
  .sgv-chest-art{height:clamp(145px,25dvh,200px)}
  .sgv-controls{height:clamp(184px,30dvh,219px);padding-top:3px}
  .sgv-hand{height:clamp(90px,16dvh,123px);margin-bottom:clamp(11px,2dvh,16px)}
@@ -241,7 +318,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 @media(max-height:580px){
  .sgv-level{height:36px}.sgv-hud{min-height:36px}
  .sgv-gold-counter,.sgv-lives{height:35px}
- .sgv-meter-section{height:120px}
+ .sgv-meter-section{height:auto;min-height:102px}
  .sgv-mini-hint{display:none}
  .sgv-chest-art{height:133px}
  .sgv-controls{height:173px}
@@ -257,8 +334,8 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
  .sgv-intro-target{animation:sgv-target-fly 0.01s forwards}
 }
 
-@media(max-height:730px){.sgv-meter{height:120px}.sgv-multipliers{top:68px}.sgv-multiplier-pill{height:29px;font-size:16px}.sgv-multiplier-pill::before{top:-14px;height:14px}}
-@media(max-height:580px){.sgv-meter{height:112px}.sgv-meter-caption{margin-bottom:9px}.sgv-multipliers{top:65px}.sgv-multiplier-pill{height:26px;padding:0 7px;font-size:15px}}
+@media(max-height:730px){.sgv-meter{height:124px}.sgv-multipliers{top:66px}.sgv-multiplier-pill{height:29px;font-size:16px}.sgv-multiplier-pill::before{top:-14px;height:14px}}
+@media(max-height:580px){.sgv-meter{height:118px}.sgv-multipliers{top:64px}.sgv-multiplier-pill{height:26px;padding:0 7px;font-size:15px}}
 
 
 /* P0: an open, unstable Pot and an independent secured target, both OUTSIDE glass. */
@@ -484,16 +561,23 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-bank-reward strong{text-shadow:0 2px #2b797b}
 .sgv-bank:disabled{filter:saturate(.75);opacity:.8}
 
-/* The bright red stem is part of the same moving marker, not a static 0 line. */
+/* Needle uses the glossy honeycomb-cell PNG; value sits in the recessed well. */
 .sgv-meter-needle{
- position:absolute;z-index:1;left:50%;top:6px;height:54px;width:9px;
- transform:translateX(-50%);border:2px solid #ffe8d9;border-radius:7px;
- background:linear-gradient(90deg,#f79aa2,#e7335d 44%,#c91e4b);
- box-shadow:0 0 7px #e7395960,0 2px 3px #aa405a6e;pointer-events:none;
+ position:absolute;left:50%;top:50%;width:44.8px;height:48px;min-width:44.8px;padding:0;
+ display:grid;place-items:center;transform:translate(-50%,-50%);
+ border:0;background:transparent;pointer-events:none;
+ filter:drop-shadow(0 2px 0 #8a420ecc) drop-shadow(0 4px 6px #5a280866);
 }
-.sgv-meter-marker{z-index:5}
-.sgv-meter-arrow{z-index:3}
-.sgv-meter-number{z-index:4}
+.sgv-meter-needle-art{
+ position:absolute;inset:0;width:100%;height:100%;display:block;
+ object-fit:contain;pointer-events:none;user-select:none;-webkit-user-select:none;
+}
+.sgv-meter-needle-value{
+ position:relative;z-index:1;margin:0;padding:0 2px 1px;
+ color:#fff8e6;font-size:17.6px;font-weight:1000;font-variant-numeric:tabular-nums;
+ line-height:1;letter-spacing:-.02em;
+ text-shadow:0 1px 0 #7a2e06,0 2px 0 #5a2204,0 0 5px #ffb84a88;
+}
 .sgv-event-zero_break .sgv-meter-needle{animation:sgv-zero-reset .48s ease}
 
 /* The compact tank stays centered; the goal is physically attached to its rim. */
@@ -1026,7 +1110,8 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 
 /* The meter's location already conveys left versus right, so only magnitudes
    remain. Removing the hint restores space for the bottles and later abilities. */
-.sgv-meter-section{margin-top:clamp(4px,1.25dvh,14px)}
+/* Pull the whole meter chrome (honeycomb + track + tap + pills) toward the HUD. */
+.sgv-meter-section{margin-top:clamp(-36px,-5.5dvh,-18px)}
 .sgv-meter-side,.sgv-marker-direction{display:none}
 
 /* Center the secured progress inside the glass, away from the platform lip.
@@ -1078,7 +1163,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
  background:#fff8e5de;color:#784d83;font-size:13px;font-weight:900;padding:5px 9px;
 }
 .sgv-onboarding .sgv-meter-placeholder{
- width:min(100%,452px);height:clamp(154px,22.5dvh,202px);
+ width:min(100%,508.5px);height:clamp(118px,18dvh,168px);
  flex:none;pointer-events:none;
 }
 .sgv-onboarding .sgv-bottle-pair .sgv-pending-pot.sgv-pot-dormant{
@@ -1131,7 +1216,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 @media(max-height:600px){
  .sgv-onboarding .sgv-tutorial-controls:has(.sgv-tutorial-actions){height:194px}
  .sgv-onboarding-1 .sgv-tutorial-controls,.sgv-onboarding-2 .sgv-tutorial-controls{height:150px}
- .sgv-onboarding .sgv-meter-placeholder{height:125px}
+ .sgv-onboarding .sgv-meter-placeholder{height:108px}
  .sgv-tutorial-hint{bottom:175px}
 }
 @media(prefers-reduced-motion:reduce){
@@ -1184,7 +1269,7 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
  .sgv-onboarding .sgv-tutorial-links button{padding:5px}
 }
 @media(max-height:620px){
- .sgv-onboarding .sgv-meter-section{height:118px;margin-top:0}
+ .sgv-onboarding .sgv-meter-section{height:auto;min-height:102px;margin-top:0}
  .sgv-onboarding .sgv-tutorial-controls:has(.sgv-tutorial-actions),
  .sgv-onboarding-1 .sgv-tutorial-controls,
  .sgv-onboarding-2 .sgv-tutorial-controls{height:205px}
@@ -1434,11 +1519,6 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-surface{animation:none}
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-bubble,
 .sgv-honey-win .sgv-honey-hero-art .sgv-glass-spark{display:none}
-.sgv-honey-win .sgv-honey-gleam-sweep{
-  position:absolute;z-index:auto;top:0;bottom:0;width:22%;left:0;border-radius:40%;
-  background:linear-gradient(90deg,transparent,#ffffffcc,transparent);
-  opacity:0;pointer-events:none;transform:translateX(-120%);
-}
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-surface{opacity:1}
 .sgv-phone[data-honey-win="true"]>.sgv-hud,
 .sgv-phone[data-honey-win="true"]>.sgv-middle,
@@ -1450,8 +1530,38 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 
 /* ── Layered PNG jar: back → masked honey → masked lights → front glass ── */
 .sgv-honey-win .sgv-honey-hero-art{
-  filter:drop-shadow(0 0 55px #ffa82066) drop-shadow(0 0 12px #68d9ff88);
+  filter:drop-shadow(0 0 70px #fff6d8cc) drop-shadow(0 0 28px #ffe9a099) drop-shadow(0 0 14px #ffffffaa);
   overflow:visible;
+}
+.sgv-honey-win .sgv-honey-hero-art::before{
+  content:"";position:absolute;z-index:0;left:50%;top:42%;width:128%;height:118%;
+  transform:translate(-50%,-50%);pointer-events:none;border-radius:50%;
+  background:radial-gradient(ellipse at 50% 42%,#fffffffa 0%,#fff8e0d6 20%,#ffeeb888 46%,transparent 72%);
+}
+.sgv-honey-win .sgv-honey-idle-stars{
+  position:absolute;inset:-18% -22%;z-index:5;pointer-events:none;overflow:visible;
+}
+.sgv-honey-win .sgv-honey-idle-star{
+  position:absolute;color:#fffef2;pointer-events:none;line-height:1;
+  text-shadow:0 0 8px #fff,0 0 14px #ffe9a0aa,0 1px #f5d98a88;
+  animation:sgv-honey-idle-twinkle 2.4s ease-in-out infinite alternate;
+  transform-origin:50% 50%;
+}
+.sgv-honey-win .sgv-honey-idle-star-a{top:8%;left:6%;font-size:18px;animation-duration:2.1s}
+.sgv-honey-win .sgv-honey-idle-star-b{top:18%;right:4%;font-size:14px;animation-delay:.4s;animation-duration:2.6s}
+.sgv-honey-win .sgv-honey-idle-star-c{top:42%;left:-2%;font-size:12px;animation-delay:.9s;animation-duration:2.2s}
+.sgv-honey-win .sgv-honey-idle-star-d{top:48%;right:-4%;font-size:16px;animation-delay:1.2s;animation-duration:2.8s}
+.sgv-honey-win .sgv-honey-idle-star-e{bottom:16%;left:10%;font-size:13px;animation-delay:.6s;animation-duration:2.5s}
+.sgv-honey-win .sgv-honey-idle-star-f{bottom:22%;right:8%;font-size:11px;animation-delay:1.5s;animation-duration:2.3s}
+@keyframes sgv-honey-idle-twinkle{
+  from{opacity:.25;transform:scale(.7) rotate(-8deg)}
+  to{opacity:1;transform:scale(1.15) rotate(8deg)}
+}
+.sgv-win-static .sgv-honey-idle-star,
+.sgv-honey-final .sgv-honey-idle-star,
+.sgv-success-settled .sgv-honey-idle-star{animation:sgv-honey-idle-twinkle 2.4s ease-in-out infinite alternate}
+@media(prefers-reduced-motion:reduce){
+  .sgv-honey-win .sgv-honey-idle-star{animation:none;opacity:.7;transform:none}
 }
 .sgv-honey-win .sgv-jar-layer,
 .sgv-honey-win .sgv-jar-mask{
@@ -1476,47 +1586,43 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-honey-win .sgv-jar-back{z-index:1}
 .sgv-honey-win .sgv-jar-honey-layer{z-index:2}
 .sgv-honey-win .sgv-jar-lights{z-index:3}
-.sgv-honey-win .sgv-jar-front{z-index:4;opacity:.72}
+.sgv-honey-win .sgv-jar-front{z-index:4;opacity:.78}
 .sgv-jar-honey-layer .sgv-fluid-fill{
   border-radius:0;left:0;right:0;bottom:0;
   background:
-    radial-gradient(ellipse at 50% 82%,#fff06a3d 0%,transparent 46%),
-    radial-gradient(ellipse at 50% 38%,#fff6a838 0%,transparent 58%),
-    radial-gradient(ellipse at 50% 50%,transparent 48%,#9d4e002e 100%),
-    linear-gradient(180deg, #fff2ad 0%, #ffc83d 18%, #ff9d0a 58%, #e97800 100%);
-  box-shadow:none;
+    radial-gradient(ellipse at 42% 28%,#ffffffaa 0%,transparent 34%),
+    radial-gradient(ellipse at 50% 82%,#fff06a66 0%,transparent 48%),
+    radial-gradient(ellipse at 50% 38%,#fff8c866 0%,transparent 58%),
+    radial-gradient(ellipse at 50% 50%,transparent 48%,#9d4e0022 100%),
+    linear-gradient(180deg, #fff8c8 0%, #ffe08a 14%, #ffc83d 36%, #ff9d0a 62%, #f07800 100%);
+  box-shadow:inset 0 0 24px #fff6c855;
 }
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-surface{
   top:-7px;left:10%;right:10%;height:14px;
-  background:radial-gradient(ellipse at 50% 35%,#fff8c7 0%,#f49a00 100%);
-  box-shadow:0 0 14px #ffc83d99;
+  background:radial-gradient(ellipse at 50% 35%,#fffdf0 0%,#ffe08a 55%,#f49a00 100%);
+  box-shadow:0 0 18px #ffd56acc,0 0 8px #fff8c8aa;
 }
 .sgv-honey-win .sgv-honey-internal-light{
   position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 38% 30%,#ffffffcc 0%,transparent 36%),
+    radial-gradient(ellipse at 50% 58%,#ffd56a55 0%,transparent 55%);
+  mix-blend-mode:screen;opacity:.85;
 }
 .sgv-honey-win .sgv-honey-reflection{
-  position:absolute;left:14%;top:-18%;width:16%;height:140%;
-  opacity:.18;pointer-events:none;transform:rotate(-14deg);transform-origin:center;
-  background:linear-gradient(90deg,transparent,#fff,transparent);
+  position:absolute;left:14%;top:-18%;width:18%;height:140%;
+  opacity:.38;pointer-events:none;transform:rotate(-14deg);transform-origin:center;
+  background:linear-gradient(90deg,transparent,#fffef8,transparent);
+}
+.sgv-honey-win .sgv-honey-gleam-sweep{
+  position:absolute;z-index:auto;top:0;bottom:0;width:28%;left:0;border-radius:40%;
+  background:linear-gradient(90deg,transparent,#ffffffee,transparent);
+  opacity:0;pointer-events:none;transform:translateX(-120%);
 }
 .sgv-honey-win .sgv-honey-hero-art .sgv-honey-gleam-sweep{z-index:auto}
 .sgv-honey-win .sgv-honey-hero-art .sgv-chest-mouth{top:10%;z-index:6}
 .sgv-honey-win .sgv-honey-overflow{z-index:7}
 
-/* ── Hide score counter and ratio — the full jar communicates success ── */
-.sgv-honey-win .sgv-honey-count-slot,
-.sgv-honey-win .sgv-honey-subline{display:none}
-
-/* ── Gold / amber CTA button ── */
-.sgv-honey-win .sgv-end-cta{
-  background:linear-gradient(#fff6b0,#ffc83d 46%,#e08a12);
-  color:#5a3a12;text-shadow:0 2px #fff4a0;border-color:#fff6c4;
-  box-shadow:0 5px 0 #c06a10,0 10px 22px #f0a51f66,0 0 0 3px rgb(240 193 74 / var(--honey-cta-outline,0));
-}
-.sgv-honey-win .sgv-end-cta:active{
-  transform:scale(.96);
-  box-shadow:0 1px 0 #c06a10;transition:transform 80ms,box-shadow 80ms;
-}
 @media(prefers-reduced-motion:reduce){
   .sgv-honey-win .sgv-honey-gleam-sweep{opacity:0!important;transform:none}
   .sgv-honey-win .sgv-honey-reflection{opacity:.18}

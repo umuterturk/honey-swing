@@ -11,8 +11,8 @@ import {
   flightDropletSize,flightDroplets,honeyTier,praiseFor
 } from '../src/casual/starThresholds.js';
 import {
-  HONEY_MOTION,HONEY_TOKENS,burstDiameter,burstOffset,compositeBacking,
-  contrastRatio,countFrame,flightEmitTime,flightOpacity,flightPosition,
+  HONEY_MOTION,HONEY_TOKENS,applyHoneyLayout,burstDiameter,burstOffset,compositeBacking,
+  contrastRatio,countFrame,fillFrame,flightEmitTime,flightOpacity,flightPosition,
   honeyLayout,honeyParticles,overflowMarks,power2Out
 } from '../src/casual/honeyWin.js';
 import {createFxBus} from '../src/casual/fx/fxBus.js';
@@ -84,79 +84,105 @@ test('honey intensity keeps Appendix A and praise is Nectar, Amber, Hiveful',()=
   assert.deepEqual([burstParticles(1),burstParticles(2),burstParticles(3)],[16,20,24]);
   assert.ok(burstParticles(3)<=24);
   assert.equal(overflowMarks(3,5,5).length,0);
-  assert.equal(overflowMarks(3,6,5).length,6);
-  assert.equal(overflowMarks(1,9,8).length,2);
-  assert.equal(overflowMarks(2,12,8).length,4);
+  assert.equal(overflowMarks(3,6,5).length,0);
+  assert.equal(overflowMarks(1,9,8).length,0);
+  assert.equal(overflowMarks(2,12,8).length,0);
 });
 
-test('count-up is a fixed 0.600s power2.out and ends on the engine integer',()=>{
-  for(const value of [1,5,32,100,10**21])assert.equal(countUpDuration(value),0.6);
-  assert.equal(HONEY_MOTION.count.start,0.2);
-  assert.equal(HONEY_MOTION.count.end,0.8);
-  assert.equal(HONEY_MOTION.count.ease,'power2.out');
+test('celebration beats are fill-first 2.0s with a 0.5s score count',()=>{
+  assert.equal(HONEY_MOTION.cap,2);
+  assert.equal(HONEY_MOTION.settled,1.75);
+  assert.equal(HONEY_MOTION.scrim.end,0.15);
+  assert.equal(HONEY_MOTION.jarEntrance.start,0.15);
+  assert.equal(HONEY_MOTION.jarEntrance.end,0.35);
+  assert.equal(HONEY_MOTION.fill.start,0.35);
+  assert.equal(HONEY_MOTION.fill.end,1.05);
+  assert.equal(HONEY_MOTION.fill.ease,'power2.out');
+  assert.equal(HONEY_MOTION.praise.start,1);
+  assert.equal(HONEY_MOTION.praise.underlineAt,1.08);
+  assert.equal(HONEY_MOTION.count.start,1.3);
+  assert.equal(HONEY_MOTION.count.duration,0.45);
+  assert.equal(HONEY_MOTION.count.end,1.75);
+  assert.equal(countUpDuration(),0.45);
+  assert.equal(HONEY_MOTION.cta.start,1.75);
+  assert.equal(HONEY_MOTION.cta.end,2);
   assert.equal(power2Out(0.5),0.875);
   assert.equal(displayedCount(0,32),0);
   assert.equal(displayedCount(0.5,5),2);
   assert.equal(displayedCount(1,32),32);
-  assert.equal(displayedCount(1.0000000002,100),100);
-  const mid=countFrame(0.5,32,9);
-  assert.equal(mid.shown,28);
-  assert.equal(mid.shown>0&&mid.shown<32,true);
-  assert.equal(mid.fraction,1);
-  assert.ok(mid.overflow>0);
-  const exact=countFrame(0.5,11,11);
-  assert.equal(exact.shown,9);
-  assert.ok(Math.abs(exact.fraction-0.875)<1e-9);
-  assert.equal(exact.overflow,0);
+});
+
+test('fillFrame drives the jar; countFrame drives the score and never overflows',()=>{
+  assert.equal(fillFrame(0.35,32,9).percent,0);
+  assert.equal(fillFrame(1.05,32,9).percent,78);
+  assert.ok(fillFrame(0.7,32,9).percent>0&&fillFrame(0.7,32,9).percent<78);
+  assert.equal(countFrame(1.3,32,9).shown,0);
+  assert.equal(countFrame(1.75,32,9).shown,32);
+  assert.equal(countFrame(1.75,32,9).overflow,0);
+  assert.equal(countFrame(1.75,32,9).targetMet,true);
+  assert.equal(countFrame(1.4,1500,2000).targetMet,false);
+  assert.equal(overflowMarks(3,6,5).length,0);
+  assert.equal(overflowMarks(1,9,8).length,0);
   for(const value of [5,32,100]){
-    assert.equal(countFrame(0.2,value,value).shown,0);
-    assert.ok(countFrame(0.24,value,value).shown<value);
-    assert.equal(countFrame(0.8,value,value).shown,value);
-    assert.equal(countFrame(0.8,value,value).fraction,1);
+    assert.equal(countFrame(1.3,value,value).shown,0);
+    assert.ok(countFrame(1.4,value,value).shown<value);
+    assert.equal(countFrame(1.75,value,value).shown,value);
     for(let step=0;step<=12;step++){
-      const frame=countFrame(0.2+0.6*step/12,value,value);
+      const frame=countFrame(1.3+0.45*step/12,value,value);
       assert.equal(Number.isInteger(frame.shown),true);
       assert.ok(frame.shown>=0&&frame.shown<=value);
     }
   }
 });
 
-test('layout puts praise at safe-top+24 and the count at least 64px',()=>{
+test('layout centers the jar and keeps scoreboard between jar and CTA',()=>{
   const small=honeyLayout(320,568,{top:0,right:0,bottom:0,left:0});
-  assert.equal(small.praise.y,24);
   assert.ok(Math.abs(small.jar.w-198.4)<1e-9);
-  assert.ok(Math.abs(small.jar.h-248)<1e-9);
-  assert.equal(small.jar.y,94);
-  assert.equal(small.number.y,352);
-  assert.equal(small.number.font,64);
-  assert.equal(small.number.h,80);
-  assert.equal(small.subline.y,440);
+  assert.ok(Math.abs(small.jar.h-130)<1e-9);
+  assert.ok(small.praise.y+small.praise.h<=small.jar.y);
+  assert.equal(small.scoreboard.y,small.jar.y+small.jar.h+8);
+  assert.ok(small.scoreboard.h>=180&&small.scoreboard.h<=200);
+  assert.ok(small.scoreboard.w>0);
   assert.equal(small.reset.x,260);
   assert.equal(small.reset.y,16);
+  const mid=honeyLayout(390,844,{top:0,right:0,bottom:0,left:0});
+  const midJarCenter=mid.jar.y+mid.jar.h/2;
+  assert.ok(midJarCenter>mid.safeH*0.38&&midJarCenter<mid.safeH*0.58);
+  assert.ok(mid.scoreboard.y>=mid.jar.y+mid.jar.h);
+  assert.ok(mid.scoreboard.y+mid.scoreboard.h<=mid.cta.y);
+  assert.ok(mid.scoreboard.w>0&&mid.scoreboard.h>=180&&mid.scoreboard.h<=200);
   const large=honeyLayout(430,932,{top:0,right:0,bottom:0,left:0});
-  assert.equal(large.praise.y,24);
   assert.equal(large.jar.w,220);
   assert.equal(large.jar.h,275);
-  assert.equal(large.number.font,80);
-  assert.equal(large.number.y,379);
-  assert.equal(large.praise.font,44);
+  assert.equal(large.praise.font,48);
   assert.equal(large.reset.x,370);
+  assert.ok(large.praise.y>=10);
+  assert.ok(large.scoreboard.y>=large.jar.y+large.jar.h);
+  assert.ok(large.scoreboard.y+large.scoreboard.h<=large.cta.y);
   const tight=honeyLayout(320,568,{top:44,right:0,bottom:34,left:0});
   assert.equal(tight.safeH,490);
   assert.equal(tight.short,true);
-  assert.equal(tight.praise.y,68);
-  assert.equal(tight.number.font,64);
-  assert.equal(tight.number.h,80);
-  for(const box of [small,large,tight]){
-    const zones=[box.praise,box.jar,box.number,box.subline,box.cta,box.reset];
+  assert.ok(tight.praise.y>=44);
+  assert.ok(tight.scoreboard.h>=180&&tight.scoreboard.h<=200);
+  for(const box of [small,mid,large,tight]){
+    const zones=[box.praise,box.jar,box.scoreboard,box.cta,box.reset];
     for(let i=0;i<zones.length;i++){
       for(let j=i+1;j<zones.length;j++){
         assert.equal(rectsOverlap(zones[i],zones[j]),false,i+' overlaps '+j);
       }
     }
-    assert.ok(box.subline.y+box.subline.h<=box.cta.y);
-    assert.ok(box.cta.h>=56);
+    assert.ok(box.scoreboard.y+box.scoreboard.h<=box.cta.y);
+    assert.ok(box.cta.h>=70);
+  assert.ok(box.cta.w<=box.safeW*0.55);
   }
+  const host=win.document.createElement('div');
+  const applied=applyHoneyLayout(host,390,844,{top:0,right:0,bottom:0,left:0});
+  assert.ok(applied);
+  assert.equal(host.style.getPropertyValue('--honey-scoreboard-top'),applied.scoreboard.y+'px');
+  assert.equal(host.style.getPropertyValue('--honey-scoreboard-left'),applied.scoreboard.x+'px');
+  assert.equal(host.style.getPropertyValue('--honey-scoreboard-width'),applied.scoreboard.w+'px');
+  assert.equal(host.style.getPropertyValue('--honey-scoreboard-height'),applied.scoreboard.h+'px');
+  assert.ok(host.style.getPropertyValue('--honey-jar-width'));
 });
 
 test('praise and count contrast clear 4.5:1 on the composited backing',()=>{
@@ -198,7 +224,7 @@ test('flight and lip burst follow the honey paths and droplet sizes',()=>{
   assert.equal(flying[0].diameter,20);
   assert.equal(flying.every(particle=>particle.event==='honey-flight'),true);
   assert.equal(honeyParticles({t:0.5,tier:3,scale:1,source,mouth}).length,0);
-  const lip=honeyParticles({t:0.9,tier:1,scale:1,source,mouth});
+  const lip=honeyParticles({t:1.15,tier:1,scale:1,source,mouth});
   assert.equal(lip.length,16);
   assert.equal(lip[0].diameter,22);
   const places=lip.map(particle=>particle.x.toFixed(3)+','+particle.y.toFixed(3));
@@ -209,9 +235,9 @@ test('flight and lip burst follow the honey paths and droplet sizes',()=>{
     assert.ok(Math.hypot(particle.vx,particle.vy)>0);
     assert.ok(Math.hypot(particle.x-mouth.x,particle.y-mouth.y)>1);
   }
-  assert.equal(honeyParticles({t:0.9,tier:3,scale:0.5,source,mouth}).length,12);
+  assert.equal(honeyParticles({t:1.15,tier:3,scale:0.5,source,mouth}).length,12);
   assert.equal(honeyParticles({t:0.2,tier:3,scale:0,source,mouth}).length,0);
-  assert.equal(honeyParticles({t:1.3,tier:3,scale:1,source,mouth}).length,0);
+  assert.equal(honeyParticles({t:1.8,tier:3,scale:1,source,mouth}).length,0);
 });
 
 test('the win plan times match the honey overrides and a loss stays quiet',()=>{
@@ -222,15 +248,15 @@ test('the win plan times match the honey overrides and a loss stays quiet',()=>{
   assert.equal(winPlan.flight.count,8);
   assert.equal(winPlan.flight.size,16);
   assert.equal(winPlan.burst.particles,16);
-  assert.equal(winPlan.burst.start,0.8);
-  assert.equal(winPlan.count.duration,0.6);
+  assert.equal(winPlan.burst.start,1.05);
+  assert.equal(winPlan.count.duration,0.45);
   assert.equal(winPlan.count.ease,'power2.out');
-  assert.equal(winPlan.subline.start,1);
-  assert.equal(winPlan.subline.end,1.18);
-  assert.equal(winPlan.settled,1.3);
-  assert.equal(winPlan.ctaEmphasis.end,1.7);
-  assert.equal(winPlan.cap,2.5);
-  assert.equal(HONEY_MOTION.scrim.end,0.18);
+  assert.equal(winPlan.count.start,1.3);
+  assert.equal(winPlan.count.end,1.75);
+  assert.equal(winPlan.settled,1.75);
+  assert.equal(winPlan.ctaEmphasis.end,2);
+  assert.equal(winPlan.cap,2);
+  assert.equal(HONEY_MOTION.scrim.end,0.15);
   assert.equal(HONEY_MOTION.foliage.end,0.25);
   assert.equal(HONEY_MOTION.foliage.fromY,12);
   assert.equal(winPlan.ctaAt,0);
@@ -255,7 +281,7 @@ test('the win plan times match the honey overrides and a loss stays quiet',()=>{
   assert.equal(reduced.settled,0);
 });
 
-function stage({score=32,target=9,over=true}={}){
+function stage({score=32,target=9}={}){
   const overlay=document.createElement('div');
   overlay.className='sgv-end-overlay sgv-honey-win';
   const scrim=document.createElement('div');
@@ -273,28 +299,31 @@ function stage({score=32,target=9,over=true}={}){
   gleam.className='sgv-honey-gleam-sweep';
   liquid.append(surface);
   hero.append(liquid,gleam);
-  const overflow=over?document.createElement('div'):null;
-  if(overflow)overflow.className='sgv-honey-overflow';
+  const board=document.createElement('div');
+  board.className='sgv-honey-scoreboard';
   const tally=document.createElement('p');
   tally.className='sgv-win-tally';
-  const subline=document.createElement('p');
-  subline.className='sgv-honey-subline';
-  subline.textContent=score+' / '+target;
+  const targetRow=document.createElement('p');
+  targetRow.className='sgv-honey-scoreboard-target';
+  targetRow.textContent='Target: '+target;
+  board.append(tally,targetRow);
   const cta=document.createElement('button');
   cta.type='button';
   cta.className='sgv-end-cta';
   cta.textContent='NEXT';
-  overlay.append(scrim,praise,hero,tally,subline,cta);
-  if(overflow)overlay.append(overflow);
-  document.body.append(overlay);
-  return {overlay,scrim,praise,hero,liquid,surface,gleam,overflow,tally,subline,cta,remove(){overlay.remove();}};
+  overlay.append(scrim,praise,hero,board,cta);
+  return {
+    overlay,scrim,praise,hero,liquid,surface,gleam,board,tally,targetRow,cta,score,target,
+    overflow:null,subline:null,remove(){overlay.remove();}
+  };
 }
 
 function play(stageNodes,{secured=32,target=9,tier=3,reduced=false,bus,schedule,doc}={}){
   return playWinCelebration({
     victory:true,secured,target,tier,
-    praise:stageNodes.praise,tally:stageNodes.tally,subline:stageNodes.subline,
-    liquid:stageNodes.liquid,overflow:stageNodes.overflow,scrim:stageNodes.scrim,
+    praise:stageNodes.praise,tally:stageNodes.tally,
+    scoreboard:stageNodes.board,targetRow:stageNodes.targetRow,
+    liquid:stageNodes.liquid,scrim:stageNodes.scrim,
     cta:stageNodes.cta,card:stageNodes.overlay,reduced,bus,schedule,doc,
     sourcePoint:{x:20,y:40},mouthPoint:{x:120,y:180}
   });
@@ -308,13 +337,9 @@ function assertFinal(nodes,secured){
   assert.equal(nodes.liquid.style.height,'78%');
   if(nodes.hero)assert.equal(nodes.hero.style.transform,'none');
   if(nodes.gleam)assert.equal(nodes.gleam.style.opacity,'0');
-  assert.equal(nodes.subline.style.opacity,'0.9');
   assert.equal(nodes.scrim.style.opacity,'1');
   assert.equal(nodes.cta.disabled,false);
-  if(nodes.overflow){
-    assert.equal(nodes.overflow.style.opacity,'1');
-    assert.doesNotMatch(nodes.overflow.style.transform||'',/scale\(0/);
-  }
+  assert.ok(nodes.targetRow.classList.contains('is-met'));
   assert.equal(nodes.overlay.classList.contains('sgv-honey-final'),true);
 }
 
@@ -334,7 +359,8 @@ test('droplet and burst origins are layer-local CSS pixels',()=>{
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=playWinCelebration({
     victory:true,secured:32,target:9,tier:1,
-    praise:nodes.praise,tally:nodes.tally,subline:nodes.subline,
+    praise:nodes.praise,tally:nodes.tally,
+    scoreboard:nodes.board,targetRow:nodes.targetRow,
     liquid:nodes.liquid,cta:nodes.cta,card:nodes.overlay,
     source,mouth,layer,reduced:false,bus
   });
@@ -342,8 +368,11 @@ test('droplet and burst origins are layer-local CSS pixels',()=>{
   handle.timeline.time(0.1);
   assert.equal(bus.pool.live().some(particle=>particle.event==='honey-flight'),false);
   handle.timeline.time(0.5);
+  const mid=Number.parseFloat(nodes.liquid.style.height);
+  assert.ok(mid>0&&mid<78,String(mid));
+  handle.timeline.time(1.05);
   assert.equal(nodes.liquid.style.height,'78%');
-  handle.timeline.time(0.8);
+  handle.timeline.time(1.2);
   assert.equal(bus.pool.live().some(particle=>particle.event==='win-burst'),false);
   handle.cancel();
   nodes.remove();
@@ -354,7 +383,7 @@ test('a skipped or killed celebration paints the final jar, praise, and score',(
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=play(nodes,{bus});
   assert.equal(handle.motion,true);
-  assert.equal(handle.timeline.totalDuration(),2.5);
+  assert.equal(handle.timeline.totalDuration(),2);
   handle.timeline.pause();
   handle.timeline.time(0.05);
   assert.notEqual(nodes.tally.textContent,'32');
@@ -369,53 +398,57 @@ test('a skipped or killed celebration paints the final jar, praise, and score',(
   nodes.remove();
 });
 
-test('the count and the jar rise together and confetti fires at 0.800s',()=>{
+test('fill leads, then Hiveful, then score count, with NEXT at 1.75s',()=>{
   const nodes=stage();
   const sounds=[];
   const bus=createFxBus({
     reducedMotion:()=>false,
     audio:{play(id){sounds.push(id);return false;}}
   });
-  const handle=play(nodes,{bus,tier:3,secured:32,target:9});
+  let settled=false;
+  const handle=playWinCelebration({
+    victory:true,secured:32,target:9,tier:3,
+    praise:nodes.praise,tally:nodes.tally,
+    scoreboard:nodes.board,targetRow:nodes.targetRow,
+    liquid:nodes.liquid,scrim:nodes.scrim,cta:nodes.cta,card:nodes.overlay,
+    reduced:false,bus,sourcePoint:{x:20,y:40},mouthPoint:{x:120,y:180},
+    onSettled(){settled=true;}
+  });
   handle.timeline.pause();
   handle.timeline.time(0);
   assert.equal(nodes.tally.textContent,'0');
   assert.equal(nodes.liquid.style.height,'0%');
-  assert.equal(nodes.cta.disabled,false);
-  handle.timeline.time(0.2);
-  assert.equal(nodes.tally.textContent,'0');
   handle.timeline.time(0.5);
-  assert.equal(nodes.tally.textContent,'28');
+  assert.equal(nodes.tally.textContent,'0');
+  const midFill=Number.parseFloat(nodes.liquid.style.height);
+  assert.ok(midFill>0&&midFill<78,String(midFill));
+  handle.timeline.time(1.05);
   assert.equal(nodes.liquid.style.height,'78%');
-  assert.equal(bus.liveParticles(),0);
-  handle.timeline.time(0.79);
-  assert.equal(bus.liveParticles(),0);
-  handle.timeline.time(0.8);
+  assert.equal(nodes.tally.textContent,'0');
+  handle.timeline.time(1.5);
+  const midScore=Number(nodes.tally.textContent);
+  assert.ok(midScore>0&&midScore<32,String(midScore));
+  handle.timeline.time(1.75);
   assert.equal(nodes.tally.textContent,'32');
-  assert.equal(bus.liveParticles(),0);
-  handle.timeline.time(0.9);
+  assert.ok(nodes.targetRow.classList.contains('is-met'));
+  assert.equal(nodes.cta.disabled,false);
+  assert.equal(settled,true);
   assert.equal(bus.liveParticles(),0);
   assert.ok(bus.liveParticles()<=PARTICLE_CAP);
-  assert.ok(bus.tweenCount()<=24);
-  assert.equal(Number(nodes.subline.style.opacity)||0,0);
-  handle.timeline.time(1.18);
-  assert.equal(nodes.subline.style.opacity,'0.9');
-  handle.timeline.time(1.3);
-  assert.equal(bus.liveParticles(),0);
   let peak=0;
   handle.timeline.time(0);
-  for(let step=0;step<=22;step++){
+  for(let step=100;step<=122;step++){
     handle.timeline.time(step/100);
     peak=Math.max(peak,Number(gsap.getProperty(nodes.praise,'scale'))||0);
   }
   assert.ok(peak<=1.14+1e-6);
   assert.ok(sounds.includes('praise.hiveful'));
-  assert.ok(sounds.includes('fx.confetti'));
+  assert.equal(sounds.includes('fx.confetti'),false);
   nodes.remove();
 });
 
 test('reduced motion is the static final card with 0 particles',()=>{
-  const nodes=stage({score:18,target:11,over:true});
+  const nodes=stage({score:18,target:11});
   nodes.praise.textContent='Amber!';
   let scheduled=0;
   const bus=createFxBus({reducedMotion:()=>false});
@@ -431,8 +464,7 @@ test('reduced motion is the static final card with 0 particles',()=>{
   assert.equal(nodes.tally.textContent,'18');
   assert.equal(nodes.praise.style.opacity,'1');
   assert.equal(nodes.liquid.style.height,'78%');
-  assert.equal(nodes.subline.style.opacity,'0.9');
-  assert.equal(nodes.overflow.style.opacity,'1');
+  assert.ok(nodes.targetRow.classList.contains('is-met'));
   assert.equal(gsap.getTweensOf(nodes.praise).length,0);
   nodes.remove();
 });
@@ -492,7 +524,7 @@ test('degrade, overlap, hidden tab, and the hard cap keep the final card',()=>{
   const capHandle=play(capped,{
     bus:capBus,
     schedule(fn,ms){
-      assert.equal(ms,2500);
+      assert.equal(ms,2000);
       fire=fn;
       return 7;
     }
@@ -515,11 +547,19 @@ test('win and fail markup have no star nodes and the win jar is not a button',()
   }));
   assert.match(won,/Hiveful!/);
   assert.doesNotMatch(won,/NECTAR!/);
-  assert.match(won,/sgv-confetti sgv-confetti-ribbon sgv-confetti-0/);
+  assert.match(won,/score-board\.png/);
+  assert.match(won,/Honey Collected/);
+  assert.match(won,/victory-slogan-underline\.png/);
+  assert.match(won,/victory-slogan-side-drops-left\.png/);
+  assert.match(won,/sgv-honey-slogan-drops-right/);
+  assert.match(won,/sgv-honey-slogan-drops-art/);
+  assert.match(won,/Target:\s*9/);
+  assert.doesNotMatch(won,/sgv-honey-confetti|sgv-confetti|sgv-honey-subline|sgv-honey-mark|sgv-honey-count-slot/);
   assert.doesNotMatch(won,/sgv-peri-spark|sgv-glass-spark/);
+  assert.match(won,/sgv-honey-idle-stars/);
+  assert.match(won,/sgv-honey-idle-star-a/);
   assert.doesNotMatch(won,/Sweet!|Tasty!|Divine!/);
   assert.match(won,/32 honey secured\. Target 9\./);
-  assert.match(won,/32 \/ 9/);
   assert.match(won,/empty-complete-jar\.png/);
   assert.match(won,/empty-front-jar\.png/);
   assert.match(won,/sgv-jar-mask sgv-jar-honey-layer/);
@@ -538,7 +578,10 @@ test('win and fail markup have no star nodes and the win jar is not a button',()
   assert.doesNotMatch(won,/celebration\/bush-biggest/);
   assert.match(won,/sgv-fluid-fill/);
   assert.match(won,/sgv-fluid-surface/);
+  assert.match(won,/sgv-honey-cta-wrap/);
   assert.match(won,/sgv-end-cta/);
+  assert.match(won,/sgv-honey-cta-stars/);
+  assert.match(won,/sgv-honey-cta-star-a/);
   assert.match(won,/>NEXT</);
   assert.match(won,/sgv-honey-reset/);
   assert.match(won,/aria-label="Reset progress"/);
@@ -548,15 +591,16 @@ test('win and fail markup have no star nodes and the win jar is not a button',()
   assert.doesNotMatch(won,/sgv-win-star|data-star|★|aria-label="[^"]*star/i);
   assert.doesNotMatch(won,/<button[^>]*sgv-honey-jar|sgv-honey-jar[^>]*<button/);
   const exact=renderToStaticMarkup(createElement(LevelEndScreen,{
-    victory:true,score:5,target:5,label:'NEXT',
+    victory:true,score:5,target:5,label:'NEXT',settled:true,
     praise:{tier:3,text:'Hiveful!'}
   }));
   assert.doesNotMatch(exact,/sgv-honey-mark/);
+  assert.match(exact,/sgv-honey-scoreboard-target is-met/);
   const over=renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:true,score:8,target:5,label:'NEXT',
     praise:{tier:3,text:'Hiveful!'}
   }));
-  assert.equal((over.match(/sgv-honey-mark/g)||[]).length,6);
+  assert.doesNotMatch(over,/sgv-honey-mark/);
   const lost=renderToStaticMarkup(createElement(LevelEndScreen,{
     victory:false,score:2,target:8,label:'TRY AGAIN'
   }));
@@ -573,7 +617,12 @@ test('honey styles are scoped under the end card and FX stays between the card a
   const engines=await read('../src/external/engines.js');
   assert.match(css,/\.sgv-end-card \.sgv-win-praise/);
   assert.match(css,/\.sgv-end-card \.sgv-win-tally/);
-  assert.match(css,/\.sgv-end-card \.sgv-honey-subline/);
+  assert.match(css,/\.sgv-honey-scoreboard\{/);
+  assert.match(css,/--honey-scoreboard-top/);
+  assert.match(css,/object-fit:\s*contain/);
+  assert.match(css,/\.sgv-honey-slogan-drops-right\{[^}]*scaleX\(-1\)/);
+  assert.match(css,/\.sgv-honey-slogan-drops-art\{/);
+  assert.match(css,/top:calc\(28%\)/);
   assert.match(css,/--honey-scrim-opacity/);
   assert.match(css,/sgv-fluid-surface/);
   assert.match(css,/mask-position:\s*50% 50%/);
@@ -581,20 +630,25 @@ test('honey styles are scoped under the end card and FX stays between the card a
   assert.match(css,/\.sgv-honey-win \.sgv-jar-mask\{/);
   assert.match(css,/transform-origin:\s*50% 50%/);
   assert.match(css,/transform:\s*translateY\(7%\) scale\(0\.82\)/);
-  assert.match(css,/linear-gradient\(180deg,\s*#fff2ad 0%,\s*#ffc83d 18%,\s*#ff9d0a 58%,\s*#e97800 100%\)/);
-  assert.match(css,/#fff6a838/);
-  assert.match(css,/#9d4e002e/);
-  assert.match(css,/#fff06a3d/);
-  assert.match(css,/#fff8c7/);
+  assert.match(css,/linear-gradient\(180deg,\s*#fff8c8 0%,\s*#ffe08a 14%,\s*#ffc83d 36%,\s*#ff9d0a 62%,\s*#f07800 100%\)/);
+  assert.match(css,/#fff8c866/);
+  assert.match(css,/#9d4e0022/);
+  assert.match(css,/#fff06a66/);
+  assert.match(css,/#fffdf0/);
   assert.match(css,/#f49a00/);
-  assert.match(css,/0 0 14px #ffc83d99/);
-  assert.match(css,/\.sgv-honey-win \.sgv-jar-front\{[^}]*opacity:\s*\.72/);
+  assert.match(css,/0 0 18px #ffd56acc/);
+  assert.match(css,/\.sgv-honey-win \.sgv-jar-front\{[^}]*opacity:\s*\.78/);
   assert.match(css,/rotate\(-14deg\)/);
-  assert.match(css,/\.sgv-honey-reflection\{[^}]*width:\s*16%/);
-  assert.match(css,/\.sgv-honey-gleam-sweep\{[^}]*width:\s*22%/s);
-  assert.match(css,/0 0 55px #ffa82066/);
-  assert.match(css,/0 0 12px #68d9ff88/);
-  assert.match(motion,/duration:\s*0\.76/);
+  assert.match(css,/\.sgv-honey-reflection\{[^}]*width:\s*18%/);
+  assert.match(css,/\.sgv-honey-gleam-sweep\{[^}]*width:\s*28%/s);
+  assert.match(css,/0 0 70px #fff6d8cc/);
+  assert.match(css,/0 0 28px #ffe9a099/);
+  assert.match(css,/\.sgv-honey-hero-art::before\{/);
+  assert.match(css,/@keyframes sgv-honey-idle-twinkle/);
+  assert.match(css,/\.sgv-honey-idle-star\{/);
+  assert.match(motion,/duration:\s*0\.9/);
+  assert.match(motion,/sgv-honey-slogan-drops-art/);
+  assert.doesNotMatch(motion,/scaleX:\s*-1/);
   assert.match(css,/rgba\(9,\s*34,\s*43,\s*\.44\)/);
   assert.match(css,/transparent 24%/);
   assert.match(css,/rgba\(9,\s*34,\s*43,\s*\.44\) 68%/);
@@ -610,17 +664,14 @@ test('honey styles are scoped under the end card and FX stays between the card a
   assert.match(css,/\.sgv-cele-plant\{[^}]*width:\s*28%/);
   assert.match(css,/0 4px 12px #f0a51f66/);
   assert.match(css,/font-family:"Lilita One"/);
-  assert.match(css,/stroke-width:16/);
+  assert.match(css,/stroke-width:14/);
   assert.match(screens,/sgv-praise-arc/);
-  assert.match(css,/sgv-confetti-burst/);
   assert.match(css,/left:\s*var\(--honey-focus-x/);
-  assert.match(screens,/dx:-168/);
-  assert.match(screens,/delay:'\.8s'/);
-  assert.match(screens,/lift:64/);
-  assert.match(css,/width:16px;height:44px/);
-  assert.match(css,/sgv-confetti-burst \.9s cubic-bezier\(\.2,\.85,\.25,1\)/);
-  assert.doesNotMatch(css,/sgv-confetti-burst[\s\S]{0,900}skewX/);
-  assert.doesNotMatch(css,/\.sgv-honey-final \.sgv-confetti\{[^}]*opacity:\s*0/);
+  assert.match(screens,/score-board\.png/);
+  assert.match(screens,/Honey Collected/);
+  assert.match(screens,/victory-slogan-underline\.png/);
+  assert.match(screens,/sgv-honey-slogan-drops-art/);
+  assert.doesNotMatch(screens,/sgv-confetti|dx:-168|sgv-honey-subline/);
   assert.match(css,/sgv-fluid-bubble[\s\S]{0,90}display:none/);
   assert.match(css,/height:44px;min-height:44px;min-width:44px/);
   assert.match(css,/\.sgv-honey-reset:focus-visible/);
@@ -643,7 +694,6 @@ test('honey styles are scoped under the end card and FX stays between the card a
     '<p class="sgv-win-praise sgv-win-praise-2">Tasty!</p>',
     '<p class="sgv-win-praise sgv-win-praise-3">Divine!</p>',
     '<p class="sgv-win-tally">32</p>',
-    '<p class="sgv-honey-subline">32 / 9</p>',
     '<p class="sgv-end-score">kept</p>'
   ].join('');
   document.body.appendChild(card);
@@ -651,7 +701,6 @@ test('honey styles are scoped under the end card and FX stays between the card a
   const tasty=win.getComputedStyle(card.querySelector('.sgv-win-praise-2'));
   const divine=win.getComputedStyle(card.querySelector('.sgv-win-praise-3'));
   const tally=win.getComputedStyle(card.querySelector('.sgv-win-tally'));
-  const sub=win.getComputedStyle(card.querySelector('.sgv-honey-subline'));
   const score=win.getComputedStyle(card.querySelector('.sgv-end-score'));
   assert.equal(sweet.fontSize,'36px');
   assert.equal(sweet.fontWeight,'900');
@@ -662,8 +711,6 @@ test('honey styles are scoped under the end card and FX stays between the card a
   assert.equal(tally.fontWeight,'900');
   assert.equal(tally.color,'#f0c14a');
   assert.match(String(tally.fontVariantNumeric),/tabular-nums/);
-  assert.equal(sub.fontSize,'18px');
-  assert.equal(sub.color,'#fff0cf');
   assert.notEqual(score.fontSize,sweet.fontSize);
   assert.equal(score.color,'#8b6954');
   const phone=document.createElement('div');
@@ -719,7 +766,6 @@ test('the win scrim, glass jar, and reset icon are styled before any tween',asyn
   assert.equal(honeyMask.webkitMaskImage,lightMask.webkitMaskImage);
   assert.equal(win.getComputedStyle(host.querySelector('.sgv-honey-warm-light')).pointerEvents,'none');
   assert.equal(win.getComputedStyle(host.querySelector('.sgv-honey-foliage-rear')).pointerEvents,'none');
-  assert.equal(win.getComputedStyle(host.querySelector('.sgv-honey-confetti')).pointerEvents,'none');
   assert.equal(win.getComputedStyle(host.querySelector('.sgv-hud')).visibility,'hidden');
   const reset=host.querySelector('.sgv-honey-reset');
   const resetStyle=win.getComputedStyle(reset);
@@ -730,32 +776,44 @@ test('the win scrim, glass jar, and reset icon are styled before any tween',asyn
   assert.equal(resetStyle.fontSize,'15px');
   assert.equal(reset.getAttribute('aria-label'),'Reset progress');
   assert.match(reset.textContent,/Reset/);
-  assert.equal(win.getComputedStyle(host.querySelector('.sgv-win-tally')).fontSize,'64px');
+  const board=host.querySelector('.sgv-honey-scoreboard');
+  const boardStyle=win.getComputedStyle(board);
+  assert.equal(boardStyle.position,'absolute');
+  assert.equal(boardStyle.height,'188px');
+  const art=win.getComputedStyle(host.querySelector('.sgv-honey-scoreboard-art'));
+  assert.equal(art.objectFit,'contain');
+  assert.match(art.maxWidth,/100%/);
+  assert.match(win.getComputedStyle(host.querySelector('.sgv-win-tally')).color,/#5a2d7a|rgb\(90,\s*45,\s*122\)/);
   const fill=win.getComputedStyle(host.querySelector('.sgv-fluid-fill'));
-  assert.match(fill.backgroundImage,/#fff2ad|#ffc83d|#ff9d0a|#e97800/i);
+  assert.match(fill.backgroundImage,/#fff8c8|#ffe08a|#ffc83d|#ff9d0a|#f07800/i);
   const surface=win.getComputedStyle(host.querySelector('.sgv-fluid-surface'));
   assert.equal(surface.height,'14px');
   assert.notEqual(surface.backgroundImage,'none');
-  assert.match(win.getComputedStyle(host.querySelector('.sgv-jar-front')).opacity,/^0?\.72$/);
-  const slot=win.getComputedStyle(host.querySelector('.sgv-honey-count-slot'));
-  assert.ok(slot.backgroundColor===''||slot.backgroundColor==='transparent'||slot.backgroundColor==='rgba(0, 0, 0, 0)');
+  assert.match(win.getComputedStyle(host.querySelector('.sgv-jar-front')).opacity,/^0?\.78$/);
   const praise=win.getComputedStyle(host.querySelector('.sgv-honey-praise-slot'));
   assert.ok(praise.backgroundColor===''||praise.backgroundColor==='transparent'||praise.backgroundColor==='rgba(0, 0, 0, 0)');
-  assert.match(praise.top,/safe-top\) \+ 24px|24px/);
+  assert.match(praise.top,/safe-top\) \+ 2px|2px/);
   assert.match(resetStyle.top,/safe-top\) \+ 16px|16px/);
   assert.match(resetStyle.right,/safe-right\) \+ 16px|16px/);
+  assert.ok(host.querySelector('.sgv-honey-slogan-drops-right'));
+  assert.ok(host.querySelector('.sgv-honey-slogan-drops-art'));
+  assert.ok(host.querySelector('.sgv-honey-slogan-underline'));
+  assert.match(
+    win.getComputedStyle(host.querySelector('.sgv-honey-slogan-drops-right')).transform,
+    /matrix\(-1|scaleX\(-1\)/
+  );
   host.remove();
   style.remove();
 });
 
-test('H3 confetti stays inside the pool because the flight droplets have already landed',()=>{
+test('particle flight and the brief settle burst never overlap in the pool',()=>{
   const source={x:40,y:100};
   const mouth={x:160,y:220};
   const colors=new Set(['#ff4d7d','#ffd24a','#6ec8ff','#c9a0ff','#ffa24a','#5ee0a8']);
   const shapes=new Set(['circle','rect']);
   let overlap=false;
   let peak=0;
-  for(let step=0;step<=26;step++){
+  for(let step=0;step<=30;step++){
     const list=honeyParticles({t:step/10,tier:3,scale:1,source,mouth});
     peak=Math.max(peak,list.length);
     assert.ok(list.length<=40);
@@ -764,18 +822,18 @@ test('H3 confetti stays inside the pool because the flight droplets have already
     if(flight&&confetti)overlap=true;
   }
   assert.equal(overlap,false);
-  assert.equal(peak,24);
-  const pieces=honeyParticles({t:0.9,tier:3,scale:1,source,mouth});
+  assert.ok(peak>=16&&peak<=24);
+  const pieces=honeyParticles({t:1.15,tier:3,scale:1,source,mouth});
   assert.equal(pieces.length,24);
   assert.equal(pieces.every(particle=>shapes.has(particle.shape)),true);
   assert.equal(pieces.every(particle=>colors.has(particle.color)),true);
   assert.equal(pieces.some(particle=>particle.shape==='circle'),true);
   assert.equal(pieces.some(particle=>particle.shape==='rect'),true);
   assert.equal(pieces.some(particle=>particle.shape==='drop'),false);
-  assert.equal(honeyParticles({t:1.3,tier:3,scale:1,source,mouth}).length,0);
+  assert.equal(honeyParticles({t:1.8,tier:3,scale:1,source,mouth}).length,0);
 });
 
-test('the fill bobs, the gleam sweeps, and the jar pops, then skip leaves scale 1',()=>{
+test('the fill bobs, the gleam sweeps, and jar entrance overshoots then settles',()=>{
   const nodes=stage();
   const body=document.createElement('div');
   body.className='sgv-chest-body';
@@ -787,28 +845,28 @@ test('the fill bobs, the gleam sweeps, and the jar pops, then skip leaves scale 
   handle.timeline.pause();
   let low=0;
   let high=0;
-  for(let step=0;step<=60;step++){
-    handle.timeline.time(0.2+0.6*step/60);
+  for(let step=0;step<=70;step++){
+    handle.timeline.time(0.35+0.7*step/70);
     const bob=Number(String(nodes.surface.style.transform).replace(/[^\d.-]/g,''))||0;
     low=Math.min(low,bob);
     high=Math.max(high,bob);
   }
   assert.ok(low<=-2.9,String(low));
   assert.ok(high>=2.9,String(high));
-  handle.timeline.time(0.79);
-  const before=Number(nodes.gleam.style.opacity||0);
-  handle.timeline.time(1.1);
-  assert.ok(Number(nodes.gleam.style.opacity)>0,nodes.gleam.style.opacity);
+  handle.timeline.time(1.0);
+  handle.timeline.time(1.2);
+  const peakGleam=Number(nodes.gleam.style.opacity||0);
+  assert.ok(peakGleam>0,nodes.gleam.style.opacity);
   assert.match(nodes.gleam.style.transform||'',/matrix|translate/);
-  handle.timeline.time(1.56);
-  assert.ok(Number(nodes.gleam.style.opacity||0)<=before+1e-6);
+  handle.timeline.time(1.9);
+  assert.ok(Number(nodes.gleam.style.opacity||0)<=peakGleam+1e-6);
   let peak=1;
-  for(let step=80;step<=98;step++){
+  for(let step=15;step<=35;step++){
     handle.timeline.time(step/100);
     peak=Math.max(peak,Number(gsap.getProperty(nodes.hero,'scale'))||1);
   }
-  assert.ok(peak>1&&peak<=1.06+1e-6);
-  handle.timeline.time(0.9);
+  assert.ok(peak>1&&peak<=1.03+1e-6);
+  handle.timeline.time(1.1);
   assert.equal(bus.liveParticles(),0);
   handle.cancel();
   assert.equal(nodes.hero.style.transform,'none');
@@ -818,7 +876,7 @@ test('the fill bobs, the gleam sweeps, and the jar pops, then skip leaves scale 
   nodes.remove();
 });
 
-test('scrim darkens in 180ms and foliage settles in 250ms, then skip paints the final card',()=>{
+test('scrim darkens in 150ms and foliage settles in 250ms, then skip paints the final card',()=>{
   const nodes=stage();
   const rear=document.createElement('div');
   rear.className='sgv-honey-foliage-rear';
@@ -830,7 +888,7 @@ test('scrim darkens in 180ms and foliage settles in 250ms, then skip paints the 
   handle.timeline.time(0);
   assert.ok(Number(nodes.scrim.style.opacity||0)<0.2);
   assert.ok(Number(rear.style.opacity||0)<0.2);
-  handle.timeline.time(0.18);
+  handle.timeline.time(0.15);
   assert.ok(Math.abs(Number(nodes.scrim.style.opacity)-1)<0.05,nodes.scrim.style.opacity);
   handle.timeline.time(0.25);
   assert.ok(Math.abs(Number(rear.style.opacity)-1)<0.05,rear.style.opacity);

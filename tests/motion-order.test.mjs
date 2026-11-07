@@ -37,19 +37,20 @@ test('a Steer cross finishes the meter glide before its reward',()=>{
 });
 
 test('reward flyers use the final meter position, not a mid-glide marker',()=>{
+  // Marker % lives in .sgv-meter-scale (12px inset each side), not full track width.
   const origin=flyerOrigin({
     track:{left:100,top:40,width:200,height:20},
     root:{left:10,top:5},
     finalPercent:75
   });
-  assert.equal(origin.x,100-10+150);
+  assert.equal(origin.x,100-10+12+(200-24)*0.75);
   assert.equal(origin.y,40-5+10);
   assert.equal(flyerOrigin({
     track:{left:0,top:0,width:80,height:10},root:{left:0,top:0},finalPercent:0
-  }).x,0);
+  }).x,12);
   assert.equal(flyerOrigin({
     track:{left:0,top:0,width:80,height:10},root:{left:0,top:0},finalPercent:100
-  }).x,80);
+  }).x,68);
 });
 
 test('reduced motion keeps add and CROSS and does not shake Snap',()=>{

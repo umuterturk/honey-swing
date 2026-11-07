@@ -31,11 +31,16 @@ export function cardMotionMarks({type='steer',snap=false,rewards=[]}={}){
   };
 }
 
+// Must match .sgv-meter-scale horizontal inset in minimal.css (marker/tick % scale).
+export const METER_SCALE_INSET_X=12;
+
 // Reward flyers use the committed meter percent, never the marker's live left.
 export function flyerOrigin({track,root,finalPercent}){
   const percent=Math.max(0,Math.min(100,finalPercent));
+  const inset=METER_SCALE_INSET_X;
+  const usable=Math.max(0,track.width-inset*2);
   return {
-    x:(track.left-root.left)+track.width*(percent/100),
+    x:(track.left-root.left)+inset+usable*(percent/100),
     y:(track.top-root.top)+track.height/2
   };
 }

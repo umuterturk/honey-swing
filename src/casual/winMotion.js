@@ -1,10 +1,12 @@
 import {gsap} from 'gsap';
-import {HONEY_MOTION,honeyEaseBack,honeyEaseOut,honeyParticles,overflowReveal,fillHeightPercent} from './honeyWin.js';
+import {
+  HONEY_MOTION,fillFrame,fillHeightPercent,honeyEaseBack,honeyEaseOut,honeyParticles
+} from './honeyWin.js';
 import {
   burstParticles,burstRadius,displayedCount,praiseFor
 } from './starThresholds.js';
 
-const PEAK=1.14;
+const PEAK=HONEY_MOTION.praise.peakScale;
 
 function centerOf(node, layer){
   const rect=node?.getBoundingClientRect?.();
@@ -20,11 +22,11 @@ function centerOf(node, layer){
   return {x:left+width/2-originX,y:top+height/2-originY};
 }
 
-// Praise, the hero jar, and the secured total. A killed tween still paints the
-// final card: the jar is full, the praise is visible, and the number is deal.T.
+// Fill-first celebration. A killed tween still paints the settled final card.
 export function playWinCelebration({
   victory=true,secured=0,target=0,tier=0,praise=null,tally=null,subline=null,
   liquid=null,overflow=null,scrim=null,cta=null,card=null,
+  scoreboard=null,underline=null,drops=null,targetRow=null,
   source=null,pot=null,mouth=null,layer=null,sourcePoint=null,mouthPoint=null,
   reduced=false,bus=null,onSettled,schedule=null,clearSchedule=null,doc=null
 }={}){
@@ -32,6 +34,12 @@ export function playWinCelebration({
   const safe=Number.isFinite(score)?score:0;
   const goal=Number(target);
   const intensity=tier|0;
+  const board=scoreboard||card?.querySelector?.('.sgv-honey-scoreboard')||null;
+  const under=underline||card?.querySelector?.('.sgv-honey-slogan-underline')||null;
+  const dropNodes=drops||[...(card?.querySelectorAll?.('.sgv-honey-slogan-drops-art')||[])];
+  const targetNode=targetRow||card?.querySelector?.('.sgv-honey-scoreboard-target')||null;
+  const met=goal>0&&safe>=goal;
+
   const paintFinal=()=>{
     card?.classList?.add('sgv-honey-final');
     if(scrim?.style)scrim.style.opacity='1';
@@ -39,9 +47,27 @@ export function playWinCelebration({
       praise.style.opacity='1';
       praise.style.transform='none';
     }
-    try{gsap.set(praise,{opacity:1,scale:1});}catch{/* the inline opacity is the end state */}
+    try{gsap.set(praise,{opacity:1,scale:1});}catch{/* inline opacity is the end state */}
+    if(under?.style){
+      under.style.opacity='1';
+      under.style.transform='translateX(-50%)';
+    }
+    // Art only — mirror stays on the CSS wrapper so GSAP never owns the flip.
+    for(const drop of dropNodes){
+      if(!drop?.style)continue;
+      drop.style.opacity='1';
+      try{gsap.set(drop,{scale:1,x:0});}catch{drop.style.transform='none';}
+    }
     if(tally)tally.textContent=String(safe);
-    if(subline?.style)subline.style.opacity='0.9';
+    if(board?.style){
+      board.style.opacity='1';
+      try{gsap.set(board,{scale:1,y:0});}catch{board.style.transform='none';}
+    }
+    if(targetNode){
+      if(met)targetNode.classList.add('is-met');
+      else targetNode.classList.remove('is-met');
+    }
+    if(subline?.style)subline.style.opacity='0';
     if(liquid?.style){
       const full=fillHeightPercent(safe,goal);
       liquid.style.transition='none';
@@ -63,7 +89,7 @@ export function playWinCelebration({
       gleam.style.transform='none';
     }
     if(overflow?.style){
-      overflow.style.opacity='1';
+      overflow.style.opacity='0';
       overflow.style.transform='none';
     }
     if(cta){
@@ -76,10 +102,10 @@ export function playWinCelebration({
     }
     const rear=card?.querySelector?.('.sgv-honey-foliage-rear');
     const front=card?.querySelector?.('.sgv-honey-foliage-front');
-    for(const layer of [rear,front]){
-      if(!layer?.style)continue;
-      layer.style.opacity='1';
-      layer.style.transform='none';
+    for(const foliage of [rear,front]){
+      if(!foliage?.style)continue;
+      foliage.style.opacity='1';
+      foliage.style.transform='none';
     }
     releaseOwned();
   };
@@ -99,24 +125,25 @@ export function playWinCelebration({
   const fx=layer||card?.closest?.('.sgv-phone')?.querySelector?.('.sgv-fx-layer')||null;
   const from=sourcePoint||centerOf(source,fx)||centerOf(pot,fx)||{x:160,y:84};
   const to=mouthPoint||centerOf(mouth,fx)||{x:from.x,y:from.y+140};
-  const paintCount=eased=>{
+
+  function paintFill(time){
+    const frame=fillFrame(time,safe,goal);
+    if(liquid?.style){
+      liquid.style.transition='none';
+      liquid.style.height=frame.percent+'%';
+      liquid.style.opacity=frame.percent>0?'1':'0';
+      liquid.style.transform='none';
+    }
+  }
+  function paintScore(eased){
     const progress=eased>=1?1:Math.max(0,eased||0);
     const shown=displayedCount(progress,safe);
     if(tally)tally.textContent=String(shown);
-    const raw=progress>=1?safe:safe*progress;
-    if(liquid?.style){
-      const percent=fillHeightPercent(raw,goal);
-      liquid.style.transition='none';
-      liquid.style.height=percent+'%';
-      liquid.style.opacity=percent>0?'1':'0';
-      liquid.style.transform='none';
+    if(targetNode){
+      if(goal>0&&shown>=goal)targetNode.classList.add('is-met');
+      else targetNode.classList.remove('is-met');
     }
-    if(overflow?.style){
-      const reveal=overflowReveal(progress,safe,goal);
-      overflow.style.opacity=String(reveal);
-      overflow.style.transform='translateY('+((1-reveal)*-8)+'px)';
-    }
-  };
+  }
   function sync(time){
     const pool=bus?.pool;
     if(!pool?.spawn)return;
@@ -152,16 +179,30 @@ export function playWinCelebration({
   }
   if(subline?.style)subline.style.opacity='0';
   if(scrim?.style)scrim.style.opacity='0';
+  if(board?.style){
+    board.style.opacity='0';
+    try{gsap.set(board,{scale:HONEY_MOTION.scoreboard.fromScale});}catch{/* optional */}
+  }
+  if(under?.style)under.style.opacity='0';
+  for(const drop of dropNodes){
+    if(!drop?.style)continue;
+    drop.style.opacity='0';
+  }
+  if(targetNode)targetNode.classList.remove('is-met');
+  if(cta?.style){
+    cta.style.opacity='0';
+    cta.style.transform='translateY(10px)';
+  }
   const rear=card?.querySelector?.('.sgv-honey-foliage-rear')||null;
   const front=card?.querySelector?.('.sgv-honey-foliage-front')||null;
-  for(const layer of [rear,front]){
-    if(!layer?.style)continue;
-    layer.style.opacity='0';
-    layer.style.transform='translateY('+HONEY_MOTION.foliage.fromY+'px)';
+  for(const foliage of [rear,front]){
+    if(!foliage?.style)continue;
+    foliage.style.opacity='0';
+    foliage.style.transform='translateY('+HONEY_MOTION.foliage.fromY+'px)';
   }
   if(overflow?.style){
     overflow.style.opacity='0';
-    overflow.style.transform='translateY(-8px)';
+    overflow.style.transform='none';
   }
 
   const timeline=gsap.timeline({paused:true});
@@ -204,16 +245,18 @@ export function playWinCelebration({
   const hero=card?.querySelector?.('.sgv-honey-hero-art')||null;
   const surface=liquid?.querySelector?.('.sgv-fluid-surface')||null;
   const gleam=hero?.querySelector?.('.sgv-honey-gleam-sweep')||null;
+  const fillStart=HONEY_MOTION.fill.start;
+  const fillEnd=HONEY_MOTION.fill.end;
   function paintPretty(time){
-    const active=time>=0.2&&time<=0.8;
-    const along=active?(time-0.2)/0.6:0;
+    const active=time>=fillStart&&time<=fillEnd;
+    const along=active?(time-fillStart)/(fillEnd-fillStart):0;
     if(surface?.style)
       surface.style.transform=active?'translateY('+(Math.sin(along*Math.PI*2)*3)+'px)':'none';
   }
   const clock={t:0};
   timeline.to(clock,{
-    t:2.5,duration:2.5,ease:'none',overwrite:'auto',
-    onUpdate(){sync(clock.t);paintPretty(clock.t);}
+    t:HONEY_MOTION.cap,duration:HONEY_MOTION.cap,ease:'none',overwrite:'auto',
+    onUpdate(){sync(clock.t);paintPretty(clock.t);paintFill(clock.t);}
   },0);
   if(scrim){
     timeline.fromTo(scrim,{opacity:0},{
@@ -222,86 +265,108 @@ export function playWinCelebration({
       ease:honeyEaseOut,overwrite:false
     },HONEY_MOTION.scrim.start);
   }
-  for(const layer of [rear,front]){
-    if(!layer)continue;
-    timeline.fromTo(layer,{opacity:0,y:HONEY_MOTION.foliage.fromY},{
+  for(const foliage of [rear,front]){
+    if(!foliage)continue;
+    timeline.fromTo(foliage,{opacity:0,y:HONEY_MOTION.foliage.fromY},{
       opacity:1,y:0,
       duration:HONEY_MOTION.foliage.end-HONEY_MOTION.foliage.start,
       ease:honeyEaseOut,overwrite:false
     },HONEY_MOTION.foliage.start);
   }
+  if(hero){
+    const enter=HONEY_MOTION.jarEntrance;
+    gsap.set(hero,{transformOrigin:'center 70%',scale:enter.fromScale});
+    timeline.fromTo(hero,{scale:enter.fromScale},{
+      scale:enter.peakScale,
+      duration:(enter.end-enter.start)*0.55,
+      ease:honeyEaseOut,overwrite:false
+    },enter.start);
+    timeline.to(hero,{
+      scale:enter.toScale,
+      duration:(enter.end-enter.start)*0.45,
+      ease:honeyEaseOut,overwrite:false
+    },enter.start+(enter.end-enter.start)*0.55);
+  }
   if(praise){
-    gsap.set(praise,{transformOrigin:'50% 50%'});
+    const beat=HONEY_MOTION.praise;
+    gsap.set(praise,{transformOrigin:'50% 50%',opacity:0,scale:beat.fromScale});
     timeline.fromTo(praise,{opacity:0},{
-      opacity:1,duration:0.1,ease:honeyEaseOut,overwrite:false
-    },0);
-    timeline.fromTo(praise,{scale:0.55},{
-      scale:PEAK,duration:0.14,ease:honeyEaseBack,overwrite:false,
+      opacity:1,duration:beat.opacityEnd-beat.start,ease:honeyEaseOut,overwrite:false
+    },beat.start);
+    timeline.fromTo(praise,{scale:beat.fromScale},{
+      scale:beat.peakScale,duration:beat.peakEnd-beat.start,ease:honeyEaseBack,overwrite:false,
       onUpdate(){
         const scale=Number(gsap.getProperty(praise,'scale'));
         if(scale>PEAK)gsap.set(praise,{scale:PEAK});
       }
-    },0);
-    timeline.to(praise,{scale:1,duration:0.08,ease:honeyEaseOut,overwrite:false},0.14);
+    },beat.start);
+    timeline.to(praise,{
+      scale:beat.toScale,duration:beat.end-beat.peakEnd,ease:honeyEaseOut,overwrite:false
+    },beat.peakEnd);
     timeline.call(()=>bus?.emit({
       id:'praise',sound:praiseFor(intensity)?.sound||'praise.nectar',
       haptic:intensity>=2?'light':undefined,particles:0
-    }),null,0);
+    }),null,beat.start);
   }
-    const proxy={p:0};
-  timeline.to(proxy,{
-    p:1,duration:0.6,ease:'power2.out',overwrite:'auto',
-    onUpdate(){paintCount(proxy.p);},
-    onComplete(){
-      paintCount(1);
-      if(tally)tally.textContent=String(safe);
-    }
-  },0.2);
-  for(let at=0.2;at<0.8-1e-9;at+=0.08){
-    const when=at;
-    timeline.call(()=>bus?.emit({id:'score-tick',sound:'score.tick',particles:0}),null,when);
+  if(under){
+    timeline.fromTo(under,{opacity:0,y:6},{
+      opacity:1,y:0,duration:0.12,ease:honeyEaseOut,overwrite:false
+    },HONEY_MOTION.praise.underlineAt);
   }
-  if(hero){
-    gsap.set(hero,{transformOrigin:'center 70%',scale:1});
-    timeline.fromTo(hero,{scale:1},{
-      scale:1.06,duration:0.09,ease:honeyEaseBack,overwrite:false,
-      onUpdate(){
-        const scale=Number(gsap.getProperty(hero,'scale'));
-        if(scale>1.06)gsap.set(hero,{scale:1.06});
-      }
-    },0.8);
-    timeline.to(hero,{scale:1,duration:0.09,ease:honeyEaseOut,overwrite:false},0.89);
+  for(const drop of dropNodes){
+    const wrap=drop.closest?.('.sgv-honey-slogan-drops');
+    const right=!!wrap?.classList?.contains('sgv-honey-slogan-drops-right');
+    // Scale the art only. Right-side flip is CSS on the wrapper and never touched here.
+    gsap.set(drop,{opacity:0,scale:0.45,x:right?10:-10});
+    timeline.to(drop,{
+      opacity:1,scale:1.12,x:0,duration:0.28,ease:honeyEaseBack,overwrite:false
+    },HONEY_MOTION.praise.start);
   }
   if(gleam){
     gsap.set(gleam,{xPercent:-120,opacity:0});
-    timeline.to(gleam,{xPercent:480,duration:0.76,ease:'power2.out',overwrite:false},0.8);
-    timeline.to(gleam,{opacity:0.65,duration:0.28,ease:'power2.out',overwrite:false},0.8);
-    timeline.to(gleam,{opacity:0,duration:0.48,ease:'power2.out',overwrite:false},1.08);
+    timeline.to(gleam,{xPercent:480,duration:0.9,ease:'power2.out',overwrite:false},fillEnd-0.08);
+    timeline.to(gleam,{opacity:0.9,duration:0.3,ease:'power2.out',overwrite:false},fillEnd-0.08);
+    timeline.to(gleam,{opacity:0.22,duration:0.55,ease:'power2.out',overwrite:false},fillEnd+0.28);
   }
-  timeline.call(()=>bus?.emit({
-    id:'fx-confetti',sound:'fx.confetti',
-    haptic:intensity>=3?'medium':intensity===2?'light':undefined,
-    particles:0
-  }),null,0.8);
-  if(subline){
-    timeline.to(subline,{
-      opacity:0.9,duration:0.18,ease:honeyEaseOut,overwrite:'auto',
-      onComplete(){subline.style.opacity='0.9';}
-    },1);
+  if(board){
+    const beat=HONEY_MOTION.scoreboard;
+    gsap.set(board,{transformOrigin:'50% 50%'});
+    timeline.fromTo(board,{
+      opacity:0,scale:beat.fromScale,y:beat.fromY
+    },{
+      opacity:1,scale:beat.toScale,y:0,
+      duration:beat.end-beat.start,ease:honeyEaseOut,overwrite:false
+    },beat.start);
+  }
+  const scoreProxy={p:0};
+  timeline.to(scoreProxy,{
+    p:1,duration:HONEY_MOTION.count.duration,ease:HONEY_MOTION.count.ease,overwrite:'auto',
+    onUpdate(){paintScore(scoreProxy.p);},
+    onComplete(){paintScore(1);}
+  },HONEY_MOTION.count.start);
+  for(let at=HONEY_MOTION.count.start;at<HONEY_MOTION.count.end-1e-9;at+=0.08){
+    const when=at;
+    timeline.call(()=>bus?.emit({id:'score-tick',sound:'score.tick',particles:0}),null,when);
   }
   if(cta){
+    const beat=HONEY_MOTION.cta;
+    timeline.to(cta,{
+      opacity:1,y:0,duration:beat.leg,ease:honeyEaseOut,overwrite:false,
+      onStart(){cta.disabled=false;}
+    },beat.start);
     const pulse={o:0.35};
     const apply=()=>cta.style?.setProperty('--honey-cta-outline',String(pulse.o));
-    timeline.to(pulse,{o:1,duration:0.2,ease:'power2.out',onUpdate:apply},1.3);
-    timeline.to(pulse,{o:0.35,duration:0.2,ease:'power2.out',onUpdate:apply},1.5);
+    timeline.to(pulse,{o:1,duration:0.1,ease:'power2.out',onUpdate:apply},beat.start+0.05);
+    timeline.to(pulse,{o:0.35,duration:0.1,ease:'power2.out',onUpdate:apply},beat.start+0.15);
   }
-  timeline.call(()=>{if(!stopped)onSettled?.();},null,1.3);
+  timeline.call(()=>{if(!stopped)onSettled?.();},null,HONEY_MOTION.settled);
 
   try{listen?.addEventListener?.('visibilitychange',onHide);}catch{/* no document in this runtime */}
   try{
-    if(typeof schedule==='function')capId=schedule(()=>cancel(),2500);
+    const capMs=Math.round(HONEY_MOTION.cap*1000);
+    if(typeof schedule==='function')capId=schedule(()=>cancel(),capMs);
     else{
-      capId=setTimeout(()=>cancel(),2500);
+      capId=setTimeout(()=>cancel(),capMs);
       capId?.unref?.();
     }
   }catch{capId=0;}

@@ -22,9 +22,9 @@ export function DropletIcon({className=''}) {
 export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=null,showDanger=true,beat='',dock=null}){
  const percentage=meterPercent(position,limit);
  return <section className="sgv-meter-section" aria-label="Swing meter and multipliers">
-   <div className="sgv-meter-caption"><span className="sgv-meter-name">SWING</span></div>
    <div className="sgv-meter" role="group" data-value={position}
      aria-label={'Swing at '+directionalValue(position)+(showDanger?'; Snap beyond '+limit+' left or '+limit+' right':'')}>
+     <img className="sgv-honeycomb" src="/honeycomb.png" alt="" aria-hidden="true" draggable="false"/>
      <div className="sgv-meter-track" role="img" data-edge-danger={showDanger&&Math.abs(position)>=limit-2}
        aria-label={'Swing position '+directionalValue(position)}>
        <div className="sgv-meter-scale" aria-hidden="true">
@@ -33,13 +33,17 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
              <span key={number} className={'sgv-meter-tick'+(number===0?' sgv-meter-tick-zero':'')}
                style={{left:meterPercent(number,limit)+'%'}}>{Math.abs(number)}</span>)}
          </div>
-         <span className="sgv-meter-marker" style={{left:percentage+'%'}}>
-           <span className="sgv-meter-number">{Math.abs(position)}</span>
-           <span className="sgv-meter-arrow"/>
-           <span className="sgv-meter-needle" aria-hidden="true"/>
-         </span>
        </div>
      </div>
+     <div className="sgv-meter-marker-rail" aria-hidden="true">
+       <span className="sgv-meter-marker" style={{left:percentage+'%'}}>
+         <span className="sgv-meter-needle">
+           <img className="sgv-meter-needle-art" src="/needle-honeycomb-cell.png" alt="" draggable="false"/>
+           <strong className="sgv-meter-needle-value">{Math.abs(position)}</strong>
+         </span>
+       </span>
+     </div>
+     <img className="sgv-honey-tap" src="/honey-tap.png" alt="" aria-hidden="true" draggable="false"/>
      <div className="sgv-multipliers" role="group" aria-label="Swing, Flip, Jackpot multipliers">
        {multipliers.filter(({kind})=>!visibleFactors||visibleFactors.includes(kind)).map(({kind,value,label})=>
          <span key={kind} className={'sgv-multiplier-pill sgv-multiplier-'+kind+

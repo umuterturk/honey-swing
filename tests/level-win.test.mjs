@@ -196,15 +196,19 @@ function makeStage(){
   card.className='sgv-honey-win';
   const praise=document.createElement('p');
   const liquid=document.createElement('div');
-  const subline=document.createElement('p');
+  const board=document.createElement('div');
+  board.className='sgv-honey-scoreboard';
   const tally=document.createElement('p');
   tally.className='sgv-win-tally';
+  const targetRow=document.createElement('p');
+  targetRow.className='sgv-honey-scoreboard-target';
+  board.append(tally,targetRow);
   const cta=document.createElement('button');
   cta.type='button';
   cta.textContent='NEXT';
-  card.append(praise,liquid,subline,tally,cta);
+  card.append(praise,liquid,board,cta);
   document.body.append(card);
-  return {card,praise,liquid,subline,tally,cta,remove(){card.remove();}};
+  return {card,praise,liquid,board,tally,targetRow,cta,remove(){card.remove();}};
 }
 
 after(()=>{
@@ -318,9 +322,9 @@ test('praise and bursts follow the star tier and never change the engine score',
 });
 
 test('the count-up duration follows the digit cap and ends on the engine integer',()=>{
-  assert.equal(countUpDuration(5),0.6);
-  assert.equal(countUpDuration(32),0.6);
-  assert.equal(countUpDuration(100),0.6);
+  assert.equal(countUpDuration(5),0.45);
+  assert.equal(countUpDuration(32),0.45);
+  assert.equal(countUpDuration(100),0.45);
   assert.equal(displayedCount(0.5,5),2);
   for(const value of [1,5,6,7,8,9,11,13,17,24,30,32,41,56,87]){
     assert.equal(displayedCount(0,value),0);
@@ -345,33 +349,32 @@ test('skip and settle land on the exact secured score, a full jar, and 0 particl
   });
   const handle=playWinCelebration({
     victory:true,secured,target:9,tier:3,praise:stage.praise,liquid:stage.liquid,
-    subline:stage.subline,tally:stage.tally,cta:stage.cta,card:stage.card,
+    scoreboard:stage.board,targetRow:stage.targetRow,tally:stage.tally,cta:stage.cta,card:stage.card,
     reduced:false,bus
   });
   assert.equal(handle.motion,true);
-  assert.equal(handle.timeline.totalDuration(),2.5);
+  assert.equal(handle.timeline.totalDuration(),2);
   handle.timeline.pause();
   handle.timeline.time(0);
-  assert.equal(stage.cta.disabled,false);
   assert.equal(stage.tally.textContent,'0');
-  handle.timeline.time(0.10);
-  assert.ok(opacityOf(stage.praise)>0);
   handle.timeline.time(0.5);
-  assert.equal(stage.tally.textContent,'28');
+  assert.equal(stage.tally.textContent,'0');
+  const mid=Number.parseFloat(stage.liquid.style.height);
+  assert.ok(mid>0&&mid<78,String(mid));
+  handle.timeline.time(1.05);
   assert.equal(stage.liquid.style.height,'78%');
-  handle.timeline.time(0.8);
-  assert.equal(stage.tally.textContent,String(secured));
-  handle.timeline.time(0.9);
+  handle.timeline.time(1.1);
+  assert.ok(opacityOf(stage.praise)>0);
   assert.equal(bus.liveParticles(),0);
   assert.ok(sounds.includes('praise.hiveful'));
-  assert.ok(sounds.includes('fx.confetti'));
+  assert.equal(sounds.includes('fx.confetti'),false);
   bus.settle();
   assert.equal(bus.tweenCount(),0);
   assert.equal(bus.liveParticles(),0);
   assert.equal(stage.tally.textContent,String(secured));
   assert.equal(stage.praise.style.opacity,'1');
   assert.equal(stage.liquid.style.height,'78%');
-  assert.equal(stage.subline.style.opacity,'0.9');
+  assert.ok(stage.targetRow.classList.contains('is-met'));
   assert.equal(gsap.getTweensOf(stage.praise).length,0);
   assert.equal(stage.cta.disabled,false);
   stage.remove();
@@ -383,7 +386,7 @@ test('a killed tween at the hidden frame still shows the final card',()=>{
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=playWinCelebration({
     victory:true,secured:8,target:5,tier:3,praise:stage.praise,liquid:stage.liquid,
-    subline:stage.subline,tally:stage.tally,cta:stage.cta,card:stage.card,reduced:false,bus
+    scoreboard:stage.board,targetRow:stage.targetRow,tally:stage.tally,cta:stage.cta,card:stage.card,reduced:false,bus
   });
   handle.timeline.pause();
   handle.timeline.time(0.05);
@@ -404,7 +407,7 @@ test('reduced motion shows the final card and emits 0 particles',()=>{
   const bus=createFxBus({reducedMotion:()=>false});
   const handle=playWinCelebration({
     victory:true,secured:18,target:11,tier:2,praise:stage.praise,liquid:stage.liquid,
-    subline:stage.subline,tally:stage.tally,cta:stage.cta,card:stage.card,reduced:true,bus
+    scoreboard:stage.board,targetRow:stage.targetRow,tally:stage.tally,cta:stage.cta,card:stage.card,reduced:true,bus
   });
   assert.equal(handle.motion,false);
   assert.equal(handle.timeline,null);
@@ -445,7 +448,9 @@ test('a fail plays no praise, stars, count-up, or particles',()=>{
   }));
   assert.match(card,/Hiveful!/);
   assert.doesNotMatch(card,/Sweet!|Tasty!|Divine!/);
-  assert.match(card,/32 \/ 9/);
+  assert.match(card,/Honey Collected/);
+  assert.match(card,/Target:\s*9/);
+  assert.match(card,/score-board\.png/);
   assert.match(card,/>NEXT</);
   assert.equal((card.match(/sgv-win-star|data-star|★/g)||[]).length,0);
   assert.match(card,/empty-complete-jar\.png/);
@@ -510,14 +515,17 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     const praise=host.querySelector('.sgv-win-praise');
     const liquid=host.querySelector('.sgv-fluid-fill');
     const tally=host.querySelector('.sgv-win-tally');
-    const subline=host.querySelector('.sgv-honey-subline');
+    const targetRow=host.querySelector('.sgv-honey-scoreboard-target');
     const cta=host.querySelector('.sgv-end-cta');
     const goal=host.querySelector('.sgv-goal-progress');
     const bus=host.querySelector('.sgv-fx-layer').__fxBus;
     assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.ok(liquid);
     assert.equal(praise.textContent,'Hiveful!');
-    assert.equal(subline.textContent,secured+' / 5');
+    assert.ok(host.querySelector('.sgv-honey-scoreboard-art'));
+    assert.match(host.querySelector('.sgv-honey-scoreboard-label').textContent,/Honey Collected/);
+    assert.match(targetRow.textContent,/Target:\s*5/);
+    assert.equal(host.querySelector('.sgv-honey-subline'),null);
     assert.equal(cta.disabled,false);
     assert.equal(cta.textContent,'NEXT');
     const reset=host.querySelector('.sgv-honey-reset');
@@ -531,9 +539,11 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     assert.ok(timeline,'the win card plays a celebration timeline');
     timeline.pause();
     timeline.time(0.90);
-    assert.equal(tally.textContent,String(secured));
+    assert.equal(tally.textContent,'0');
+    const mid=Number.parseFloat(liquid.style.height);
+    assert.ok(mid>0&&mid<=78,String(mid));
     assert.equal(bus.liveParticles(),0);
-    assert.equal(subline.textContent,secured+' / 5');
+    assert.match(targetRow.textContent,/Target:\s*5/);
     const overlay=host.querySelector('.sgv-end-overlay');
     await act(async()=>{
       overlay.dispatchEvent(new win.PointerEvent('pointerdown',{
@@ -542,7 +552,7 @@ test('a mounted settle mid-celebration leaves 0 tweens and a visible final card'
     });
     assert.ok(host.querySelector('.sgv-end-overlay'),'backdrop settles and stays on the card');
     assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
-    assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
+    assert.match(host.querySelector('.sgv-honey-scoreboard-target').textContent,/Target:\s*5/);
     assert.equal(host.querySelector('.sgv-win-praise').textContent,'Hiveful!');
     assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.equal(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill').style.height,'78%');
@@ -619,7 +629,7 @@ test('the settled timeline keeps a computed full jar',async()=>{
     const host=view.host;
     const timeline=timelineOf(host.querySelector('.sgv-win-praise'));
     assert.ok(timeline);
-    await act(async()=>{timeline.time(1.3);});
+    await act(async()=>{timeline.time(1.75);});
     assert.ok(host.querySelector('.sgv-success-settled'));
     assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'settled');
     await view.unmount();
@@ -639,7 +649,8 @@ test('reduced motion mounts the static final card with 0 particles',async()=>{
     assert.equal(host.querySelector('.sgv-win-praise').textContent,'Hiveful!');
     assert.equal(host.querySelector('.sgv-win-star'),null);
     assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
-    assert.equal(host.querySelector('.sgv-honey-subline').textContent,secured+' / 5');
+    assert.match(host.querySelector('.sgv-honey-scoreboard-target').textContent,/Target:\s*5/);
+    assert.match(host.querySelector('.sgv-honey-scoreboard-label').textContent,/Honey Collected/);
     assert.equal(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill').style.height,'78%');
     assert.ok(host.querySelector('.sgv-win-static'));
     assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'reduced-motion');
@@ -651,7 +662,7 @@ test('reduced motion mounts the static final card with 0 particles',async()=>{
   });
 });
 
-test('confetti starts at the laid-out lip on 320, 430, and a safe-area phone',async()=>{
+test('jar mouth origin stays laid out on 320, 430, and a safe-area phone',async()=>{
   await withStylesheet(async()=>{
     const cases=[
       {width:320,height:568,top:0,right:0,bottom:0,left:0},
@@ -675,8 +686,9 @@ test('confetti starts at the laid-out lip on 320, 430, and a safe-area phone',as
       const timeline=timelineOf(host.querySelector('.sgv-win-praise'));
       assert.ok(timeline,box.width+' timeline');
       timeline.pause();
-      timeline.time(0.8);
+      timeline.time(1.05);
       assert.equal(layer.__fxBus.pool.live().some(entry=>entry.event==='win-burst'),false);
+      assert.ok(host.querySelector('.sgv-honey-scoreboard'));
       const layerBox=layoutRect(layer);
       const lip=layoutRect(mouth);
       const origin={

@@ -1,25 +1,31 @@
 import {burstParticles,burstRadius as burstTravel,flightDropletSize,flightDroplets} from './starThresholds.js';
 
 // Presentation geometry for the honey-jar win. Nothing here writes a score.
-// PM overrides: count D is 0.600s (0.200→0.800, power2.out), flight droplets are
-// 16/18/20 px, confetti replaces the lip burst at 0.800, settle 1.300, CTA 1.700.
+// Fill-first 2.0s celebration: jar fill is the hero; score counts after Hiveful.
 export const HONEY_MOTION=Object.freeze({
-  cap:2.5,
-  settled:1.3,
-  scrim:Object.freeze({start:0,end:0.18,opacity:1}),
+  cap:2,
+  settled:1.75,
+  scrim:Object.freeze({start:0,end:0.15,opacity:1}),
   foliage:Object.freeze({start:0,end:0.25,fromY:12}),
+  jarEntrance:Object.freeze({
+    start:0.15,end:0.35,fromScale:0.92,peakScale:1.03,toScale:1
+  }),
+  fill:Object.freeze({start:0.35,end:1.05,ease:'power2.out'}),
   praise:Object.freeze({
-    start:0,peakEnd:0.14,end:0.22,opacityEnd:0.1,
+    start:1,peakEnd:1.14,end:1.22,underlineAt:1.08,opacityEnd:1.1,
     fromScale:0.55,peakScale:1.14,toScale:1
+  }),
+  scoreboard:Object.freeze({
+    start:1.1,end:1.75,fromScale:0.86,toScale:1,fromY:48
   }),
   flight:Object.freeze({
     emitStart:0.1,emitEnd:0.16,life:0.32,
     fadeIn:0.04,hold:0.2,fadeOut:0.08,lift:48
   }),
-  count:Object.freeze({start:0.2,duration:0.6,end:0.8,ease:'power2.out'}),
-  burst:Object.freeze({start:0.8,life:0.55}),
-  subline:Object.freeze({start:1,end:1.18,opacity:0.9}),
-  cta:Object.freeze({start:1.3,end:1.7,from:0.35,to:1,leg:0.2})
+  count:Object.freeze({start:1.3,duration:0.45,end:1.75,ease:'power2.out'}),
+  burst:Object.freeze({start:1.05,life:0.4}),
+  subline:Object.freeze({start:1.25,end:1.25,opacity:0}),
+  cta:Object.freeze({start:1.75,end:2,from:0,to:1,leg:0.2})
 });
 
 // Overlay aliases. Component CSS mirrors these custom properties.
@@ -164,8 +170,8 @@ export function honeyLayout(width,height,insets={}){
   const safeH=height-top-bottom;
   const short=safeH<520;
   const hud={x:left,y:top+HUD_PAD,w:safeW,h:HUD_H,bottom:top+HUD_PAD+HUD_H};
-  const praiseH=58;
-  const praiseY=top+24;
+  const praiseH=64;
+  const praiseY=top+2;
   const praiseX=left+16;
   const reset={x:width-right-16-44,y:top+16,w:44,h:44};
   let praiseW=safeW-32;
@@ -173,36 +179,43 @@ export function honeyLayout(width,height,insets={}){
     praiseW=Math.max(120,reset.x-8-praiseX);
   const jarW=Math.min(220,0.62*safeW);
   const naturalH=jarW*1.25;
-  const numberH=80;
-  const subH=24;
-  const jarGap=10;
-  const subGap=8;
-  const stageTop=praiseY+praiseH+12;
-  const ctaH=56;
-  const ctaY=height-bottom-16-ctaH;
-  const limit=ctaY-16;
+  const scoreboardH=188;
+  const praiseGap=8;
+  const jarGap=8;
+  const ctaH=70;
+  // Raise NEXT by one button height; chrome packs into the band above it.
+  // Foliage/scrim/warm-light stay pinned to the viewport.
+  const ctaY=height-bottom-16-ctaH-ctaH;
+  const limit=ctaY-12;
   let jarH=naturalH;
-  if(short)jarH=Math.min(jarH,Math.max(96,safeH-328));
-  const maxBody=limit-stageTop-jarGap-numberH-subGap-subH;
-  if(maxBody>96)jarH=Math.min(jarH,maxBody);
+  if(short)jarH=Math.min(jarH,Math.max(96,safeH-348));
+  const minJarY=top+2+praiseH+praiseGap;
+  const maxBody=limit-minJarY-jarGap-scoreboardH;
+  if(maxBody>0)jarH=Math.min(jarH,maxBody);
+  const maxJarY=Math.max(minJarY,limit-scoreboardH-jarGap-jarH);
+  // Prefer the jar's vertical center near mid-screen, then clamp into the free band.
+  const idealJarY=top+safeH*0.46-jarH/2;
+  const jarY=Math.min(maxJarY,Math.max(minJarY,idealJarY));
+  // Lift the slogan ~1/5 of its slot height above the previous baseline.
+  const praiseTop=Math.max(top,Math.max(top+2,jarY-praiseGap-praiseH)-Math.round(praiseH*0.2));
+  const scoreboardY=jarY+jarH+jarGap;
   const contentX=left+16;
   const contentW=safeW-32;
   const jarX=left+(safeW-jarW)/2;
-  const numberY=stageTop+jarH+jarGap;
-  const subY=numberY+numberH+subGap;
   return {
     safeW,safeH,short,hud,
     praise:{
-      x:praiseX,y:praiseY,w:praiseW,h:praiseH,
-      font:Math.min(44,Math.max(36,36+(safeW-320)*8/70))
+      x:praiseX,y:praiseTop,w:praiseW,h:praiseH,
+      font:Math.min(48,Math.max(40,40+(safeW-320)*8/70))
     },
-    jar:{x:jarX,y:stageTop,w:jarW,h:jarH},
-    number:{
-      x:contentX,y:numberY,w:contentW,h:numberH,
-      font:Math.min(80,Math.max(64,0.2*safeW))
+    jar:{x:jarX,y:jarY,w:jarW,h:jarH},
+    scoreboard:{
+      x:contentX,y:scoreboardY,w:contentW,h:scoreboardH,
+      font:Math.min(44,Math.max(32,0.11*safeW))
     },
-    subline:{x:contentX,y:subY,w:contentW,h:subH,font:18},
-    cta:{x:contentX,y:ctaY,w:contentW,h:ctaH},
+    cta:{
+      x:left+(safeW-contentW*0.5)/2,y:ctaY,w:contentW*0.5,h:ctaH
+    },
     reset
   };
 }
@@ -224,11 +237,11 @@ export function applyHoneyLayout(node,width,height,insets){
   set('--honey-jar-left',layout.jar.x+'px');
   set('--honey-jar-width',layout.jar.w+'px');
   set('--honey-jar-height',layout.jar.h+'px');
-  set('--honey-count-top',layout.number.y+'px');
-  set('--honey-count-height',layout.number.h+'px');
-  set('--honey-count-font',layout.number.font+'px');
-  set('--honey-sub-top',layout.subline.y+'px');
-  set('--honey-sub-font',layout.subline.font+'px');
+  set('--honey-scoreboard-top',layout.scoreboard.y+'px');
+  set('--honey-scoreboard-left',layout.scoreboard.x+'px');
+  set('--honey-scoreboard-width',layout.scoreboard.w+'px');
+  set('--honey-scoreboard-height',layout.scoreboard.h+'px');
+  set('--honey-count-font',layout.scoreboard.font+'px');
   set('--honey-reset-top',layout.reset.y+'px');
   set('--honey-reset-right',(width-layout.reset.x-layout.reset.w)+'px');
   return layout;
@@ -242,20 +255,26 @@ export function fillFraction(tally,target){
   return Math.min(1,value/goal);
 }
 
-export function overflowReveal(eased,secured,target){
-  const score=Math.trunc(Number(secured));
-  const goal=Number(target);
-  if(!Number.isFinite(score)||!(score>goal)||!(goal>0))return 0;
-  const progress=clamp01(eased);
-  const cross=goal/score;
-  if(progress<cross)return 0;
-  const elapsed=(invertPower2Out(progress)-invertPower2Out(cross))*HONEY_MOTION.count.duration;
-  return Math.min(1,Math.max(0,elapsed/0.18));
+export function overflowReveal(){
+  return 0;
+}
+
+export function fillFrame(time,secured,target){
+  const start=HONEY_MOTION.fill.start;
+  const duration=HONEY_MOTION.fill.end-start;
+  let linear=0;
+  if(time>=start+duration)linear=1;
+  else if(time>start)linear=(time-start)/duration;
+  const eased=power2Out(linear);
+  const finalFraction=fillFraction(secured,target);
+  const fraction=finalFraction*eased;
+  return {linear,eased,fraction,percent:FILL_MAX*fraction};
 }
 
 export function countFrame(time,secured,target){
   const score=Math.trunc(Number(secured));
   const safe=Number.isFinite(score)?Math.max(0,score):0;
+  const goal=Number(target);
   const start=HONEY_MOTION.count.start;
   const duration=HONEY_MOTION.count.duration;
   let linear=0;
@@ -264,20 +283,18 @@ export function countFrame(time,secured,target){
   const eased=power2Out(linear);
   const tally=safe*eased;
   const shown=linear>=1?safe:Math.floor(tally);
+  const clipped=Number.isFinite(shown)?Math.min(safe,Math.max(0,shown)):0;
   return {
     linear,eased,tally,
-    shown:Number.isFinite(shown)?Math.min(safe,Math.max(0,shown)):0,
+    shown:clipped,
     fraction:fillFraction(tally,target),
-    overflow:overflowReveal(eased,safe,target)
+    overflow:0,
+    targetMet:goal>0&&clipped>=goal
   };
 }
 
-export function overflowMarks(tier,secured,target){
-  const score=Number(secured);
-  const goal=Number(target);
-  if(!(score>goal))return [];
-  const marks=OVERFLOW[tier]||[];
-  return marks.map((mark,index)=>({...mark,key:mark.kind+'-'+index}));
+export function overflowMarks(){
+  return [];
 }
 
 export function flightEmitTime(index,count){

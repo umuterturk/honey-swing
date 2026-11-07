@@ -35,8 +35,8 @@ const BURST=Object.freeze([0,16,20,24]);
 const BURST_RADIUS=Object.freeze([0,56,72,88]);
 const FLIGHT=Object.freeze([0,8,12,16]);
 const FLIGHT_SIZE=Object.freeze([0,16,18,20]);
-// PM override: the count-up is a fixed 0.600s, not the digit-based 40/80/120ms.
-export const COUNT_UP_SECONDS=0.6;
+// Score reveal count-up during the post-Hiveful scoreboard beat (1.3→1.75).
+export const COUNT_UP_SECONDS=0.45;
 
 function integer(value){
   const number=Math.trunc(Number(value));
