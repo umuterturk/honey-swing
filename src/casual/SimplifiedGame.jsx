@@ -707,6 +707,7 @@ export default function SimplifiedGame(){
           </div>
         </div>
       </header>
+      <div className="sgv-spring-top" aria-hidden="true"/>
       <div className="sgv-middle">
         <HorizontalMeter position={view.position} limit={level.rules.snapLimit}
           multipliers={view.factors} visibleFactors={level.visibleFactors}
@@ -758,6 +759,7 @@ export default function SimplifiedGame(){
           </button>}
         </div>
       </section>
+      <div className="sgv-spring-bottom" aria-hidden="true"/>
       {help&&!finished&&<ul className="sgv-glossary" role="note">
         <li>Card → meter → Pot</li>
         <li>SAVE → Savings</li>

@@ -35,8 +35,14 @@ button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
  pointer-events:none;user-select:none;-webkit-user-select:none;will-change:transform,opacity;
 }
 
-/* Middle is a stable flex column; no popup/button text can alter meter width. */
-.sgv-middle{position:relative;min-width:0;width:100%;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:0}
+/* Top/bottom springs: absorb leftover height outside the play stack.
+   Bottom is weighted 2.5× so tall phones show more garden below SAVE. */
+.sgv-spring-top{flex:1 1 0;min-height:0;min-width:0;pointer-events:none}
+.sgv-spring-bottom{flex:2.5 1 0;min-height:0;min-width:0;pointer-events:none}
+
+/* Middle is a stable flex column; no popup/button text can alter meter width.
+   flex:none + min-height:0 keeps it fixed-height so springs absorb tall-screen leftover. */
+.sgv-middle{position:relative;min-width:0;min-height:0;width:100%;flex:none;display:flex;flex-direction:column;align-items:center;gap:4px}
 .sgv-mini-hint{flex:none;align-self:center;display:flex;align-items:center;justify-content:center;width:min(96%,375px);min-height:26px;height:26px;margin-top:4px;color:#76537f;font-size:clamp(12px,3vw,14px);line-height:1.2;font-weight:900;text-align:center;text-shadow:0 2px #fffee7;white-space:nowrap;overflow:hidden}
 .sgv-meter-section{position:relative;z-index:2;flex:none;width:min(100%,540px);min-width:0;max-width:100%;height:auto;min-height:clamp(126px,19dvh,178px);padding:4px clamp(6px,2vw,12px) 0;display:flex;flex-direction:column;justify-content:flex-end;overflow:visible}
 .sgv-meter-caption{display:none}
@@ -113,7 +119,7 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-chest-mouth{position:absolute;z-index:5;top:13%;left:50%;width:3px;height:3px;transform:translateX(-50%);pointer-events:none}
 
 /* Card shelf and just two actions. */
-.sgv-controls{position:relative;z-index:3;flex:none;width:calc(100% + 32px);min-width:0;margin:0 -16px;padding:8px 16px 0;height:clamp(196px,28.5dvh,248px);display:flex;flex-direction:column;justify-content:flex-end}
+.sgv-controls{position:relative;z-index:3;flex:none;min-height:0;width:calc(100% + 32px);min-width:0;margin:0 -16px;padding:8px 16px 0;height:256px;display:flex;flex-direction:column;justify-content:flex-end}
 .sgv-card-shelf{position:absolute;z-index:0;pointer-events:none;left:0;right:0;top:calc(clamp(100px,15.5dvh,138px) - 10px);height:43px;border:5px solid #f4bc83;border-radius:18px 18px 25px 25px;background:linear-gradient(#efba7f 0%,#e8a05c 42%,#b97040 80%);box-shadow:inset 0 6px #ffe0a5,0 6px 0 #9d623b,0 11px 16px #527b5369}
 .sgv-card-shelf:before{content:"";position:absolute;top:6px;left:13px;right:13px;height:4px;border-radius:10px;background:#fff4c1a1}
 .sgv-hand{position:relative;z-index:2;flex:none;width:100%;height:clamp(100px,15.5dvh,138px);display:flex;justify-content:center;align-items:stretch;gap:clamp(7px,2.7vw,17px);padding:0 8px;margin-bottom:clamp(14px,2.6dvh,22px)}
@@ -348,7 +354,8 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  .sgv-mini-hint{height:21px;min-height:21px;margin-top:4px}
  .sgv-meter-section{height:auto;min-height:clamp(108px,17dvh,136px);padding-top:1px}
  .sgv-chest-art{height:clamp(145px,25dvh,200px)}
- .sgv-controls{height:clamp(172px,28dvh,204px);padding-top:3px}
+ /* Fixed controls height at 730; springs absorb tall-screen leftover above/below stack */
+ .sgv-controls{height:196px;padding-top:3px}
  .sgv-hand{height:clamp(84px,14.5dvh,114px);margin-bottom:clamp(10px,1.8dvh,14px)}
  .sgv-card-shelf{top:calc(clamp(84px,14.5dvh,114px) - 9px)}
  .sgv-action{height:clamp(56px,8.5dvh,64px)}
@@ -372,8 +379,8 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
  .sgv-intro-target{animation:sgv-target-fly 0.01s forwards}
 }
 
-@media(max-height:730px){.sgv-meter{height:124px}.sgv-multipliers{top:66px}.sgv-multiplier-pill{height:29px;font-size:16px}.sgv-multiplier-pill::before{top:-14px;height:14px}}
-@media(max-height:580px){.sgv-meter{height:118px}.sgv-multipliers{top:64px}.sgv-multiplier-pill{height:26px;padding:0 7px;font-size:15px}}
+@media(max-height:730px){.sgv-meter{height:124px}.sgv-multipliers{top:66px}.sgv-multiplier-pill{height:29px;font-size:16px}.sgv-multiplier-pill::before{top:-14px;height:14px}.sgv-meter-section{margin-top:6px}}
+@media(max-height:580px){.sgv-meter{height:118px}.sgv-multipliers{top:64px}.sgv-multiplier-pill{height:26px;padding:0 7px;font-size:15px}.sgv-meter-section{margin-top:4px}}
 
 
 /* P0: an open, unstable Pot and an independent secured target, both OUTSIDE glass. */
@@ -766,29 +773,26 @@ button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 /* P0 two-bottle interaction: one small at-risk source + one larger secured
    destination. No separate Bank button and no duplicated secured HUD. */
 .sgv-bottle-pair{
- position:relative;z-index:2;flex:1;min-height:0;min-width:0;
+ position:relative;z-index:2;flex:none;min-height:0;min-width:0;
  width:100%;max-width:480px;
- /* Stage height must fit Bank jar; Pot/Bank share top edge.
-    Bottom-bias jars into spare stage (no transform — GSAP owns x/y).
-    --jar-h stays in sync with .sgv-bank-bottle; sink capped for pour length. */
+ /* Fixed stage height: springs handle tall screens, not this element.
+    --jar-h stays in sync with .sgv-bank-bottle height.
+    --jar-top is a small fixed offset; no spare-stage sink needed. */
  --jar-h:clamp(130px,24dvh,184px);
- --jar-top:min(56px,max(8px,calc(100% - var(--jar-h) - clamp(10px,2.2dvh,22px))));
- min-height:clamp(150px,28dvh,230px);
- padding:4px 0 clamp(8px,2dvh,18px);
+ --jar-top:8px;
+ height:206px;
+ padding:4px 0 14px;
  display:block;
 }
 @media(max-width:365px){
  .sgv-bottle-pair{--jar-h:118px}
 }
 @media(max-height:730px){
- .sgv-bottle-pair{
-  --jar-top:min(36px,max(8px,calc(100% - var(--jar-h) - clamp(8px,1.8dvh,16px))));
- }
+ /* Fixed jar stage at 730; --jar-top stays 8px (inherits from base rule) */
+ .sgv-bottle-pair{height:184px}
 }
 @media(max-height:580px){
- .sgv-bottle-pair{
-  --jar-top:min(20px,max(4px,calc(100% - var(--jar-h) - 8px)));
- }
+ .sgv-bottle-pair{height:148px}
 }
 .sgv-bottle-pair .sgv-pending-pot{
  position:absolute;left:50%;top:var(--jar-top);
