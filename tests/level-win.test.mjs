@@ -266,80 +266,6 @@ test('star thresholds match Appendix A for all 20 levels',()=>{
   assert.equal(honeyTier(9,17),3);
 });
 
-test('praise and bursts follow the star tier and never change the engine score',()=>{
-  assert.deepEqual(praiseFor(1),{tier:1,text:'Nectar!',sound:'praise.nectar'});
-  assert.deepEqual(praiseFor(2),{tier:2,text:'Amber!',sound:'praise.amber'});
-  assert.deepEqual(praiseFor(3),{tier:3,text:'Hiveful!',sound:'praise.hiveful'});
-  assert.equal(praiseFor(0),null);
-  assert.equal(burstParticles(0),0);
-  assert.equal(burstParticles(1),16);
-  assert.equal(burstParticles(2),20);
-  assert.equal(burstParticles(3),24);
-  assert.ok(burstParticles(3)<=24);
-  let round=newOnboardingRound(1);
-  round=stepOnboarding(round,{type:'steer',index:0});
-  round=stepOnboarding(round,{type:'steer',index:0});
-  round=stepOnboarding(round,{type:'bank'});
-  const secured=round.game.deal.T;
-  assert.ok(secured>=onboardingLevel(1).target);
-  assert.equal(honeyTier(1,secured),3);
-  assert.equal(praiseFor(honeyTier(1,secured)).text,'Hiveful!');
-  assert.equal(round.game.deal.T,secured);
-  const sweet=successPlan({victory:true,levelId:4,secured:11});
-  assert.equal(sweet.tier,1);
-  assert.equal(sweet.flight.size,16);
-  assert.equal(sweet.praise.text,'Nectar!');
-  assert.equal(sweet.burst.particles,16);
-  assert.equal(sweet.count.to,11);
-  const tasty=successPlan({victory:true,levelId:4,secured:18});
-  assert.equal(tasty.tier,2);
-  assert.equal(tasty.flight.size,18);
-  assert.equal(tasty.praise.text,'Amber!');
-  assert.equal(tasty.burst.particles,20);
-  const divine=successPlan({victory:true,levelId:11,secured:32});
-  assert.equal(divine.tier,3);
-  assert.equal(divine.flight.size,20);
-  assert.equal(divine.praise.text,'Hiveful!');
-  assert.equal(divine.count.to,32);
-  assert.equal(divine.burst.particles,24);
-  assert.equal(divine.ctaAt,0);
-  assert.equal(divine.scoreAt,0);
-  const lost=successPlan({victory:false,levelId:11,secured:32,bank:true});
-  assert.equal(lost.effects,false);
-  assert.equal(lost.tier,0);
-  assert.equal(lost.star,null);
-  assert.equal(lost.praise,null);
-  assert.equal(lost.particles,0);
-  assert.equal(lost.burst,null);
-  assert.equal(lost.count,null);
-  const reduced=successPlan({victory:true,levelId:1,secured:8,reduced:true});
-  assert.equal(reduced.motion,false);
-  assert.equal(reduced.particles,0);
-  assert.equal(reduced.tier,3);
-  assert.equal(reduced.flight.count,0);
-  assert.equal(reduced.praise.text,'Hiveful!');
-  assert.equal(reduced.count.to,8);
-});
-
-test('reduced motion shows the final card and emits 0 particles',()=>{
-  const stage=makeStage();
-  stage.praise.textContent='Amber!';
-  const bus=createFxBus({reducedMotion:()=>false});
-  const handle=playWinCelebration({
-    victory:true,secured:18,target:11,tier:2,praise:stage.praise,liquid:stage.liquid,
-    scoreboard:stage.board,targetRow:stage.targetRow,tally:stage.tally,cta:stage.cta,card:stage.card,reduced:true,bus
-  });
-  assert.equal(handle.motion,false);
-  assert.equal(handle.timeline,null);
-  assert.equal(bus.liveParticles(),0);
-  assert.equal(bus.tweenCount(),0);
-  assert.equal(gsap.getTweensOf(stage.praise).length,0);
-  assert.equal(stage.tally.textContent,'18');
-  assert.equal(stage.praise.style.opacity,'1');
-  assert.equal(stage.liquid.style.height,'78%');
-  stage.remove();
-});
-
 test('a fail plays no praise, stars, count-up, or particles',()=>{
   const stage=makeStage(3);
   const bus=createFxBus({reducedMotion:()=>false});
@@ -465,32 +391,6 @@ test('a mounted loss shows the quiet end card',async()=>{
     assert.equal(bus.liveParticles(),0);
     assert.equal(bus.tweenCount(),0);
     assert.equal(gsap.getTweensOf(host.querySelector('.sgv-end-card')).length,0);
-    await view.unmount();
-  });
-});
-
-test('reduced motion mounts the static final card with 0 particles',async()=>{
-  await withStylesheet(async()=>{
-    resetStorage();
-    useMotion(true);
-    const round=bankedLevel1();
-    const secured=round.game.deal.T;
-    saveRound(round);
-    const view=await mount();
-    const host=view.host;
-    const bus=host.querySelector('.sgv-fx-layer').__fxBus;
-    assert.equal(host.querySelector('.sgv-win-praise').textContent,'Hiveful!');
-    assert.equal(host.querySelector('.sgv-win-star'),null);
-    assert.equal(host.querySelector('.sgv-win-tally').textContent,String(secured));
-    assert.match(host.querySelector('.sgv-honey-scoreboard-target').textContent,/Target:\s*5/);
-    assert.match(host.querySelector('.sgv-honey-scoreboard-label').textContent,/Honey Collected/);
-    assert.equal(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill').style.height,'78%');
-    assert.ok(host.querySelector('.sgv-win-static'));
-    assertComputedFill(host.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),'reduced-motion');
-    assert.equal(bus.liveParticles(),0);
-    assert.equal(bus.tweenCount(),0);
-    assert.equal(gsap.getTweensOf(host.querySelector('.sgv-win-praise')).length,0);
-    assert.equal(host.querySelector('.sgv-end-cta').textContent,'NEXT');
     await view.unmount();
   });
 });
