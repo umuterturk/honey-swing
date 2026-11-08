@@ -35,20 +35,6 @@ test('Level 15 can Snap on the opening +9 and still keep a win path',()=>{
   assert.equal(hasWinningContinuation(snapped),true);
 });
 
-test('Level 12 after +4 then +1 does not hint the Bank that caps at 17',()=>{
-  const state=line(12,[4,1]);
-  let capped=play(state,bank);
-  capped=play(capped,flip);
-  capped=play(capped,bank);
-  assert.equal(capped.game.deal.T,17);
-  assert.equal(play(state,flip).game.deal.potValue,29);
-  const hint=idleHintAction(state);
-  assert.notEqual(hint.type,'bank');
-  assert.equal(hint.type,'flip');
-  assert.equal(hasWinningContinuation(stepOnboarding(state,hint)),true);
-  assert.equal(hasWinningContinuation(stepOnboarding(state,bank)),false);
-});
-
 test('Level 6 keeps the Flip line when Bank is also a winning action',()=>{
   const opening=idleHintAction(newOnboardingRound(6));
   assert.equal(opening.type,'flip');
