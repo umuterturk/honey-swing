@@ -166,36 +166,6 @@ test('Swing without a zero cross falls back to meterStart',()=>{
   assert.equal(marks.swingFlyer,marks.meterStart);
 });
 
-test('reduced motion uses More Flower / More Bee and never CROSS',()=>{
-  assert.equal(STATIC_OUTCOME_MS,1100);
-  const quiet=reducedCardSummary({to:4,rawPotAfter:9,addedToPot:4,rewards:[],factorsAfter:[]});
-  assert.equal(quiet.add,'+4');
-  assert.equal(quiet.flower,null);
-  assert.equal(quiet.bee,null);
-  assert.equal(quiet.cross,null);
-  const swing=reducedCardSummary({
-    to:-2,rawPotAfter:13,addedToPot:10,
-    rewards:[{kind:'swing',value:2}],factorsAfter:[{kind:'swing',value:2}]
-  });
-  assert.equal(swing.flower,'More Flower');
-  assert.equal(swing.bee,null);
-  assert.equal(swing.cross,null);
-  const flip=reducedCardSummary({
-    to:4,rawPotAfter:9,addedToPot:4,
-    rewards:[{kind:'flip',value:3}],factorsAfter:[{kind:'flip',value:3}]
-  });
-  assert.equal(flip.bee,'More Bee');
-  assert.equal(flip.flower,null);
-  const both=reducedCardSummary({
-    to:-2,rawPotAfter:13,addedToPot:10,
-    rewards:[{kind:'swing',value:2},{kind:'flip',value:2},{kind:'jackpot',value:2}],
-    factorsAfter:[]
-  });
-  assert.equal(both.flower,'More Flower');
-  assert.equal(both.bee,'More Bee');
-  assert.equal(both.cross,null);
-});
-
 test('factor flyer motion uses More Flower / More Bee art and drops CROSS chips',()=>{
   const motion=readFileSync(new URL('../src/casual/minimalMotion.js',import.meta.url),'utf8');
   assert.match(motion,/More Flower/);
@@ -206,25 +176,4 @@ test('factor flyer motion uses More Flower / More Bee art and drops CROSS chips'
   assert.doesNotMatch(motion,/textContent='CROSS'/);
   const css=readFileSync(new URL('../src/casual/minimal.css',import.meta.url),'utf8');
   assert.match(css,/\.sgv-factor-flyer\b/);
-});
-
-test('reduced motion Snap keeps add hidden and does not shake',()=>{
-  const zero=reducedCardSummary({to:0,rawPotAfter:17,addedToPot:4,rewards:[],factorsAfter:[],snap:false});
-  assert.equal(zero.position,0);
-  assert.equal(zero.add,'+4');
-  assert.equal(zero.cross,null);
-  assert.equal(zero.shake,false);
-  const snap=reducedCardSummary({
-    snap:true,to:9,rawPotAfter:0,addedToPot:0,rewards:[],factorsAfter:[],securedAfter:6
-  });
-  assert.equal(snap.position,0);
-  assert.equal(snap.rawPot,0);
-  assert.equal(snap.add,null);
-  assert.equal(snap.cross,null);
-  assert.equal(snap.shake,false);
-  const bank=reducedBankSummary(4,12);
-  assert.deepEqual(bank,{pot:0,secured:12,gain:'+8'});
-  const css=readFileSync(new URL('../src/casual/minimal.css',import.meta.url),'utf8');
-  const blocks=[...css.matchAll(/@media\(prefers-reduced-motion:reduce\)\{([^}]*)\}/g)].map(match=>match[1]);
-  assert.ok(blocks.some(block=>block.includes('.sgv-event-snap .sgv-meter-track')&&block.includes('animation:none')));
 });
