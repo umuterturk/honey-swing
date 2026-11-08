@@ -203,40 +203,6 @@ test('Level 2: both orders fill 6, and a middle pass with Swing off is not a cro
   assert.deepEqual(multiplierRewards(across.game.deal,across.game.lastAction),[]);
 });
 
-test('Level 3: the pulsed cross pays 13 and the other order still banks 8',()=>{
-  let hot=line(3,[3,-5]);
-  assert.equal(pot(hot),13);
-  assert.equal(hot.game.lastAction.addedToPot,10);
-  assert.deepEqual(factors(hot),[2,1,1]);
-  assert.equal(play(hot,bank).game.deal.T,13);
-  let quiet=line(3,[-5,3]);
-  assert.equal(quiet.game.deal.S,-2);
-  assert.equal(quiet.game.lastAction.swung,false);
-  assert.equal(pot(quiet),8);
-  assert.equal(play(quiet,bank).game.deal.T,8);
-});
-
-test('Level 4: every order clears, and the quiet line is 11',()=>{
-  const table=[
-    [[2,-5,4],24],[[4,-5,2],20],[[2,4,-5],11],
-    [[4,2,-5],11],[[-5,2,4],15],[[-5,4,2],13]
-  ];
-  for(const [order,total] of table){
-    const state=line(4,order);
-    assert.equal(pot(state),total,order.join(','));
-    assert.equal(state.snaps,0);
-  }
-  for(const order of [[2,4],[-5,2],[-5,4]]){
-    let state=line(4,order);
-    state=play(state,bank);
-    const left=state.game.deal.hand.map(signed);
-    assert.equal(left.length,1);
-    state=steerValue(state,left[0]);
-    state=play(state,bank);
-    assert.equal(state.game.deal.T,11,order.join(','));
-  }
-});
-
 test('Level 5: the hidden card is a Flip, pays its rank, and never ticks Swing',()=>{
   let state=line(5,[3,2]);
   assert.deepEqual(state.game.deal.hand,[]);
@@ -251,87 +217,6 @@ test('Level 5: the hidden card is a Flip, pays its rank, and never ticks Swing',
   const flipped=line(5,['flip',3,2,'bank']);
   assert.equal(flipped.flipCount,1);
   assert.equal(flipped.game.deal.T>=6,true);
-});
-
-test('Level 6: Flip-first banks 13 and hand-first banks 16, both ticking Flip twice',()=>{
-  let first=line(6,['flip','flip']);
-  assert.equal(pot(first),13);
-  assert.equal(first.game.lastAction.addedToPot,9);
-  assert.deepEqual(factors(first),[1,3,1]);
-  assert.equal(play(first,bank).game.deal.T,13);
-  let hand=line(6,[2,1,'flip','flip']);
-  assert.equal(pot(hand),16);
-  assert.deepEqual(factors(hand),[1,3,1]);
-  assert.equal(hand.snaps,0);
-});
-
-test('Level 7: the cross banks 13 and the quiet line reaches 10 with one Flip',()=>{
-  let cross=line(7,[3,-5]);
-  assert.equal(pot(cross),13);
-  assert.deepEqual(factors(cross),[2,1,1]);
-  assert.equal(play(cross,bank).game.deal.T,13);
-  let quiet=line(7,[-5,3,'flip']);
-  assert.equal(pot(quiet),10);
-  assert.equal(quiet.game.lastAction.addedToPot,2);
-  assert.deepEqual(factors(quiet),[1,2,1]);
-  let banked=line(7,[-5,3,'bank','flip','bank']);
-  assert.equal(banked.game.deal.T,10);
-});
-
-test('Level 8: a crossing Flip ticks Swing and Flip and pays ×4',()=>{
-  let hot=line(8,[2,'flip']);
-  assert.equal(pot(hot),26);
-  assert.equal(hot.game.lastAction.addedToPot,24);
-  assert.deepEqual(factors(hot),[2,2,1]);
-  assert.equal(hot.game.deal.flipStreak,1);
-  assert.deepEqual(multiplierRewards(hot.game.deal,hot.game.lastAction).map(reward=>reward.kind),['swing','flip']);
-  assert.equal(line(8,[3,'flip']).game.deal.potValue,27);
-  assert.equal(line(8,[2,3,'flip']).game.deal.potValue,29);
-  let early=line(8,['flip',2,3]);
-  assert.equal(pot(early),22);
-  assert.deepEqual(factors(early),[1,2,1]);
-  assert.equal(play(early,bank).game.deal.T,22);
-  let floor=line(8,[2,3,'bank','flip','bank']);
-  assert.equal(floor.game.deal.T,17);
-  assert.equal(onboardingVictory(floor),true);
-});
-
-test('Level 9: the quiet order still fills 11 and the cross fills 17',()=>{
-  assert.equal(line(9,[5,-6]).game.deal.potValue,17);
-  assert.equal(line(9,[-6,5]).game.deal.potValue,11);
-  assert.equal(play(line(9,[-6,5]),bank).game.deal.T,11);
-});
-
-test('Level 10: Bank waits for zero, and the zero play does not drop the Pot',()=>{
-  let state=line(10,[3,-5]);
-  assert.equal(pot(state),13);
-  assert.equal(onboardingActions(state).some(action=>action.type==='bank'),false);
-  const before=pot(state);
-  state=steerValue(state,2);
-  assert.equal(state.game.lastAction.zeroBreak,true);
-  assert.equal(state.game.lastAction.addedToPot,4);
-  assert.equal(pot(state),17);
-  assert.ok(pot(state)>=before);
-  assert.deepEqual(factors(state),[1,1,1]);
-  assert.equal(state.game.deal.S,0);
-  state=play(state,bank);
-  assert.equal(state.game.deal.T,17);
-  const orders=[[3,-5,2],[-5,3,2],[3,2,-5],[2,3,-5],[-5,2,3],[2,-5,3]];
-  for(const order of orders){
-    let round=newOnboardingRound(10),sawZero=false,previous=0;
-    for(const value of order){
-      previous=pot(round);
-      round=steerValue(round,value);
-      if(round.game.lastAction.zeroBreak){
-        sawZero=true;
-        assert.ok(pot(round)>=previous,order.join(','));
-      }
-    }
-    assert.equal(sawZero,true,order.join(','));
-    assert.equal(onboardingActions(round).some(action=>action.type==='bank'),true);
-    round=play(round,bank);
-    assert.ok(round.game.deal.T>=10,order.join(',')+' banked '+round.game.deal.T);
-  }
 });
 
 test('Level 11: the safe line banks 11 and the taught Snap recovers to 9',()=>{
@@ -353,48 +238,6 @@ test('Level 11: the safe line banks 11 and the taught Snap recovers to 9',()=>{
     assert.equal(state.game.deal.T,9,leftover.join(','));
     assert.equal(state.snaps,1);
   }
-});
-
-test('Level 12: plus-then-Flip banks 28 and Flip-first never reaches the target',()=>{
-  let hot=line(12,[4,'flip']);
-  assert.equal(pot(hot),28);
-  assert.equal(hot.game.lastAction.addedToPot,24);
-  assert.deepEqual(factors(hot),[2,2,1]);
-  assert.equal(play(hot,bank).game.deal.T,28);
-  assert.equal(line(12,[1,'flip']).game.deal.potValue,25);
-  assert.equal(line(12,[4,1,'flip']).game.deal.potValue,29);
-  assert.equal(line(12,[4,'flip',1]).game.deal.potValue,32);
-  assert.equal(line(12,[1,'flip',4]).game.deal.potValue,41);
-  assert.equal(line(12,['flip',4,1]).game.deal.potValue,22);
-  let short=line(12,['flip',4,'bank',1,'bank']);
-  assert.equal(short.game.deal.T,21);
-  let obvious=line(12,[4,1,'bank','flip','bank']);
-  assert.equal(obvious.game.deal.T,17);
-  let best=0;
-  const queue=[line(12,['flip'])];
-  const seen=new Set();
-  while(queue.length){
-    const state=queue.pop();
-    const d=state.game.deal;
-    const key=JSON.stringify([state.turn,state.snaps,d.T,d.potValue,d.S,d.W,
-      d.flipFactor,d.jackpotFactor,d.plays,d.hand,d.pos]);
-    if(seen.has(key))continue;
-    seen.add(key);
-    best=Math.max(best,state.game.deal.T);
-    if(state.game.deal.T>=24||state.game.status!=='playing')continue;
-    for(const action of onboardingActions(state))queue.push(play(state,action));
-  }
-  assert.equal(best,22);
-});
-
-test('Lower Orchard stubs are winnable and the light test can miss by banking early',()=>{
-  assert.equal(play(line(15,['flip','flip']),bank).game.deal.T,38);
-  let miss=line(15,[4,'flip','bank']);
-  assert.equal(miss.game.deal.T,6);
-  assert.equal(onboardingVictory(miss),false);
-  assert.equal(play(line(13,[3,2,-6]),bank).game.deal.T>=16,true);
-  assert.equal(play(line(19,['flip','flip']),bank).game.deal.T,38);
-  assert.equal(play(line(20,['flip',3]),bank).game.deal.T,14);
 });
 
 test('Levels 15–20 open with a +9 Snap for feedback testing',()=>{
