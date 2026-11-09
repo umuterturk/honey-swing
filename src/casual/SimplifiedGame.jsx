@@ -1,717 +1,318 @@
-import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
-import {signed} from '../external/engines.js';
-import {GardenScene} from './CasualArt.jsx';
-import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
-import {displayOf,settledPresentation} from './presentation.js';
-import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
-import {applyHoneyLayout} from './honeyWin.js';
-import {playWinCelebration} from './winMotion.js';
-import {playLevelStart} from './levelStartMotion.js';
-import {createActionPresentation,runPresentedAction} from './actionPresentation.js';
-import {playOutcome,startPlayMotion} from './playMotion.js';
-import {createFxBus} from './fx/fxBus.js';
-import {FxLayer} from './fx/FxLayer.jsx';
-import {clearWinMemo} from './idleHint.js';
-import {LevelEndScreen,LevelStartScreen,dismissLevelScreen} from './levelScreens.js';
-import {nextBankAnnouncement} from './bankStatus.js';
-import {focusTargetAfterSkip,isSkipKey,rememberFocus} from './skipFocus.js';
-import {
-  ONBOARDING_PROGRESS_KEY,clearOnboardingProgress,
-  prepareOnboardingJump,readUnlockedOnboardingLevel
-} from './onboardingProgress.js';
-import {commitPlay,loadSavedRound,saveRound} from './sessionRecords.js';
-import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
-import {FactorInfoOverlay} from './FactorInfoOverlay.jsx';
-import {factorInfoFor} from './factorInfoContent.js';
-import {
-  boardTapDuringIntro,dismissFeatureIntro,featureIntroForEntry,introPointerDecision,
-  derivedFeatureUnlocks
-} from './featureIntroRegistry.js';
+import React, {useEffect, useRef, useState} from 'react';
+import {createActionPresentation, runPresentedAction} from './actionPresentation.js';
+import {boardClickDecision, boardKeyDecision, boardPointerDecision} from './boardInput.js';
 import {boardReadout} from './boardReadout.js';
+import {createFxBus} from './fx/fxBus.js';
+import {boardTapDuringIntro, dismissFeatureIntro, derivedFeatureUnlocks} from './featureIntroRegistry.js';
+import {clearWinMemo} from './idleHint.js';
+import {dismissLevelScreen} from './levelScreens.js';
+import {GARDEN_2_START, ONBOARDING_COUNT, onboardingFinished, onboardingLevel, onboardingVictory} from './onboardingLevels.js';
+import {ONBOARDING_PROGRESS_KEY, clearOnboardingProgress, prepareOnboardingJump} from './onboardingProgress.js';
+import {OnboardingPhone} from './OnboardingPhone.jsx';
+import {browserStorage, dispatchCasualEvent, prefersReducedMotion} from './platform.js';
+import {introCopy, successPlan, takeFirstOutcome} from './presentationSequence.js';
+import {settledPresentation} from './presentation.js';
+import {playOutcome, startPlayMotion} from './playMotion.js';
 import {
-  newOnboardingRound,onboardingLevel,onboardingVictory,wouldSnap,ONBOARDING_COUNT,GARDEN_2_START
-} from './onboardingLevels.js';
+  ackAfterCommit, arrivalSettled, clearedDock, closedDevMenu, closedFactor, closedStart,
+  dismissedIntro, endTransition, initialScreen, levelScreen, openedFactor, phoneClassName,
+  settledScreen, successMarked, toggledDevMenu, toggledHelp
+} from './screenState.js';
+import {commitPlay, saveRound} from './sessionRecords.js';
+import {
+  useBoardChrome, useDebugBridge, useHoneyLayout, useLevelArrival, useSkipFocus, useWinCelebration
+} from './screenEffects.js';
 
-const PROGRESS_KEY=ONBOARDING_PROGRESS_KEY;
-function prefersReducedMotion(){
-  return typeof window!=='undefined'&&
-    !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-}
-function browserStorage(){
-  try{return window.localStorage;}catch{return null;}
-}
-const event=(name,details={})=>{
-  if(typeof window==='undefined')return;
-  window.dispatchEvent(new CustomEvent('swing-casual-event',{detail:{name,...details}}));
-};
-function save(round){saveRound(browserStorage(),round);}
-function initialRound(){
-  const saved=loadSavedRound(browserStorage(),ONBOARDING_COUNT);
-  if(saved)return saved;
-  // No mid-level session: open at the unlocked level (debug jump / recovery).
-  return newOnboardingRound(readUnlockedOnboardingLevel(browserStorage(),ONBOARDING_COUNT));
-}
 export default function SimplifiedGame(){
-  const [round,setRound]=useState(initialRound);
-  const openingRef=useRef(null);
-  if(openingRef.current===null)openingRef.current=featureIntroForEntry({
-    round,storage:browserStorage(),reduced:prefersReducedMotion()
-  });
-  const [introGate,setIntroGate]=useState(openingRef.current.gate);
-  const [introCard,setIntroCard]=useState(openingRef.current.intro);
-  const introGateRef=useRef(openingRef.current.gate);
-  const introStartRef=useRef(null);
-  const levelReadyRef=useRef(null);
-  const [view,setView]=useState(()=>displayOf(round));
-  const [shownGold,setShownGold]=useState(round.game.deal.T);
-  const [animating,setAnimating]=useState(false);
-  const [feedback,setFeedback]=useState(null);
-  const [pulse,setPulse]=useState(false);
-  const [beat,setBeat]=useState('');
-  const [help,setHelp]=useState(false);
-  const [docking,setDocking]=useState(()=>Boolean(onboardingLevel(round.levelId).dock));
-  const freshStart=round.turn===0&&!(round.game.deal.plays);
-  const [startOpen,setStartOpen]=useState(freshStart&&!openingRef.current.gate);
-  const [ack,setAck]=useState(null);
-  const [successSettled,setSuccessSettled]=useState(false);
-  const advancedRef=useRef(false);
-  const [arriving,setArriving]=useState(()=>openingRef.current.gate?false:levelStartPlan(round.levelId,{
-    fresh:freshStart,reduced:prefersReducedMotion()
-  }).motion);
-  const arrivalRef=useRef(null);
-  const winMotionRef=useRef(null);
-  const [devMenuOpen,setDevMenuOpen]=useState(false);
-  const rootRef=useRef(null),cancelRef=useRef(null),presentationRef=useRef(null);
+  const reduced=prefersReducedMotion();
+  const [screen, setScreen]=useState(()=>initialScreen({
+    storage:browserStorage(), levelCount:ONBOARDING_COUNT, reduced:prefersReducedMotion()
+  }));
+  const screenRef=useRef(screen);
+  const rootRef=useRef(null);
   const fxRef=useRef(null);
   if(!fxRef.current)fxRef.current=createFxBus();
+  const presentationRef=useRef(null);
   if(!presentationRef.current)presentationRef.current=createActionPresentation({fx:fxRef.current});
-  const resetMotionRef=useRef(null),lossMotionRef=useRef(null),breakMotionRef=useRef(null);
+  const cancelRef=useRef(null);
+  const resetMotionRef=useRef(null);
+  const lossMotionRef=useRef(null);
+  const breakMotionRef=useRef(null);
   const seenFactorsRef=useRef(new Set());
-  const priorFocusRef=useRef(null),skipFocusedRef=useRef(false);
-  const bankAnnounceRef=useRef(null);
-  const [bankLive,setBankLive]=useState('');
-  const [factorInfo,setFactorInfo]=useState(null);
+  const introStartRef=useRef(null);
+  const levelReadyRef=useRef(null);
+  const introGateRef=useRef(screen.introGate);
   const factorInfoOpenerRef=useRef(null);
-  const {
-    level,deal,victory,finished,factorInfoEnabled,available,canBank,canFlip,autoBank,
-    potDisplay,remaining,hearts,shownHand,bankMessage,bankPulse,flipPulse,pulseIndex,winLabel
-  }=boardReadout({round,view,feedback,animating,introGate,factorInfo,startOpen,pulse});
+  introGateRef.current=screen.introGate;
+
+  function commitScreen(next){
+    screenRef.current=next;
+    setScreen(next);
+  }
+  function updateScreen(recipe){
+    commitScreen(recipe(screenRef.current));
+  }
+  function patchField(field){
+    return value=>updateScreen(current=>{
+      const patched=typeof value==='function'?value(current[field]):value;
+      return {...current, [field]:patched};
+    });
+  }
+  const setScreenStable=useRef(updateScreen);
+  setScreenStable.current=updateScreen;
+  function setFromEffect(recipe){
+    setScreenStable.current(recipe);
+  }
+
+  const readout=boardReadout({
+    round:screen.round, view:screen.view, feedback:screen.feedback, animating:screen.animating,
+    introGate:screen.introGate, factorInfo:screen.factorInfo, startOpen:screen.startOpen, pulse:screen.pulse
+  });
+  const fresh=screen.round.turn===0&&!screen.round.game.deal.plays;
+  const arrival=useLevelArrival({
+    rootRef, fxRef, levelId:screen.round.levelId, fresh, introGate:screen.introGate,
+    startOpen:screen.startOpen, reduced, introStartRef, levelReadyRef,
+    onArrivingSettled:()=>setFromEffect(arrivalSettled)
+  });
+  const win=useWinCelebration({
+    rootRef, fxRef, active:readout.finished&&readout.victory, levelId:screen.round.levelId,
+    secured:readout.deal.T, target:readout.level.target, reduced,
+    onSuccessSettled:()=>setFromEffect(successMarked)
+  });
+  useHoneyLayout(rootRef, {active:readout.finished&&readout.victory});
+  useSkipFocus(rootRef, screen.animating);
+  useDebugBridge({fxRef, changeLevel});
+
+  function cancelHandles(){
+    try{arrival.stopArrival({notify:false});}catch{/* the level change settles next */}
+    try{win.stopWin({notify:false});}catch{/* the level change settles next */}
+    try{fxRef.current.settle();}catch{/* settle must not block the tap */}
+    presentationRef.current.abandon();
+    try{cancelRef.current?.();}catch{/* the level change settles next */}
+    try{resetMotionRef.current?.();}catch{/* the level change settles next */}
+    try{lossMotionRef.current?.();}catch{/* the level change settles next */}
+    try{breakMotionRef.current?.();}catch{/* the level change settles next */}
+    cancelRef.current=null;
+    resetMotionRef.current=null;
+    lossMotionRef.current=null;
+    breakMotionRef.current=null;
+  }
+  function changeLevel(id){
+    clearWinMemo();
+    cancelHandles();
+    const next=levelScreen(id, {storage:browserStorage(), reduced:prefersReducedMotion()});
+    saveRound(browserStorage(), next.round);
+    seenFactorsRef.current=new Set();
+    commitScreen(next);
+  }
+
+  function play(action, source){
+    const current=screenRef.current;
+    if(onboardingFinished(current.round))return;
+    if(!boardTapDuringIntro(introGateRef.current).play)return;
+    const root=rootRef.current;
+    const level=onboardingLevel(current.round.levelId);
+    runPresentedAction(current.round, action, presentationRef.current, {
+      onCommit({next, change}){
+        const record=commitPlay(browserStorage(), {
+          next, turnBefore:current.round.turn, action, change,
+          levelId:level.id, levelCount:ONBOARDING_COUNT, won:onboardingVictory(next)
+        });
+        for(const entry of record.events){
+          const {name, ...details}=entry;
+          dispatchCasualEvent(name, details);
+        }
+        const outcome=playOutcome(change, action);
+        const first=takeFirstOutcome(seenFactorsRef.current, outcome);
+        updateScreen(state=>ackAfterCommit(state, {
+          outcome, first, text:first?introCopy(first.kind, change.rewards[0]?.value):null
+        }));
+      },
+      onSettle({next}){
+        cancelRef.current=null;
+        resetMotionRef.current=null;
+        lossMotionRef.current=null;
+        breakMotionRef.current=null;
+        updateScreen(state=>settledScreen(state, settledPresentation(next)));
+      },
+      startMotion({change}, complete){
+        return startPlayMotion({
+          root, source, action, change, level,
+          firstTap:current.round.levelId===1&&current.round.turn===0,
+          seenFactors:seenFactorsRef.current,
+          cancelRef, resetMotionRef, lossMotionRef, breakMotionRef,
+          setView:patchField('view'), setFeedback:patchField('feedback'), setBeat:patchField('beat'),
+          setShownGold:patchField('shownGold'), setAnimating:patchField('animating'),
+          setPulse:patchField('pulse'), setHelp:patchField('help')
+        }, complete);
+      }
+    });
+  }
+  const bankLive=useBoardChrome({
+    rootRef, screen, readout, play, seenFactorsRef, setScreen:setFromEffect
+  });
 
   useEffect(()=>()=>{
     fxRef.current.settle();
     presentationRef.current.abandon();
-    cancelRef.current?.();resetMotionRef.current?.();
-    lossMotionRef.current?.();breakMotionRef.current?.();
-  },[]);
-  useEffect(()=>{
-    if(!import.meta.env.DEV||typeof window==='undefined')return;
-    const emit=spec=>fxRef.current.emit(spec);
-    window.__swingFxEmit=emit;
-    return ()=>{if(window.__swingFxEmit===emit)delete window.__swingFxEmit;};
-  },[]);
-  const startLevelRef=useRef(null);
-  useEffect(()=>{
-    if(typeof window==='undefined')return;
-    // Recovery/debug: __swingGoToLevel(15) or __swingGoToLevel(15,{reload:true})
-    window.__swingGoToLevel=(levelId,options={})=>{
-      const id=prepareOnboardingJump(browserStorage(),Number(levelId),{
-        levelCount:ONBOARDING_COUNT,
-        introUnlocks:derivedFeatureUnlocks()
-      });
-      if(id==null){
-        console.warn('__swingGoToLevel: need an integer 1..'+ONBOARDING_COUNT);
-        return false;
-      }
-      event('debug_goto_level',{level:id});
-      if(options.reload){
-        window.location.reload();
-        return id;
-      }
-      startLevelRef.current?.(id);
-      return id;
-    };
-    return ()=>{
-      if(window.__swingGoToLevel)delete window.__swingGoToLevel;
-    };
-  },[]);
-  useEffect(()=>{
-    fxRef.current.settle();
-    event('level_start',{level:round.levelId});
-    levelReadyRef.current=round.levelId;
-    introStartRef.current?.();
-    if(introGateRef.current)return;
-    return beginArrival();
-  },[round.levelId]);
-  useEffect(()=>{
-    if(!finished||!victory)return;
-    const root=rootRef.current;
-    if(!root)return;
-    const reduced=prefersReducedMotion();
-    const plan=successPlan({victory:true,levelId:round.levelId,secured:deal.T,reduced});
-    let alive=true;
-    const handle=playWinCelebration({
-      victory:true,secured:deal.T,target:level.target,tier:plan.tier||0,
-      praise:root.querySelector('.sgv-win-praise'),
-      tally:root.querySelector('.sgv-win-tally'),
-      scoreboard:root.querySelector('.sgv-honey-scoreboard'),
-      underline:root.querySelector('.sgv-honey-slogan-underline'),
-      drops:[...root.querySelectorAll('.sgv-honey-slogan-drops-art')],
-      targetRow:root.querySelector('.sgv-honey-scoreboard-target'),
-      liquid:root.querySelector('.sgv-honey-hero-art .sgv-fluid-fill'),
-      scrim:root.querySelector('.sgv-honey-scrim'),
-      mouth:root.querySelector('.sgv-honey-mouth'),
-      source:root.querySelector('.sgv-gold-counter'),
-      pot:root.querySelector('.sgv-pending-pot'),
-      layer:root.querySelector('.sgv-fx-layer'),
-      cta:root.querySelector('.sgv-end-cta'),
-      card:root.querySelector('.sgv-honey-win'),
-      reduced,bus:fxRef.current,
-      onSettled(){if(alive)setSuccessSettled(true);}
-    });
-    winMotionRef.current=handle;
-    return ()=>{
-      alive=false;
-      if(winMotionRef.current===handle)winMotionRef.current=null;
-      handle.cancel();
-    };
-  },[finished,victory,round.levelId,deal.T]);
-  useLayoutEffect(()=>{
-    const phone=rootRef.current;
-    if(!phone)return;
-    const apply=()=>{
-      const box=phone.getBoundingClientRect?.();
-      const height=box?.height||phone.clientHeight||0;
-      const width=box?.width||phone.clientWidth||0;
-      if(!(height>0)||!(width>0))return;
-      const style=getComputedStyle(phone);
-      // padding* already resolves env(safe-area-inset-*); reading --safe-* returns
-      // the unevaluated env() string, so parseFloat was always 0 on real phones.
-      const top=parseFloat(style.paddingTop)||0;
-      const right=parseFloat(style.paddingRight)||0;
-      const bottom=parseFloat(style.paddingBottom)||0;
-      const left=parseFloat(style.paddingLeft)||0;
-      phone.classList.toggle('sgv-honey-short',height-top-bottom<520);
-      applyHoneyLayout(phone.querySelector('.sgv-honey-win'),width,height,{top,right,bottom,left});
-    };
-    const nodes=[...phone.querySelectorAll(
-      ':scope > .sgv-hud, :scope > .sgv-middle, :scope > .sgv-controls'
-    )];
-    for(const node of nodes){
-      if(finished&&victory){
-        node.setAttribute('aria-hidden','true');
-        node.setAttribute('inert','');
-      }else{
-        node.removeAttribute('aria-hidden');
-        node.removeAttribute('inert');
-      }
-    }
-    apply();
-    window.addEventListener('resize',apply);
-    const ro=typeof ResizeObserver==='function'?new ResizeObserver(apply):null;
-    ro?.observe(phone);
-    return ()=>{
-      window.removeEventListener('resize',apply);
-      ro?.disconnect();
-    };
-  },[finished,victory]);
-  useEffect(()=>{
-    const reduced=typeof window!=='undefined'&&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const plan=levelStartPlan(round.levelId,{fresh:round.turn===0&&!(round.game.deal.plays),reduced});
-    if(!plan.dock)return;
-    setDocking(true);
-    const timer=setTimeout(()=>setDocking(false),plan.dock.end*1000);
-    return ()=>clearTimeout(timer);
-  },[round.levelId,level.dock]);
-  useEffect(()=>{
-    if(introGate||!startOpen)return;
-    if(levelReadyRef.current!==round.levelId)return;
-    if(arrivalRef.current)return;
-    return beginArrival();
-  },[introGate,startOpen,round.levelId]);
-  useEffect(()=>{
-    if(!introGate||!introCard)return;
-    event('feature_intro_shown',{feature:introCard.id,level:round.levelId});
-  },[introGate,introCard,round.levelId]);
-  useEffect(()=>{
-    setPulse(false);
-    if(animating||finished||introGate||startOpen)return;
-    const timer=setTimeout(()=>{
-      setPulse(true);
-      event('hint_shown',{level:level.id,turn:round.turn});
-    },3000);
-    return ()=>clearTimeout(timer);
-  },[animating,round.turn,round.levelId,finished,level.id,introGate,startOpen]);
-  useEffect(()=>{
-    const root=rootRef.current;
-    if(!root)return;
-    if(animating){
-      priorFocusRef.current=rememberFocus(document.activeElement,root);
-      root.querySelector('.sgv-skip-surface')?.focus();
-      skipFocusedRef.current=true;
-      return;
-    }
-    if(!skipFocusedRef.current)return;
-    skipFocusedRef.current=false;
-    const active=document.activeElement;
-    const inside=active&&root.contains(active)?active:null;
-    const controls=[...root.querySelectorAll(
-      '.sgv-card, .sgv-bank-command, .sgv-flip, .sgv-end-card button')];
-    const target=focusTargetAfterSkip({
-      active:inside,previous:priorFocusRef.current,controls
-    });
-    priorFocusRef.current=null;
-    if(target&&target!==active)target.focus();
-  },[animating]);
-  useEffect(()=>{
-    const result=nextBankAnnouncement(bankAnnounceRef.current,bankMessage);
-    bankAnnounceRef.current=result.previous;
-    if(result.text)setBankLive(result.text);
-  },[bankMessage]);
-  useEffect(()=>{
-    if(!factorInfoEnabled&&factorInfo)setFactorInfo(null);
-  },[factorInfoEnabled,factorInfo]);
-  useEffect(()=>{setFactorInfo(null);},[round.levelId]);
-  useEffect(()=>{
-    // Mark first Save unlock as seen without overlaying a second "SAVE N" on the button.
-    if(!canBank)return;
-    takeFirstOutcome(seenFactorsRef.current,'bank');
-  },[canBank,round.turn,round.levelId]);
-  useEffect(()=>{
-    if(!ack)return;
-    const timer=setTimeout(()=>setAck(current=>current===ack?null:current),1100);
-    return ()=>clearTimeout(timer);
-  },[ack]);
-  useEffect(()=>{
-    if(finished||animating||introGate||startOpen||arriving||!autoBank)return;
-    const source=rootRef.current?.querySelector('.sgv-pending-pot');
-    const timer=setTimeout(()=>play({type:'bank'},source),280);
-    return ()=>clearTimeout(timer);
-  },[autoBank,finished,animating,introGate,startOpen,arriving,round.turn,round.levelId]);
+    cancelRef.current?.();
+    resetMotionRef.current?.();
+    lossMotionRef.current?.();
+    breakMotionRef.current?.();
+  }, []);
 
-  function stopArrival(){
-    const handle=arrivalRef.current;
-    arrivalRef.current=null;
-    try{handle?.cancel();}catch{/* a half-played arrival still has to show its end */}
-    try{fxRef.current.settle();}catch{/* settle must not block the tap */}
-    try{handle?.showFinal?.();}catch{/* the inline end state is enough */}
-    setArriving(false);
-  }
-  function beginArrival(){
-    const root=rootRef.current;
-    const fresh=round.turn===0&&!(round.game.deal.plays);
-    const reduced=prefersReducedMotion();
-    const plan=levelStartPlan(round.levelId,{fresh,reduced});
-    if(!root||!fresh||introGateRef.current){
-      setArriving(false);
-      return ()=>{};
-    }
-    try{arrivalRef.current?.cancel();}catch{/* the previous banner is already gone */}
-    arrivalRef.current=null;
-    const banner=document.createElement('div');
-    banner.className='sgv-level-banner';
-    banner.setAttribute('aria-hidden','true');
-    banner.textContent='Level '+round.levelId;
-    root.appendChild(banner);
-    let alive=true;
-    const handle=playLevelStart({
-      banner,
-      jar:root.querySelector('.sgv-chest-area'),
-      goal:root.querySelector('.sgv-goal-progress'),
-      board:[...root.querySelectorAll('.sgv-meter-section, .sgv-hand, .sgv-actions, .sgv-pending-pot')],
-      reduced,bus:fxRef.current,
-      onSettled(){if(alive)setArriving(false);}
-    });
-    arrivalRef.current=handle;
-    setArriving(plan.motion);
-    return ()=>{
-      alive=false;
-      if(arrivalRef.current===handle)arrivalRef.current=null;
-      handle.cancel();
-    };
-  }
-  function stopWin(){
-    const handle=winMotionRef.current;
-    winMotionRef.current=null;
-    try{handle?.cancel();}catch{/* a half-played celebration still shows its end */}
-    try{fxRef.current.settle();}catch{/* settle must not block the tap */}
-    try{handle?.showFinal?.();}catch{/* the inline end state is enough */}
-  }
-  function startLevel(id){
-    clearWinMemo();
-    try{arrivalRef.current?.cancel();}catch{/* the level change settles next */}
-    arrivalRef.current=null;
-    try{winMotionRef.current?.cancel();}catch{/* the level change settles next */}
-    winMotionRef.current=null;
-    fxRef.current.settle();
-    presentationRef.current.abandon();
-    cancelRef.current?.();resetMotionRef.current?.();
-    lossMotionRef.current?.();breakMotionRef.current?.();
-    cancelRef.current=null;resetMotionRef.current=null;
-    lossMotionRef.current=null;breakMotionRef.current=null;
-    const next=newOnboardingRound(id);
-    save(next);
-    setRound(next);setView(displayOf(next));setShownGold(0);
-    setAnimating(false);setFeedback(null);setPulse(false);setBeat('');setHelp(false);
-    setDocking(Boolean(onboardingLevel(id).dock));
-    setSuccessSettled(false);advancedRef.current=false;
-    setAck(null);
-    const opening=featureIntroForEntry({
-      round:next,storage:browserStorage(),reduced:prefersReducedMotion()
-    });
-    openingRef.current=opening;
-    introGateRef.current=opening.gate;
-    setIntroGate(opening.gate);
-    setIntroCard(opening.intro);
-    setStartOpen(!opening.gate);
-    if(opening.gate)setArriving(false);
-    setDevMenuOpen(false);
-    seenFactorsRef.current=new Set();
-  }
-  startLevelRef.current=startLevel;
   function dismissIntro(via){
     if(!introGateRef.current)return;
     introGateRef.current=false;
     const outcome=dismissFeatureIntro({
-      levelId:round.levelId,storage:browserStorage(),via,fx:fxRef.current
+      levelId:screenRef.current.round.levelId, storage:browserStorage(), via, fx:fxRef.current
     });
     if(!outcome.dismissed){
       introGateRef.current=true;
       return;
     }
-    introGateRef.current=outcome.gate;
-    setIntroGate(outcome.gate);
-    setIntroCard(outcome.intro);
-    event('feature_intro_dismiss',{feature:outcome.id,level:round.levelId,via});
-    if(outcome.handoff==='level-start')setStartOpen(true);
+    const next=dismissedIntro(screenRef.current, outcome);
+    introGateRef.current=next.introGate;
+    commitScreen(next);
+    dispatchCasualEvent('feature_intro_dismiss', {feature:outcome.id, level:next.round.levelId, via});
+  }
+  function applyEndDecision(decision){
+    const result=endTransition(screenRef.current, decision, ONBOARDING_COUNT);
+    if(result.enterLevel!=null)changeLevel(result.enterLevel);
+    else commitScreen(result.screen);
   }
   function resetProgress(){
-    // One-tap development reset: clear the session, the unlocked level, and the
-    // seen feature cards, then restart.
-    try{clearOnboardingProgress(window.localStorage);}catch{}
-    // The new Level 1 state is saved by startLevel even after clearing storage.
-    setDevMenuOpen(false);
-    startLevel(1);
-    event('onboarding_reset',{level:1});
+    try{clearOnboardingProgress(window.localStorage);}catch{/* startLevel saves the fresh round */}
+    changeLevel(1);
+    dispatchCasualEvent('onboarding_reset', {level:1});
+  }
+  function skip(){
+    dispatchCasualEvent('tutorial_skip', {level:screenRef.current.round.levelId});
+    try{browserStorage()?.setItem(ONBOARDING_PROGRESS_KEY, String(GARDEN_2_START));}catch{/* the jump still starts the level */}
+    changeLevel(GARDEN_2_START);
   }
   function goToLevelPrompt(){
     const raw=typeof window!=='undefined'
-      ?window.prompt('Go to level (1–'+ONBOARDING_COUNT+')',String(round.levelId))
+      ?window.prompt('Go to level (1–'+ONBOARDING_COUNT+')', String(screenRef.current.round.levelId))
       :null;
     if(raw==null)return;
-    const wanted=Number.parseInt(String(raw).trim(),10);
-    const id=prepareOnboardingJump(browserStorage(),wanted,{
-      levelCount:ONBOARDING_COUNT,
-      introUnlocks:derivedFeatureUnlocks()
+    const wanted=Number.parseInt(String(raw).trim(), 10);
+    const id=prepareOnboardingJump(browserStorage(), wanted, {
+      levelCount:ONBOARDING_COUNT, introUnlocks:derivedFeatureUnlocks()
     });
     if(id==null){
-      setDevMenuOpen(false);
+      updateScreen(closedDevMenu);
       return;
     }
-    setDevMenuOpen(false);
-    event('debug_goto_level',{level:id});
-    startLevel(id);
+    dispatchCasualEvent('debug_goto_level', {level:id});
+    changeLevel(id);
   }
-  function nextLevel(){
-    if(round.levelId>=ONBOARDING_COUNT)return startLevel(ONBOARDING_COUNT);
-    startLevel(round.levelId+1);
-  }
-  function skip(){
-    event('tutorial_skip',{level:level.id});
-    try{localStorage.setItem(PROGRESS_KEY,String(GARDEN_2_START));}catch{}
-    startLevel(GARDEN_2_START);
-  }
-
-  function finishPresentation(){
-    fxRef.current.settle();
-    presentationRef.current.finishPresentation();
-  }
-  function play(action,source){
-    if(finished)return;
-    if(!boardTapDuringIntro(introGateRef.current).play)return;
-    const root=rootRef.current;
-    // Commit before motion: an interrupted animation or reload never replays a move.
-    runPresentedAction(round,action,presentationRef.current,{
-      onCommit({next,change}){
-        const record=commitPlay(browserStorage(),{
-          next,turnBefore:round.turn,action,change,
-          levelId:level.id,levelCount:ONBOARDING_COUNT,
-          won:onboardingVictory(next)
-        });
-        for(const entry of record.events){
-          const {name,...details}=entry;
-          event(name,details);
-        }
-        const outcome=playOutcome(change,action);
-        const first=takeFirstOutcome(seenFactorsRef.current,outcome);
-        if(first)setAck({kind:first.kind,text:introCopy(first.kind,change.rewards[0]?.value)});
-        else if(outcome)setAck(null);
-      },
-      onSettle({next}){
-        const settled=settledPresentation(next);
-        cancelRef.current=null;resetMotionRef.current=null;
-        lossMotionRef.current=null;breakMotionRef.current=null;
-        setRound(settled.round);setView(settled.view);setShownGold(settled.shownGold);
-        setFeedback(settled.feedback);setAnimating(settled.animating);
-      },
-      startMotion({change},complete){
-        return startPlayMotion({
-          root,source,action,change,level,
-          firstTap:round.levelId===1&&round.turn===0,
-          seenFactors:seenFactorsRef.current,
-          cancelRef,resetMotionRef,lossMotionRef,breakMotionRef,
-          setView,setFeedback,setBeat,setShownGold,setAnimating,setPulse,setHelp
-        },complete);
-      }
-    });
+  function runSteps(steps){
+    let consultSkip=false;
+    for(const step of steps){
+      if(step==='stopArrival')arrival.stopArrival();
+      if(step==='closeStart')updateScreen(closedStart);
+      if(step==='clearDock')updateScreen(clearedDock);
+      if(step==='skipPresentation')presentationRef.current.acceptPointerDown();
+      if(step==='consultPointer'&&presentationRef.current.acceptPointerDown()==='skip')consultSkip=true;
+    }
+    return consultSkip;
   }
 
   const ending=successPlan({
-    victory,levelId:level.id,secured:deal.T,
-    bank:round.game.lastAction?.type==='bank',reduced:prefersReducedMotion()
+    victory:readout.victory, levelId:readout.level.id, secured:readout.deal.T,
+    bank:screen.round.game.lastAction?.type==='bank', reduced
   });
-  function settleSuccess(){setSuccessSettled(true);}
-  function applyEndDecision(decision){
-    if(!decision||decision.lock)return;
-    if(decision.settle)settleSuccess();
-    if(decision.advance)advanceLevel();
-    if(decision.replay)startLevel(level.id);
-  }
-  function advanceLevel(){
-    const claim=claimLevelAdvance(advancedRef.current);
-    advancedRef.current=claim.claimed;
-    settleSuccess();
-    if(claim.advance)nextLevel();
-  }
-  return <main className="sgv-page">
-    <div ref={rootRef}
-      data-honey-win={finished&&victory?'true':undefined}
-      data-factor-info={factorInfo?true:undefined}
-      className={'sgv-phone sgv-onboarding sgv-onboarding-'+level.id+
-        (level.garden===2?' sgv-orchard':'')+' sgv-event-'+(feedback||round.event.type)+
-        (arriving?' sgv-level-arrival':'')}
-      aria-busy={animating}
-      data-intro-gate={introGate?true:undefined}
-      onPointerDownCapture={event=>{
-        const introHit=introPointerDecision({
-          gate:introGateRef.current,
-          inIntro:!!event.target?.closest?.('.sgv-feature-intro')
-        });
-        if(introHit.handled){
-          if(!introHit.dismiss){
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          return;
-        }
-        const presenting=presentationRef.current.isPresenting();
-        if(startOpen&&!presenting){
-          const opening=dismissLevelScreen('start','tap');
-          if(opening.dismiss&&!opening.lock){
-            stopArrival();
-            setStartOpen(false);
-            if(docking)setDocking(false);
-            event.preventDefault();
-            event.stopPropagation();
-            return;
-          }
-        }
-        const tap=startTap({action:presenting,arrival:arriving||!!arrivalRef.current});
-        if(tap.finishArrival)stopArrival();
-        if(tap.consume){
-          presentationRef.current.acceptPointerDown();
-          event.preventDefault();
-          event.stopPropagation();
-          return;
-        }
-        if(docking)setDocking(false);
-        if(presentationRef.current.acceptPointerDown()==='skip'){
-          event.preventDefault();
-          event.stopPropagation();
-        }
-      }}
-      onClickCapture={event=>{
-        const introHit=introPointerDecision({
-          gate:introGateRef.current,
-          inIntro:!!event.target?.closest?.('.sgv-feature-intro')
-        });
-        if(introHit.handled){
-          if(!introHit.dismiss){
-            event.preventDefault();
-            event.stopPropagation();
-          }
-          return;
-        }
-        if(presentationRef.current.acceptClick()!=='action'){
-          event.preventDefault();
-          event.stopPropagation();
-        }
-      }}
-      onKeyDownCapture={event=>{
-        if(!isSkipKey(event.key))return;
-        if(introGateRef.current){
-          event.preventDefault();
-          event.stopPropagation();
-          dismissIntro(event.target?.closest?.('.sgv-feature-intro-play')?'play':'scrim');
-          return;
-        }
-        if(presentationRef.current.isPresenting()){
-          event.preventDefault();
-          event.stopPropagation();
-          presentationRef.current.acceptPointerDown();
-          return;
-        }
-        if(finished){
-          if(event.target?.closest?.('button'))return;
-          event.preventDefault();
-          event.stopPropagation();
-          if(victory)stopWin();
-          applyEndDecision(dismissLevelScreen(victory?'win':'lose','backdrop'));
-          return;
-        }
-        if(!startOpen)return;
-        const opening=dismissLevelScreen('start','skip');
-        if(opening.dismiss&&!opening.lock){
-          event.preventDefault();
-          event.stopPropagation();
-          stopArrival();
-          setStartOpen(false);
-        }
-      }}>
-      <GardenScene/>
-      <FxLayer bus={fxRef.current}/>
-      <div className="sgv-atmosphere" aria-hidden="true"/>
-      <header className="sgv-hud sgv-tutorial-hud">
-        <div className="sgv-level" aria-label={'Level '+level.id+(level.telegraph?' '+level.name:'')}>
-          <span>★</span><strong>Level {level.id}</strong>
-          {level.telegraph&&<small className="sgv-level-name">{level.name}</small>}
-        </div>
-        <div className="sgv-hud-right">
-          <div className="sgv-gold-counter" aria-label={shownGold+' drops secured'}>
-            <span className="sgv-gold-icon">●</span><strong>{shownGold}</strong>
-          </div>
-          {level.showChances&&<div className={'sgv-lives'+(docking&&level.dock==='hearts'?' sgv-dock':'')}
-            aria-label={hearts+' chances remaining'}>
-            {Array.from({length:level.maxSnaps},(_,i)=><span key={i}
-              className={i<hearts?'sgv-heart':'sgv-heart sgv-heart-empty'}>♥</span>)}
-          </div>}
-          <div className="sgv-tutorial-tools">
-            <button type="button" className="sgv-reset-progress"
-              onClick={resetProgress} aria-label="Reset onboarding progress and restart Level 1"
-              title="Reset onboarding progress">
-              <span aria-hidden="true" className="sgv-reset-icon">↺</span>
-              <span className="sgv-reset-label">Reset</span>
-            </button>
-            <button type="button" className="sgv-dev-menu-toggle"
-              onClick={()=>setDevMenuOpen(open=>!open)}
-              aria-label="More onboarding tools" aria-expanded={devMenuOpen}>⋯</button>
-            {devMenuOpen&&<div className="sgv-dev-menu" role="group" aria-label="Onboarding tools">
-              <button type="button" onClick={goToLevelPrompt}>
-                Go to level…
-              </button>
-              <button type="button" onClick={()=>{setHelp(value=>!value);setDevMenuOpen(false);}}>
-                {help?'Hide help':'Show help'}
-              </button>
-              {level.id<GARDEN_2_START&&<button type="button"
-                onClick={()=>{setDevMenuOpen(false);skip();}}>
-                Skip to Level 13
-              </button>}
-            </div>}
-          </div>
-        </div>
-      </header>
-      <div className="sgv-spring-top" aria-hidden="true"/>
-      <div className="sgv-middle">
-        <HorizontalMeter position={view.position} limit={level.rules.snapLimit}
-          multipliers={view.factors} visibleFactors={level.visibleFactors}
-          showDanger={level.showChances} beat={ack?ack.text:beat} dock={docking?level.dock:null}
-          factorInfoEnabled={factorInfoEnabled}
-          onFactorInfo={kind=>{
-            factorInfoOpenerRef.current=rootRef.current?.querySelector(
-              '.sgv-multiplier-pill[data-factor="'+kind+'"]'
-            )||null;
-            setFactorInfo(kind);
-          }}/>
-        <span className="sgv-flight-center" aria-hidden="true"/>
-        <div className="sgv-bottle-pair" aria-label="Pending Pot and secured glass">
-          <PendingPot value={potDisplay} cap={level.rules.potCap} target={level.target}
-            bankable={canBank} interactive={false}/>
-          <GlassChest banked={shownGold} target={level.target}/>
-        </div>
-      </div>
-      <section className="sgv-controls sgv-tutorial-controls" aria-label="Card actions">
-        <div className="sgv-card-shelf" aria-hidden="true"/>
-        <div className="sgv-hand" aria-label="Your cards">
-          {shownHand.map((id,i)=><SimpleCard key={id} id={id} index={i}
-            value={signed(id)} showDirection={true}
-            risky={level.showChances&&wouldSnap(round,{type:'steer',index:i})}
-            highlighted={pulseIndex===i}
-            disabled={finished||animating||!available.some(a=>a.type==='steer'&&a.index===i)}
-            onPlay={(index,element)=>play({type:'steer',index},element)}/>)}
-        </div>
-        <div className="sgv-actions sgv-tutorial-actions">
-          <button type="button"
-            className={'sgv-action sgv-bank sgv-bank-command'+(bankPulse?' sgv-attention':'')}
-            disabled={!canBank}
-            onClick={()=>play({type:'bank'},rootRef.current?.querySelector('.sgv-pending-pot'))}
-            aria-label={canBank?'Save '+potDisplay+' pending drops':bankMessage}>
-            <span className="sgv-action-text">SAVE{canBank?' '+potDisplay:''}</span>
-          </button>
-          <p className="sgv-bank-live" aria-live="polite" aria-atomic="true">{bankLive}</p>
-          {level.showFlip&&remaining>0&&<button type="button"
-            className="sgv-action sgv-flip"
-            data-dock={docking&&level.dock==='flip'?true:undefined}
-            data-hint={flipPulse?true:undefined}
-            disabled={!canFlip}
-            onClick={e=>play({type:'flip'},e.currentTarget.querySelector('.sgv-next-card'))}
-            aria-label={'Flip a hidden card. '+remaining+' remain'}>
-            <span className="sgv-action-icon">⟳</span>
-            <span className="sgv-action-text">FLIP</span>
-            <span className="sgv-flip-next"><span className="sgv-next-card">?</span>
-              <small>{remaining} left</small></span>
-          </button>}
-        </div>
-      </section>
-      <div className="sgv-spring-bottom" aria-hidden="true"/>
-      {help&&!finished&&<ul className="sgv-glossary" role="note">
-        <li>Card → meter → Pot</li>
-        <li>SAVE → Savings</li>
-        <li>Pill × this card</li>
-        <li>0 keeps the Pot. Snap empties it.</li>
-      </ul>}
-      {factorInfo&&factorInfoFor(factorInfo)&&<FactorInfoOverlay
-        info={factorInfoFor(factorInfo)}
-        onDismiss={()=>{
-          setFactorInfo(null);
-          factorInfoOpenerRef.current?.focus?.();
-          factorInfoOpenerRef.current=null;
-        }}/>}
-      {introGate&&introCard&&<FeatureIntroOverlay intro={introCard}
-        reduced={prefersReducedMotion()} bus={fxRef.current} onDismiss={dismissIntro}
-        levelId={round.levelId} introStartRef={introStartRef} levelReadyRef={levelReadyRef}/>}
-      {startOpen&&!introGate&&!finished&&!animating&&<LevelStartScreen levelId={level.id} target={level.target}
-        onDismiss={()=>{
-          const opening=dismissLevelScreen('start','cta');
-          if(opening.dismiss&&!opening.lock){
-            stopArrival();
-            setStartOpen(false);
-          }
-        }}/>}
-      {finished&&<LevelEndScreen victory={victory} score={deal.T} target={level.target}
-        label={victory?winLabel:'TRY AGAIN'} orchard={!!ending.orchard} settled={successSettled}
-        praise={ending.praise} reduced={victory&&!ending.motion}
-        onPrimary={()=>{
-          if(victory)stopWin();
-          applyEndDecision(dismissLevelScreen(victory?'win':'lose','cta'));
-        }}
-        onBackdrop={()=>{
-          if(victory)stopWin();
-          applyEndDecision(dismissLevelScreen(victory?'win':'lose','backdrop'));
-        }}
-        onReset={resetProgress}/>}
-      {animating&&<button type="button" className="sgv-skip-surface" aria-label="Skip animation"
-        onPointerDown={event=>{event.preventDefault();event.stopPropagation();finishPresentation();}}
-        onClick={event=>{event.preventDefault();event.stopPropagation();finishPresentation();}}/>}
-    </div>
-  </main>;
+  return <OnboardingPhone
+    screen={screen} readout={readout} ending={ending} bankLive={bankLive} reduced={reduced}
+    fx={fxRef.current} rootRef={rootRef} introStartRef={introStartRef} levelReadyRef={levelReadyRef}
+    phoneClass={phoneClassName(screen, {
+      levelId:readout.level.id, garden:readout.level.garden,
+      feedback:screen.feedback, eventType:screen.round.event.type
+    })}
+    onPointerDownCapture={event=>{
+      const decision=boardPointerDecision({
+        gate:introGateRef.current,
+        inIntro:!!event.target?.closest?.('.sgv-feature-intro'),
+        presenting:presentationRef.current.isPresenting(),
+        startOpen:screenRef.current.startOpen,
+        arriving:screenRef.current.arriving||arrival.active,
+        docking:screenRef.current.docking
+      });
+      const consultSkip=runSteps(decision.steps);
+      if(decision.prevent||consultSkip)event.preventDefault();
+      if(decision.stop||consultSkip)event.stopPropagation();
+    }}
+    onClickCapture={event=>{
+      const decision=boardClickDecision({
+        gate:introGateRef.current,
+        inIntro:!!event.target?.closest?.('.sgv-feature-intro')
+      });
+      const block=decision.consultClick&&presentationRef.current.acceptClick()!=='action';
+      if(decision.prevent||block)event.preventDefault();
+      if(decision.stop||block)event.stopPropagation();
+    }}
+    onKeyDownCapture={event=>{
+      const decision=boardKeyDecision({
+        key:event.key, gate:introGateRef.current,
+        presenting:presentationRef.current.isPresenting(),
+        finished:onboardingFinished(screenRef.current.round),
+        victory:onboardingVictory(screenRef.current.round),
+        startOpen:screenRef.current.startOpen,
+        onButton:!!event.target?.closest?.('button')
+      });
+      if(!decision.handled)return;
+      if(decision.prevent)event.preventDefault();
+      if(decision.stop)event.stopPropagation();
+      if(decision.dismissIntro){
+        dismissIntro(event.target?.closest?.('.sgv-feature-intro-play')?'play':'scrim');
+      }
+      if(decision.skipPresentation)presentationRef.current.acceptPointerDown();
+      if(decision.stopWin)win.stopWin();
+      if(decision.endVia){
+        applyEndDecision(dismissLevelScreen(
+          onboardingVictory(screenRef.current.round)?'win':'lose', decision.endVia
+        ));
+      }
+      if(decision.stopArrival)arrival.stopArrival();
+      if(decision.closeStart)updateScreen(closedStart);
+    }}
+    onPlay={play}
+    onFactorInfo={kind=>{
+      factorInfoOpenerRef.current=rootRef.current?.querySelector(
+        '.sgv-multiplier-pill[data-factor="'+kind+'"]'
+      )||null;
+      updateScreen(state=>openedFactor(state, kind));
+    }}
+    onReset={resetProgress}
+    onToggleDev={()=>updateScreen(toggledDevMenu)}
+    onGotoLevel={goToLevelPrompt}
+    onToggleHelp={()=>{updateScreen(toggledHelp); updateScreen(closedDevMenu);}}
+    onSkipGarden={()=>{updateScreen(closedDevMenu); skip();}}
+    onDismissFactor={()=>{
+      updateScreen(closedFactor);
+      factorInfoOpenerRef.current?.focus?.();
+      factorInfoOpenerRef.current=null;
+    }}
+    onDismissIntro={dismissIntro}
+    onDismissStart={()=>{
+      const opening=dismissLevelScreen('start', 'cta');
+      if(opening.dismiss&&!opening.lock){
+        arrival.stopArrival();
+        updateScreen(closedStart);
+      }
+    }}
+    onEndPrimary={()=>{
+      if(readout.victory)win.stopWin({notify:false});
+      applyEndDecision(dismissLevelScreen(readout.victory?'win':'lose', 'cta'));
+    }}
+    onEndBackdrop={()=>{
+      if(readout.victory)win.stopWin({notify:false});
+      applyEndDecision(dismissLevelScreen(readout.victory?'win':'lose', 'backdrop'));
+    }}
+    onFinishPresentation={()=>{
+      fxRef.current.settle();
+      presentationRef.current.finishPresentation();
+    }}
+  />;
 }
