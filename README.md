@@ -26,7 +26,7 @@ npm run verify:release
 
 ## Layout
 
-- `src/casual/` — onboarding levels, board, motion, and the legacy single-level screen (`CasualGame.jsx`, not mounted).
+- `src/casual/` — onboarding levels in `levels/garden.js`, the board, motion, and one module per overlay in `screens/`.
 - `src/external/engines.js` — authoritative rules. Do not recompute payouts in the UI.
 - `tests/` — the casual engine, onboarding, progress, and UI-source checks from the lab.
 - `docs/SWING_CASUAL_MASTER_PROJECT_DOCUMENT.md` — product handoff. Older docs in `docs/` are historical.

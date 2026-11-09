@@ -116,28 +116,18 @@ The physical arrangement is **two adjacent containers**: smaller Pot on the left
 
 ### 3.4 Multipliers
 
-The original Overswing engine has three independent factors. Campaign defaults (`enableJackpotFactor: true`, `runningPot: false`) are unchanged:
+Casual play has two factors, Swing and Flip. A crossing Flip grows Swing and Flip. There is no third multiplier.
 
 | Factor | Engine value | Cause |
 |---|---|---|
 | **Swing** | `W + 1` | Strict nonzero sign crossing |
-| **Flip** | `flipFactor` | Safe non-crossing Flip streak |
-| **Jackpot** | `jackpotFactor` | Strict crossing performed by a Flip. The Flip streak resets; Flip does not grow on that play |
+| **Flip** | `flipFactor` | A Flip, including a strict crossing. That crossing does not reset the streak |
 
-A crossing Flip in that mode awards **Swing and Jackpot together**. Do not show a Flip-factor increase unless the engine awards it.
+`M = (W + 1) × flipFactor`. A Steer still clears the streak and does not clear `flipFactor`. A board with no Flip shows Swing only. Pills are compact numbers, sourced from the engine, shown only once that factor is enabled. The live level list is `src/casual/levels/garden.js`.
 
-Garden 1 (`runningPot: true`, `enableJackpotFactor: false` on every level) does not teach Jackpot. `M = (W + 1) × flipFactor`. A strict-crossing Flip grows Swing and takes the same Flip step as a safe Flip, and the streak is not reset. A Steer still clears the streak and does not clear `flipFactor`. A board with no Flip shows Swing only. Pills are compact numbers, sourced from the engine, shown only once that factor is enabled.
+The canonical payout is computed by `overswingPayout`, not duplicated in React. Garden banks a running total: each safe card adds `M × rank`, and Bank transfers that integer as-is.
 
-The canonical payout is computed by `overswingPayout`, not duplicated in React. Campaign, before modifiers/tax:
-
-```text
-Gross payout = floor((sum of absolute ranks in Pot + resonance points)
-                     × Swing factor × Flip factor × Jackpot factor)
-```
-
-Garden 1 banks a running total: each safe card adds `M × rank`, and Bank transfers that integer as-is.
-
-Per-level rules and any engine modifiers/tax are applied by the engine. During **all current onboarding levels**, resonance is **disabled**; bank capacity loss is `0`; bank tax is not introduced; the casual `steerAlwaysToPot` behavior is enabled; and noncrossing penalties are disabled. The `enableSwingFactor`, `enableFlipFactor` and `enableJackpotFactor` rules explicitly gate each multiplier. **Full original Overswing defaults remain unchanged** outside opted-in casual rules.
+Per-level rules and any engine modifiers/tax are applied by the engine. During **all current onboarding levels**, resonance is **disabled**; bank capacity loss is `0`; bank tax is not introduced; the casual `steerAlwaysToPot` behavior is enabled; and noncrossing penalties are disabled. Swing and Flip are gated per level. `src/external/engines.js` stays the copied rules file.
 
 ### 3.5 Win, loss and retry
 
@@ -194,7 +184,7 @@ The table below comes from the current `src/casual/onboardingLevels.js` rather t
 | **4** | Hidden Card | **2** | `+1, −2` | **Flip** becomes available | Must perform at least one Flip before Bank |
 | **5** | Crossing Bonus | **16** | `+3, −5` | **Swing ×** unlocks | Scripted crossing/Bank teaching sequence |
 | **6** | Flip Streak | **10** | `+2, −2` | **Flip ×** unlocks | Safe noncrossing Flip increases its factor |
-| **7** | Jackpot Flip | **40** | `+4, −2` | **Jackpot ×** unlocks | A crossing Flip can earn Swing and Jackpot |
+| **7** | Sweet Mix | **10** | see `garden.js` | Swing and Flip together | A crossing Flip grows Swing and Flip |
 | **8** | Exactly Zero | **10** | `+3, −5, +2` | **Zero Break** distinction | Must trigger exact zero; Pot survives factor reset |
 | **9** | Edge Danger | **12** | `+2, −2, +5` | **Snap/chances/edge danger** | Real risk with winning safe and recovery paths |
 | **10** | Your First Puzzle | **80** | `+3, −4, +6` | Combine the enabled rules without a forced script | Multiple strategies; replayable capstone |
@@ -203,10 +193,10 @@ The table below comes from the current `src/casual/onboardingLevels.js` rather t
 
 - **Level 1 onward:** header, horizontal meter, playable hand, pending Pot, secured Bank, dedicated Bank control.
 - **Level 4 onward:** Flip control.
-- **Level 5 onward:** Swing factor; **Level 6** adds Flip factor; **Level 7** adds Jackpot factor.
+- **Swing and Flip** are the only multipliers. A crossing Flip grows both. The live unlock level for each is in `src/casual/levels/garden.js`.
 - **Level 9 onward:** visible chance/hearts and edge danger guidance.
 - **Levels 5–9:** some actions are scripted/gated to guarantee a specific teaching outcome. Some earlier levels also hide extra hand slots for focus, though the meter/Pot/Bank/header remain present.
-- **Level 10:** no mandatory script; all three factors and Flip are available.
+- **Later levels** keep Swing and Flip only. There is no third pill.
 - **Throughout:** `enableResonance:false` and no royalty/relic/ability/shop mechanics.
 
 ### The onboarding teaching contract
@@ -303,7 +293,7 @@ A new contributor should **not** inadvertently revert the current product to old
 | Older document/screenshot says | Current decision / source of truth |
 |---|---|
 | Level 1 hides the header, meter and Pot, shows only one card | **Rejected after actual player-view screenshot.** Show header, meter, all three starting hand cards, Pot and Bank from the first frame |
-| First-level target is 24 and deck has 10 ordinary cards | That is the **legacy** `src/casual/firstLevel.js`. Active onboarding Level 1 target is **5**, deck `[1,22,3]` |
+| First-level target is 24 and deck has 10 ordinary cards | That description is gone. Level 1 is the Honey Drop record in `src/casual/levels/garden.js`: target **5**, deck `[1, 2, 12]` |
 | Tap the Pot bottle to Bank | Superseded in the active onboarding screen: **separate BANK button**, decorative/noninteractive Pot |
 | The Pot always displays raw sum of card ranks | Current screen displays **projected engine payout** in the Pot bottle; decide whether that presentation is sufficiently clear in usability testing |
 | Only one tutorial level exists | Ten playable onboarding configurations exist; **quality and balance are not validated** |
@@ -336,7 +326,7 @@ The repository is a **multi-game lab**, not a dedicated Honey Swing application.
 | [`src/casual/CasualArt.jsx`](https://github.com/umuterturk/card-game-lab/blob/main/src/casual/CasualArt.jsx) | Garden/environment artwork |
 | [`src/external/engines.js`](https://github.com/umuterturk/card-game-lab/blob/main/src/external/engines.js) | **Authoritative game state, rules, legal actions and Bank payout** |
 | [`src/external/overswingRoyals.js`](https://github.com/umuterturk/card-game-lab/blob/main/src/external/overswingRoyals.js) | Wider Overswing dependency; not a casual onboarding feature |
-| [`src/casual/firstLevel.js`](https://github.com/umuterturk/card-game-lab/blob/main/src/casual/firstLevel.js) | **Legacy v0.6 single-level config**, still used by historical tests; **not** the live onboarding definition |
+| `src/casual/levels/garden.js` | Live onboarding levels. One frozen record each. Star rows come from `star2` and `star3` on the record |
 | [`scripts/simulate-casual-onboarding.mjs`](https://github.com/umuterturk/card-game-lab/blob/main/scripts/simulate-casual-onboarding.mjs) | Bounded deterministic state-space exploration across all ten levels |
 | [`tests/casual-onboarding.test.mjs`](https://github.com/umuterturk/card-game-lab/blob/main/tests/casual-onboarding.test.mjs) | Level completion, factor gates, Snap/Zero/Flip behavior and simulator checks |
 | [`tests/casual-onboarding-progress.test.mjs`](https://github.com/umuterturk/card-game-lab/blob/main/tests/casual-onboarding-progress.test.mjs) | Reset storage and UI visibility tests |
@@ -424,7 +414,7 @@ Current sessions are stored locally and can be reset for repeat first-touch test
 **Status: NOT DONE / no player-study evidence.** Observe at least **five** players unfamiliar with the game or card roguelikes attempting **Levels 1–10 without prior explanation**.
 
 - Measure time to first meaningful tap, first Bank, each level completion/quit, retries, hints and total onboarding completion.
-- Ask what negative cards do to **both** meter and Pot; what Bank secures; how much remains toward the target; why Swing, Flip and Jackpot changed; how Zero Break differs from Snap.
+- Ask what negative cards do to **both** meter and Pot; what Bank secures; how much remains toward the target; why Swing and Flip changed; how Zero Break differs from Snap.
 - Note first hesitation or incorrect action and whether interaction feedback rescues it without narration.
 - Use the provisional **4/5 accurately explaining each key idea** threshold as a **formative heuristic**, not a statistically reliable retention benchmark.
 - Revise confusing levels and test again. Be especially alert at L4 (Flip), L7 (two-factor event), L8 (zero) and L9 (risk).
@@ -549,7 +539,7 @@ Current sessions are stored locally and can be reset for repeat first-touch test
 
 **B1. Five unbriefed sessions, full 10-level ladder.** Capture confusion and time to action, not just win. **Exit:** critical concepts can be explained by at least four of five participants as a provisional formative target.
 
-**B2. Resolve hardest lessons.** Improve event timing/tooltips for crossing, Flip factor, Jackpot, Zero Break and Snap; no new clutter. **Exit:** each cause and result understood without coached narration.
+**B2. Resolve hardest lessons.** Improve event timing/tooltips for crossing, Flip factor, Zero Break and Snap; no new clutter. **Exit:** each cause and result understood without coached narration.
 
 **B3. Calibrate the capstone.** Compare simulator paths to actual player actions; retune L10 target/deck if it blocks mastery. **Exit:** skillful independent completion rather than accidental brute force.
 
@@ -613,7 +603,7 @@ Casual-specific PWA/offline checks, audio that respects external playback, acces
 1. **Read this document; inspect latest GitHub `main`; check the actual deployed SHA.** Do not assume the handoff commit or `v0.6.0` label represents the newest code.
 2. **Preserve the current Level 1 board:** header + meter + three cards + pending Pot + secured Bank + Bank action. Never repeat the design mistake of hiding the structure to minimize first exposure.
 3. **Use the authoritative engine.** Do not calculate payouts, Snap, crossing or multipliers independently in JSX or animation code. Casual-only rule changes must be opt-in and backed by original-mode regression tests.
-4. **Treat the current ten levels as prototypes, not balanced content.** Check the exact target and deck in `onboardingLevels.js`; the old `firstLevel.js` is a legacy test fixture.
+4. **Treat the garden records as the level source.** Check the exact target and deck in `src/casual/levels/garden.js`.
 5. **For UI changes, test on phone.** Unit/build success does not prove animation timing, touch targets, safe-area layout or comprehension. Ask for actual first-frame and transaction recordings when needed.
 6. **Prefer small, measurable iterations.** Prioritize clear Pot/Bank semantics, first touch, Bank reward and multiplier comprehension before adding decorative effects or more systems.
 7. **For implementation:** update tests and docs together; run `npm test`, `npm run simulate:casual`, `npm run build`, `npm run verify:release`; inspect Actions to verify the actual deploy. Do not claim a merge alone means the site is live.

@@ -957,11 +957,12 @@ export function useBoardChrome({
 ```jsx
 import {signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
-import {FactorInfoOverlay} from './FactorInfoOverlay.jsx';
+import {FactorInfoOverlay} from './screens/factorInfo.jsx';
 import {factorInfoFor} from './factorInfoContent.js';
-import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
+import {FeatureIntroOverlay} from './screens/featureIntro.jsx';
 import {FxLayer} from './fx/FxLayer.jsx';
-import {LevelEndScreen, LevelStartScreen} from './levelScreens.js';
+import {LevelEndScreen} from './screens/levelEnd.jsx';
+import {LevelStartScreen} from './screens/levelStart.jsx';
 import {HorizontalMeter, GlassChest, PendingPot, SimpleCard} from './MinimalBoard.jsx';
 import {GARDEN_2_START, wouldSnap} from './onboardingLevels.js';
 

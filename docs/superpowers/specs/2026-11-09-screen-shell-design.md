@@ -14,7 +14,7 @@ Payouts, onboarding rules, motion timing, copy, class names, storage keys, and e
 
 - Rewriting `winMotion.js`, `chrome.css`, or `src/external/engines.js`.
 - Changing `startPlayMotion`'s parameter list.
-- Deleting `CasualGame.jsx`, `firstLevel.js`, `animations.js`, or the legacy stylesheets.
+- The legacy single-level screen and its stylesheets are already gone. The mounted screen is `SimplifiedGame.jsx`.
 - Moving `seenFactors` into the snapshot. `startPlayMotion` still mutates that `Set`.
 
 ## Platform

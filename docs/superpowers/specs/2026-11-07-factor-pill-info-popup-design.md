@@ -2,7 +2,7 @@
 
 **Date:** 7 November 2026  
 **Status:** Approved  
-**Scope:** Tap Swing / Flip multiplier pills for a short how-it-works popup. Jackpot pill unchanged.
+**Scope:** Tap Swing or Flip pills for a short how-it-works popup. A crossing Flip grows Swing and Flip. There is no third multiplier.
 
 ## Goal
 
@@ -13,7 +13,7 @@ When the player taps a visible **More Flower** (Swing) or **More Bee** (Flip) pi
 | Topic | Choice |
 |-------|--------|
 | Triggers | Tap Swing pill or Flip pill when that factor is visible |
-| Jackpot | No popup |
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 | Content | Short how-it-works only (no score math, no “NEW!”) |
 | Dismiss | **Got it** button **or** tap outside (scrim); Escape also closes |
 | Visual approach | Mini feature card (reuse Save intro chrome) |
@@ -65,7 +65,7 @@ Reuse feature-intro card styling:
 
 ## Out of scope
 
-- Jackpot pill popup
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 - Changing multiplier rules or flyer motion
 - First-time auto-show / coach marks
 - Localizing copy beyond the two English lines above

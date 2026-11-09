@@ -14,7 +14,7 @@
 | `src/casual/styles/hud.css` | Level, score, hearts |
 | `src/casual/styles/meter.css` | Play stack, meter, factors, flight center |
 | `src/casual/styles/board.css` | Chest, cards, opening objective |
-| `src/casual/styles/honey-win.css` | Victory card and celebration |
+| `src/casual/screens/levelEnd.css` | Victory card and celebration |
 | `src/casual/styles/currency.css` | Pot, coins, glass, needle, goal |
 | `src/casual/styles/bottles.css` | Pending cup, two-bottle pair, lips |
 | `src/casual/styles/pour.css` | Bank action, streams, ambient, fractures |

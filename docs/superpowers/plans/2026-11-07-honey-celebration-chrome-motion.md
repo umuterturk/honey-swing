@@ -4,7 +4,7 @@
 
 **Goal:** Rebuild the win celebration chrome and GSAP timeline so honey fill is the 2.0s hero event, with Hiveful decorations, `score-board.png` (“Honey Collected”), and NEXT matching `public/reference.png` while keeping the production jar stack.
 
-**Architecture:** Keep jar PNGs/mask/lighting. Replace win chrome DOM in `levelScreens.js`, retarget `HONEY_MOTION` + `countFrame`/`fillFrame` helpers in `honeyWin.js`, rewrite `playWinCelebration` in `winMotion.js`, and restyle slots in `minimal.css`. Tests in `tests/honey-win.test.mjs` and `tests/level-win.test.mjs` drive each change.
+**Architecture:** Keep jar PNGs/mask/lighting. Replace win chrome DOM in `src/casual/screens/levelEnd.jsx`, retarget `HONEY_MOTION` + `countFrame`/`fillFrame` helpers in `honeyWin.js`, rewrite `playWinCelebration` in `winMotion.js`, and restyle slots in `minimal.css`. Tests in `tests/honey-win.test.mjs` and `tests/level-win.test.mjs` drive each change.
 
 **Tech Stack:** React (createElement screens), GSAP timelines, CSS custom properties, Node test runner + happy-dom, existing FX bus sounds.
 
@@ -31,7 +31,7 @@
 | `src/casual/honeyWin.js` | `HONEY_MOTION` beats, `fillFrame` / `countFrame`, layout vars for scoreboard, `overflowMarks` → always `[]` |
 | `src/casual/starThresholds.js` | `COUNT_UP_SECONDS` → `0.5` to match score beat |
 | `src/casual/presentationSequence.js` | `successPlan` reads new motion fields (no subline/burst confetti reliance) |
-| `src/casual/levelScreens.js` | Win DOM: praise decorations + scoreboard; remove overflow/confetti/subline |
+| `src/casual/screens/levelEnd.jsx` | Win DOM: praise decorations + scoreboard; remove overflow/confetti/subline |
 | `src/casual/winMotion.js` | 2.0s fill-first GSAP timeline + shared `paintFinal` |
 | `src/casual/minimal.css` | Slots/layers for slogan PNGs + scoreboard overlays |
 | `tests/honey-win.test.mjs` | Beat table, DOM chrome, motion, reduced-motion, no overflow/confetti |
@@ -226,7 +226,7 @@ Do not change `--honey-jar-left/top/width/height` formulas except as needed to l
 ### Task 3: Win DOM chrome rebuild
 
 **Files:**
-- Modify: `src/casual/levelScreens.js`
+- Modify: `src/casual/screens/levelEnd.jsx`
 - Modify: `tests/honey-win.test.mjs`, `tests/level-win.test.mjs`
 
 **Interfaces:**
@@ -263,7 +263,7 @@ Update `level-win` assertions that read `.sgv-honey-subline` to read scoreboard 
 
 - [x] **Step 3: Implement DOM**
 
-In `levelScreens.js`:
+In `screens/levelEnd.jsx`:
 
 1. Extend `praiseMark` to append underline + left/right drops (`alt=""`, `aria-hidden`).
 2. Replace count slot + subline with `scoreboard(score,target,staticCard)`.

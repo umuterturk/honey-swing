@@ -2,11 +2,11 @@
 
 **Date:** 7 November 2026  
 **Status:** Approved  
-**Scope:** In-level Swing and Flip multiplier presentation only (not engine rules, not Jackpot flyer redesign)
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 
 ## Goal
 
-Make multiplier gains readable at a glance: **cause → travel → pill bump**. Replace the Swing/Flip `×value` chip flyers with labeled icon+text flyers. Jackpot awards get no flying cue in this change.
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 
 ## Decisions
 
@@ -16,7 +16,7 @@ Make multiplier gains readable at a glance: **cause → travel → pill bump**. 
 | Flip origin | Flip button |
 | Flip start | When the flipped card **face is revealed** (`faceEnd`) |
 | Chip flyers | **Replaced** for Swing and Flip (text flight is the only flying reward) |
-| Jackpot | **No** flying cue in this change |
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 | Simultaneous | Both flyers may run in one play when both rewards fire |
 | Old Swing tip | Remove `CROSS` under-pill tip |
 
@@ -49,12 +49,12 @@ Flyer chrome: horizontal chip with icon + short text (not a bare `×N`). Reuse e
 3. Fade out + pill `back.out` pop
 4. Factor value update (`onFactors`) must not flash the new ×value before the matching flyer arrives; use the existing factors mark or the later of {Swing arrival, Flip arrival} when both fire
 
-Swing and Flip flyers are independent nodes; they overlap freely when both rewards are present. Jackpot entries in `rewards` are ignored by the flyer builder.
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 
 ## Surfaces
 
 - `motionSchedule.js` — `zeroCross` helper; `reducedCardSummary` uses More Flower / More Bee (no `CROSS`)
-- `minimalMotion.js` — Swing/Flip labeled flyers; Flip at `faceEnd`, Swing at `zeroCross`; drop Jackpot flyers; remove Swing `CROSS` tip
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 - `minimal.css` — icon+text flyer chip styles
 - Tests — motion-order / reduced-summary expectations for new copy and marks
 
@@ -75,5 +75,5 @@ Static labels near the awarded pills: **More Flower** / **More Bee** with icons.
 - Swing text visibly starts while the needle is still moving through 0 (not after settle)
 - Flip text leaves the Flip button at face reveal
 - Both visible together when both rewards fire
-- Jackpot award does not spawn a flyer
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 - Reduced motion: static labels, no travel

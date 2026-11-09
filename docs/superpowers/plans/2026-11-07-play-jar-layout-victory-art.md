@@ -6,7 +6,7 @@
 
 **Architecture:** Extract a shared `VictoryJarArt` layer component (back PNG → masked honey → lights → front PNG + mouth anchor) used by play Pot/Bank and by the win `heroJar`. Switch `.sgv-bottle-pair` from a centered flex row to an absolute-positioned stage so Pot stays true screen-center regardless of Bank width. Keep pour lip/mouth selectors working for `animateBankPour`.
 
-**Tech Stack:** React JSX (`MinimalBoard.jsx`), `createElement` win screens (`levelScreens.js`), CSS in `minimal.css`, Node test runner source assertions in `tests/casual-ui-currency.test.mjs`.
+**Tech Stack:** React JSX (`MinimalBoard.jsx`), `createElement` win screens (`src/casual/screens/levelEnd.jsx`), CSS in `minimal.css`, Node test runner source assertions in `tests/casual-ui-currency.test.mjs`.
 
 ## Global Constraints
 
@@ -30,7 +30,7 @@
 |------|----------------|
 | `src/casual/VictoryJarArt.jsx` | Shared Victory jar layer stack + optional fill height |
 | `src/casual/MinimalBoard.jsx` | `PendingPot` / `GlassChest` consume `VictoryJarArt`; drop CSS bottle/chest body art |
-| `src/casual/levelScreens.js` | Win `heroJar` consumes same stack (or thin wrapper) so asset order cannot diverge |
+| `src/casual/screens/levelEnd.jsx` | Win `heroJar` consumes same stack (or thin wrapper) so asset order cannot diverge |
 | `src/casual/minimal.css` | Absolute bottle-pair slots; shared `.sgv-jar-*` rules usable outside `.sgv-honey-win`; play label overlays |
 | `src/casual/minimalMotion.js` | Only if Bank measurement selector must change after markup swap |
 | `tests/casual-ui-currency.test.mjs` | Source/CSS expectations for layout, Victory art, anchors |
@@ -59,7 +59,7 @@ Append to `tests/casual-ui-currency.test.mjs`:
 test('play jars use Victory layered art and absolute Bank-left / Pot-center slots',()=>{
   const art=read('src/casual/VictoryJarArt.jsx');
   const board=read('src/casual/MinimalBoard.jsx');
-  const screens=read('src/casual/levelScreens.js');
+  const screens=read('src/casual/screens/levelEnd.jsx');
   const css=read('src/casual/minimal.css');
   assert.match(art,/export function VictoryJarArt/);
   assert.match(art,/empty-complete-jar\.png/);
@@ -167,7 +167,7 @@ Expected: FAIL on `MinimalBoard` / CSS / `levelScreens` asserts (file exists; wi
 
 **Files:**
 - Modify: `src/casual/MinimalBoard.jsx`
-- Modify: `src/casual/levelScreens.js`
+- Modify: `src/casual/screens/levelEnd.jsx`
 - Test: `tests/casual-ui-currency.test.mjs`, `tests/honey-win.test.mjs`
 
 **Interfaces:**
@@ -175,7 +175,7 @@ Expected: FAIL on `MinimalBoard` / CSS / `levelScreens` asserts (file exists; wi
 - Produces:
   - `PendingPot` renders `VictoryJarArt` + `POT` label + amount + `.sgv-pot-pour-lip`
   - `GlassChest` renders `VictoryJarArt` + `GoalProgress` + a measurement host with class `sgv-chest-body` wrapping or sibling to the art (required by `animateBankPour` today)
-  - `heroJar()` in `levelScreens.js` uses `VictoryJarArt` with `showIdleStars` and `className="sgv-honey-hero-art"`
+  - `heroJar()` in `screens/levelEnd.jsx` uses `VictoryJarArt` with `showIdleStars` and `className="sgv-honey-hero-art"`
 
 - [ ] **Step 1: Rewrite `PendingPot` body in `MinimalBoard.jsx`**
 
@@ -239,9 +239,9 @@ So Bank becomes:
 <GoalProgress banked={banked} target={target}/>
 ```
 
-- [ ] **Step 3: Refactor `heroJar` in `levelScreens.js`**
+- [ ] **Step 3: Refactor `heroJar` in `screens/levelEnd.jsx`**
 
-Because `levelScreens.js` is `createElement`-based, either:
+Because `screens/levelEnd.jsx` is `createElement`-based, either:
 
 **Option A (preferred):** import React and the JSX component if the module already supports it via the app bundler — check how other JSX imports work from `.js` files. If Vite resolves JSX from JS imports, use:
 
@@ -264,7 +264,7 @@ function heroJar(){
 
 Win fill height continues to be driven by CSS / GSAP on `.sgv-fluid-fill` inside the hero art (existing win motion). Keep `fillPercent={0}` as the mount default.
 
-If importing JSX into `levelScreens.js` breaks tests, duplicate is forbidden by spec — instead move `VictoryJarArt` to `VictoryJarArt.js` using `createElement` only (no JSX), and have `MinimalBoard.jsx` import that. Prefer createElement shared module if any loader friction appears:
+If importing JSX into `screens/levelEnd.jsx` breaks tests, duplicate is forbidden by spec — instead move `VictoryJarArt` to `VictoryJarArt.js` using `createElement` only (no JSX), and have `MinimalBoard.jsx` import that. Prefer createElement shared module if any loader friction appears:
 
 ```js
 // src/casual/VictoryJarArt.js

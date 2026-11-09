@@ -4,7 +4,7 @@
 
 **Goal:** Let players tap visible Swing / Flip multiplier pills to open a short how-it-works popup (icon + title + copy + Got it / scrim / Escape).
 
-**Architecture:** Pure content map in `factorInfoContent.js`. Presentational `FactorInfoOverlay.jsx` reuses feature-intro CSS classes (no NEW!, no demo). `HorizontalMeter` turns Swing/Flip pills into buttons; Jackpot stays a non-button span. `SimplifiedGame` owns `factorInfo: null|'swing'|'flip'`, sets `data-factor-info`, locks board play, and clears on dismiss / level / end / intro / start.
+**Architecture:** `src/casual/screens/factorInfo.jsx` is the Swing/Flip how-it-works popup. A crossing Flip grows Swing and Flip. There is no third multiplier.
 
 **Tech Stack:** React (createElement / JSX), existing `minimal.css` feature-intro chrome, Node test runner + happy-dom mount tests
 
@@ -13,7 +13,7 @@
 - Spec: `docs/superpowers/specs/2026-11-07-factor-pill-info-popup-design.md`
 - Copy exact: Swing → title `More Flower`, body `Cross 0 for more flowers.`; Flip → title `More Bee`, body `Flip for more bees.`; button `Got it`
 - Art exact: Swing `/celebration/daisy-2.png`; Flip `/bee-smiling-closed-eyes.png` (72×72 via `.sgv-feature-intro-icon`)
-- Jackpot pill: no popup, stays non-interactive for info
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 - Dismiss: Got it, scrim tap, Escape; restore focus to opening pill
 - Gate: disabled while `animating`, `introGate`, `startOpen`, or `finished`
 - Prefer reuse of `.sgv-feature-intro*` classes over a parallel skin; no NEW! badge, no demo strip
@@ -24,7 +24,7 @@
 | File | Responsibility |
 |------|----------------|
 | `src/casual/factorInfoContent.js` | `FACTOR_INFO` map + `factorInfoFor(kind)` |
-| `src/casual/FactorInfoOverlay.jsx` | Dialog: scrim, icon img, title, copy, Got it; Escape |
+| `src/casual/screens/factorInfo.jsx` | Dialog: scrim, icon img, title, copy, Got it; Escape |
 | `src/casual/MinimalBoard.jsx` | Swing/Flip pills as buttons; `onFactorInfo` / `factorInfoOpen` |
 | `src/casual/SimplifiedGame.jsx` | `factorInfo` state, gate attrs, mount overlay, clear on transitions |
 | `src/casual/minimal.css` | `data-factor-info` pointer lock; raise multipliers so swap taps work |
@@ -42,7 +42,7 @@
 **Interfaces:**
 - Produces:
   - `FACTOR_INFO` — frozen map keyed by `'swing'` | `'flip'`
-  - `factorInfoFor(kind)` → `{kind,title,copy,iconSrc,buttonLabel}|null` (null for jackpot / unknown)
+  A crossing Flip grows Swing and Flip. There is no third multiplier.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -65,7 +65,7 @@ test('factor info copy and art match the approved popup spec',()=>{
   assert.equal(bee.copy,'Flip for more bees.');
   assert.equal(bee.iconSrc,'/bee-smiling-closed-eyes.png');
   assert.equal(bee.buttonLabel,'Got it');
-  assert.equal(factorInfoFor('jackpot'),null);
+  A crossing Flip grows Swing and Flip. There is no third multiplier.
   assert.equal(factorInfoFor('nope'),null);
 });
 ```
@@ -123,7 +123,7 @@ EOF
 ### Task 2: Overlay + CSS gate
 
 **Files:**
-- Create: `src/casual/FactorInfoOverlay.jsx`
+- Create: `src/casual/screens/factorInfo.jsx`
 - Modify: `src/casual/minimal.css` (after intro-gate block ~1407)
 - Test: extend `tests/factor-info-content.test.mjs` with a source/CSS contract **or** add assertions in a tiny overlay render test — prefer static source/CSS checks here so Task 3 owns mount behavior
 
@@ -141,7 +141,7 @@ import {fileURLToPath} from 'node:url';
 import {dirname,join} from 'node:path';
 
 const root=join(dirname(fileURLToPath(import.meta.url)),'..');
-const overlay=readFileSync(join(root,'src/casual/FactorInfoOverlay.jsx'),'utf8');
+const overlay=readFileSync(join(root,'src/casual/screens/factorInfo.jsx'),'utf8');
 const css=readFileSync(join(root,'src/casual/minimal.css'),'utf8');
 
 test('FactorInfoOverlay reuses feature-intro chrome without NEW! or demo',()=>{
@@ -172,7 +172,7 @@ Expected: FAIL (overlay missing / CSS missing)
 
 - [ ] **Step 3: Implement overlay**
 
-Create `src/casual/FactorInfoOverlay.jsx`:
+Create `src/casual/screens/factorInfo.jsx`:
 
 ```jsx
 import {createElement,useEffect,useRef} from 'react';
@@ -252,7 +252,7 @@ Expected: PASS
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/casual/FactorInfoOverlay.jsx src/casual/minimal.css tests/factor-info-content.test.mjs
+git add src/casual/screens/factorInfo.jsx src/casual/minimal.css tests/factor-info-content.test.mjs
 git commit -m "$(cat <<'EOF'
 Add factor info overlay and pointer gate.
 
@@ -326,8 +326,8 @@ test('tapping Swing and Flip pills opens matching info; Got it and scrim dismiss
   assert.ok(beePill);
   assert.equal(flowerPill.tagName,'BUTTON');
   assert.equal(beePill.tagName,'BUTTON');
-  const jackpot=host.querySelector('.sgv-multiplier-pill[data-factor="jackpot"]');
-  if(jackpot)assert.equal(jackpot.tagName,'SPAN');
+  A crossing Flip grows Swing and Flip. There is no third multiplier.
+  A crossing Flip grows Swing and Flip. There is no third multiplier.
 
   await act(async()=>{tap(flowerPill);});
   const phone=host.querySelector('.sgv-phone');
@@ -391,7 +391,7 @@ export function HorizontalMeter({
   return <Tag key={kind} type={interactive?'button':undefined}
     className={'sgv-multiplier-pill sgv-multiplier-'+kind+
       ((dock==='swing'&&kind==='swing')||(dock==='flip-pill'&&kind==='flip')||
-       (dock==='jackpot'&&kind==='jackpot')?' sgv-dock':'')}
+       A crossing Flip grows Swing and Flip. There is no third multiplier.
     data-factor={kind} title={label}
     aria-label={interactive?label+' info':label+': times '+value}
     disabled={interactive?false:undefined}
@@ -509,7 +509,7 @@ EOF
 | Swing / Flip copy + daisy / bee icons | 1, 2 |
 | Got it + scrim + Escape | 2, 3 |
 | Mini feature-intro card, no NEW! / demo | 2 |
-| Pills as buttons; Jackpot unchanged | 3 |
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 | Disabled during animating / intro / start / end | 3 |
 | `data-factor-info` lock + swap via second pill | 2, 3 |
 | Focus restore to opener | 3 |

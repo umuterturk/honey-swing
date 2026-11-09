@@ -16,7 +16,7 @@ Make **card rank × multipliers → Pot add** obvious on every scoring play duri
 | Levels 16+ | Keep today’s simple `+N` |
 | Form | Short equation near the pour / Pot meniscus, then settle on `+N` |
 | ×1 silence | If every **visible** factor is ×1 (or no factors visible), show only `+N` — no fake `3 × ×1` |
-| Factors shown | Only **visible** level factors with value **> 1**, in HUD order (Swing → Flip → Jackpot) |
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 | Rank | Absolute card rank used by the engine (`\|signed\|`) |
 | Timing | Same beat as today’s `sgv-pot-fly` (with tap pour); equation holds briefly, then collapses to `+addedToPot` |
 | Cap overflow | Show full product intent, then arrow to **actual** add: e.g. `4 × ×3 → +5` when room was 5 |
@@ -64,7 +64,7 @@ Do **not** invent UI math. Prefer deriving parts from `actionPresentation` + `le
 - Persistent formula strip under the meter
 - Pill-pulse “chain” tutorial
 - Changing engine scoring or factor growth rules
-- Jackpot pedagogy beyond including ×Jackpot when visible and > 1
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 - Levels 16–20 equation flyers
 - Rewriting factor info popup copy
 
