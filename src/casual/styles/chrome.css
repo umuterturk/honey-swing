@@ -103,8 +103,7 @@
 }
 @media(prefers-reduced-motion:reduce){
   .sgv-dock,.sgv-onboarding .sgv-flip[data-dock="true"],.sgv-glossary li,
-  .sgv-level-banner,
-  .sgv-success-pour .sgv-pending-pot,.sgv-orchard-hook{
+  .sgv-level-banner{
     animation:none;opacity:1;transform:none;
   }
 }
@@ -222,17 +221,13 @@ img.sgv-feature-intro-icon{object-fit:contain;display:block}
    the mobile chest clamps so a 7px glass wall is not squeezed by HUD insets. */
 .sgv-honey-win .sgv-honey-hero-art.sgv-chest-art{
   position:absolute;z-index:1;flex:none;max-width:none;max-height:none;
-  left:var(--honey-jar-left,60.8px);top:var(--honey-jar-top,94px);
-  width:var(--honey-jar-width,198.4px);height:var(--honey-jar-height,248px);
+  left:var(--honey-jar-left);top:var(--honey-jar-top);
+  width:var(--honey-jar-width);height:var(--honey-jar-height);
   filter:none;
 }
 .sgv-honey-win .sgv-honey-hero-art .sgv-chest-body{
   left:0;right:0;top:0;bottom:0;width:auto;height:auto;max-width:none;max-height:none;
 }
-.sgv-honey-win .sgv-honey-hero-art .sgv-chest-platform{
-  left:-8px;right:-8px;bottom:-8px;height:22px;
-}
-.sgv-honey-win .sgv-honey-hero-art .sgv-chest-rim{display:block!important;top:0;height:18%}
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-fill{
   transition:none!important;height:0%;opacity:0;will-change:auto;
 }
@@ -242,8 +237,7 @@ img.sgv-feature-intro-icon{object-fit:contain;display:block}
   height:78%;opacity:1;
 }
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-surface{animation:none}
-.sgv-honey-win .sgv-honey-hero-art .sgv-fluid-bubble,
-.sgv-honey-win .sgv-honey-hero-art .sgv-glass-spark{display:none}
+.sgv-honey-win .sgv-honey-hero-art .sgv-fluid-bubble{display:none}
 .sgv-honey-win .sgv-honey-hero-art .sgv-fluid-surface{opacity:1}
 .sgv-phone[data-honey-win="true"]>.sgv-hud,
 .sgv-phone[data-honey-win="true"]>.sgv-middle,
@@ -251,7 +245,6 @@ img.sgv-feature-intro-icon{object-fit:contain;display:block}
 .sgv-phone[data-honey-win="true"]>.sgv-glossary{
   visibility:hidden;pointer-events:none;
 }
-.sgv-phone[data-honey-win="true"] .sgv-glass-spark{display:none!important}
 
 /* ── Layered PNG jar: back → masked honey → masked lights → front glass ── */
 .sgv-honey-win .sgv-honey-hero-art{
@@ -351,11 +344,9 @@ img.sgv-feature-intro-icon{object-fit:contain;display:block}
 }
 .sgv-honey-win .sgv-honey-hero-art .sgv-honey-gleam-sweep{z-index:auto}
 .sgv-honey-win .sgv-honey-hero-art .sgv-chest-mouth{top:10%;z-index:6}
-.sgv-honey-win .sgv-honey-overflow{z-index:7}
 
 @media(prefers-reduced-motion:reduce){
   .sgv-honey-win .sgv-honey-gleam-sweep{opacity:0!important;transform:none}
   .sgv-honey-win .sgv-honey-reflection{opacity:.18}
-  .sgv-honey-win .sgv-confetti{animation:none;opacity:0}
   .sgv-honey-win .sgv-honey-foliage-rear,.sgv-honey-win .sgv-honey-foliage-front{opacity:1;transform:none}
 }

@@ -75,25 +75,46 @@ export function honeyLayout(width,height,insets={}){
   };
 }
 
+// Names written by applyHoneyLayout. Fallback values live in styles/honey-win.css.
+export const HONEY_LAYOUT_VARS=Object.freeze({
+  praiseTop:'--honey-praise-top',
+  praiseLeft:'--honey-praise-left',
+  praiseWidth:'--honey-praise-width',
+  praiseHeight:'--honey-praise-height',
+  praiseFont:'--honey-praise-font',
+  jarTop:'--honey-jar-top',
+  jarLeft:'--honey-jar-left',
+  jarWidth:'--honey-jar-width',
+  jarHeight:'--honey-jar-height',
+  scoreboardTop:'--honey-scoreboard-top',
+  scoreboardLeft:'--honey-scoreboard-left',
+  scoreboardWidth:'--honey-scoreboard-width',
+  scoreboardHeight:'--honey-scoreboard-height',
+  countFont:'--honey-count-font',
+  resetTop:'--honey-reset-top',
+  resetRight:'--honey-reset-right'
+});
+
 export function applyHoneyLayout(node,width,height,insets){
   if(!node||!(width>0)||!(height>0))return null;
   const layout=honeyLayout(width,height,insets);
   const set=(name,value)=>node.style.setProperty(name,value);
-  set('--honey-praise-top',layout.praise.y+'px');
-  set('--honey-praise-left',layout.praise.x+'px');
-  set('--honey-praise-width',layout.praise.w+'px');
-  set('--honey-praise-height',layout.praise.h+'px');
-  set('--honey-praise-font',layout.praise.font+'px');
-  set('--honey-jar-top',layout.jar.y+'px');
-  set('--honey-jar-left',layout.jar.x+'px');
-  set('--honey-jar-width',layout.jar.w+'px');
-  set('--honey-jar-height',layout.jar.h+'px');
-  set('--honey-scoreboard-top',layout.scoreboard.y+'px');
-  set('--honey-scoreboard-left',layout.scoreboard.x+'px');
-  set('--honey-scoreboard-width',layout.scoreboard.w+'px');
-  set('--honey-scoreboard-height',layout.scoreboard.h+'px');
-  set('--honey-count-font',layout.scoreboard.font+'px');
-  set('--honey-reset-top',layout.reset.y+'px');
-  set('--honey-reset-right',(width-layout.reset.x-layout.reset.w)+'px');
+  const vars=HONEY_LAYOUT_VARS;
+  set(vars.praiseTop,layout.praise.y+'px');
+  set(vars.praiseLeft,layout.praise.x+'px');
+  set(vars.praiseWidth,layout.praise.w+'px');
+  set(vars.praiseHeight,layout.praise.h+'px');
+  set(vars.praiseFont,layout.praise.font+'px');
+  set(vars.jarTop,layout.jar.y+'px');
+  set(vars.jarLeft,layout.jar.x+'px');
+  set(vars.jarWidth,layout.jar.w+'px');
+  set(vars.jarHeight,layout.jar.h+'px');
+  set(vars.scoreboardTop,layout.scoreboard.y+'px');
+  set(vars.scoreboardLeft,layout.scoreboard.x+'px');
+  set(vars.scoreboardWidth,layout.scoreboard.w+'px');
+  set(vars.scoreboardHeight,layout.scoreboard.h+'px');
+  set(vars.countFont,layout.scoreboard.font+'px');
+  set(vars.resetTop,layout.reset.y+'px');
+  set(vars.resetRight,(width-layout.reset.x-layout.reset.w)+'px');
   return layout;
 }
