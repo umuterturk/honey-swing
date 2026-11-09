@@ -1,128 +1,273 @@
-import test from 'node:test';
+import test, {after, describe} from 'node:test';
 import assert from 'node:assert/strict';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
-import {readFile} from 'node:fs/promises';
-import {chooseBankPour} from '../src/casual/minimalMotion.js';
-import {reducedBankSummary} from '../src/casual/motionSchedule.js';
+import {ONBOARDING_SESSION_KEY} from '../src/casual/onboardingProgress.js';
 import {
-  LevelEndScreen,LevelStartScreen,dismissLevelScreen
-} from '../src/casual/levelScreens.js';
-import {ONBOARDING_PROGRESS_KEY,clearOnboardingProgress} from '../src/casual/onboardingProgress.js';
-import {newOnboardingRound} from '../src/casual/onboardingLevels.js';
+  newOnboardingRound, onboardingLevel, onboardingVictory, stepOnboarding
+} from '../src/casual/onboardingLevels.js';
+import {LevelEndScreen} from '../src/casual/levelScreens.js';
+import {honeyTier, praiseFor} from '../src/casual/starThresholds.js';
+import {createFxBus} from '../src/casual/fx/fxBus.js';
+import {
+  accessibleName, boot, buttonNamed, click, closePage, dialogs, mountGame,
+  page, pressKey, setReduced
+} from './helpers/mount.mjs';
 
-const read=async path=>readFile(new URL(path,import.meta.url),'utf8');
+function winLevel1(){
+  let round = newOnboardingRound(1);
+  round = stepOnboarding(round, {type:'steer', index:0});
+  round = stepOnboarding(round, {type:'steer', index:0});
+  round = stepOnboarding(round, {type:'bank'});
+  assert.equal(onboardingVictory(round), true);
+  return round;
+}
 
-test('BANK plays the pot pour, including a win, and reduced motion stays static',async()=>{
-  assert.deepEqual(chooseBankPour({reduced:false,hasRoot:true,hasSource:true,fromScore:0,toScore:8}),
-    {timeline:true,static:false});
-  assert.deepEqual(chooseBankPour({reduced:true,hasRoot:true,hasSource:true,fromScore:4,toScore:12}),
-    {timeline:false,static:true});
-  assert.deepEqual(reducedBankSummary(4,12),{pot:0,secured:12,gain:'+8'});
-  const motion=await read('../src/casual/minimalMotion.js');
-  assert.match(motion,/chooseBankPour\(/);
-  assert.match(motion,/showReducedBank\(root,fromScore,toScore\)/);
-  assert.match(motion,/export function animateBankPour\(/);
-  const source=await read('../src/casual/SimplifiedGame.jsx');
-  const start=source.slice(source.indexOf('startMotion('),source.indexOf('const winLabel'));
-  assert.match(start,/motionKind\(action,change\)==='bank'/);
-  assert.match(start,/animateBankPour\(/);
-  assert.doesNotMatch(start.slice(0,start.indexOf('animateBankPour(')),/onboardingVictory/,
-    'a winning Bank must not settle before the pour starts');
-  const commit=source.slice(source.indexOf('onCommit({next,change})'),source.indexOf('onSettle'));
-  const early=commit.slice(commit.indexOf('if(onboardingVictory(next))'));
-  assert.doesNotMatch(early,/setView\(settled\.view\)/);
-  assert.doesNotMatch(early,/setShownGold\(settled\.shownGold\)/);
+function loseRound(){
+  const round = newOnboardingRound(4);
+  return {...round, snaps:onboardingLevel(4).maxSnaps, turn:2};
+}
+
+async function mountStored(round, {reduced = false} = {}){
+  await boot();
+  setReduced(reduced);
+  page().localStorage.clear();
+  page().localStorage.setItem(ONBOARDING_SESSION_KEY, JSON.stringify(round));
+  return mountGame();
+}
+
+async function mountFresh({reduced = false} = {}){
+  await boot();
+  setReduced(reduced);
+  page().localStorage.clear();
+  return mountGame();
+}
+
+function enabledPlay(host){
+  return [...host.querySelectorAll('button')].find(node =>
+    accessibleName(node).startsWith('Play ') && !node.disabled);
+}
+
+async function skipIfPresent(host){
+  const skip = buttonNamed(host, 'Skip animation');
+  if(skip)await click(skip);
+}
+
+function jarFill(dialog){
+  const fill = dialog.querySelector('.sgv-fluid-fill');
+  assert.ok(fill, 'the win jar has a honey fill');
+  return page().getComputedStyle(fill);
+}
+
+function assertFilled(dialog, score){
+  const tally = dialog.querySelector('.sgv-win-tally');
+  assert.equal(tally.textContent, String(score));
+  const fill = jarFill(dialog);
+  assert.notEqual(fill.height, '0%');
+  assert.notEqual(fill.height, '0px');
+  assert.notEqual(fill.height, '0');
+  assert.notEqual(fill.opacity, '0');
+}
+
+after(async() => {
+  await closePage();
 });
 
-test('the header reset renders without a dev gate and restarts Level 1',async()=>{
-  const source=await read('../src/casual/SimplifiedGame.jsx');
-  const header=source.slice(source.indexOf('<header className="sgv-hud sgv-tutorial-hud">'),
-    source.indexOf('</header>'));
-  assert.match(header,/<button type="button" className="sgv-reset-progress"/);
-  assert.match(header,/onClick=\{resetProgress\}/);
-  assert.match(header,/aria-label="Reset onboarding progress and restart Level 1"/);
-  assert.doesNotMatch(header,/import\.meta\.env\.DEV/);
-  assert.doesNotMatch(header,/level\.id>=\d+&&<button type="button" className="sgv-reset-progress"/);
-  const reset=source.slice(source.indexOf('function resetProgress(){'),
-    source.indexOf('function nextLevel(){'));
-  assert.match(reset,/clearOnboardingProgress\(window\.localStorage\)/);
-  assert.match(reset,/startLevel\(1\)/);
-  const storage={
-    items:new Map([[ONBOARDING_PROGRESS_KEY,'8']]),
-    getItem(key){return this.items.get(key)??null;},
-    setItem(key,value){this.items.set(key,String(value));},
-    removeItem(key){this.items.delete(key);}
-  };
-  assert.equal(clearOnboardingProgress(storage),true);
-  assert.equal(storage.getItem(ONBOARDING_PROGRESS_KEY),null);
-  const first=newOnboardingRound(1);
-  assert.equal(first.levelId,1);
-  assert.equal(first.turn,0);
-  const html=renderToStaticMarkup(createElement(LevelEndScreen,{
-    victory:true,score:5,target:5,label:'NEXT',onPrimary(){},onReset(){}
-  }));
-  assert.match(html,/sgv-honey-reset/);
-  assert.match(html,/aria-label="Reset progress"/);
-  assert.doesNotMatch(html,/RESET PROGRESS/);
+describe('mounted guards', {concurrency:false}, () => {
+test('start, win, and lose screens show a call to action, and skip dismisses the start', async() => {
+  const fresh = await mountFresh();
+  await click(buttonNamed(fresh.host, 'PLAY'));
+  const start = dialogs(fresh.host).find(node => accessibleName(node).includes('Level 1'));
+  assert.ok(start, 'level start is on screen');
+  assert.match(start.textContent, /COLLECT/);
+  assert.ok(buttonNamed(start, 'START'));
+  await pressKey(start, 'Escape');
+  assert.equal(dialogs(fresh.host).some(node => accessibleName(node).includes('Level 1')), false);
+  assert.ok(enabledPlay(fresh.host), 'skip leaves a card the player can play');
+  await fresh.unmount();
+
+  const won = winLevel1();
+  const victory = await mountStored(won, {reduced:true});
+  const winDialog = dialogs(victory.host)[0];
+  assert.ok(winDialog);
+  assert.match(winDialog.textContent, /Level complete/);
+  assert.ok(buttonNamed(winDialog, 'NEXT'));
+  await victory.unmount();
+
+  const defeat = await mountStored(loseRound(), {reduced:true});
+  const loseDialog = dialogs(defeat.host)[0];
+  assert.ok(loseDialog);
+  assert.match(loseDialog.textContent, /Try again/);
+  assert.ok(buttonNamed(loseDialog, 'TRY AGAIN'));
+  await defeat.unmount();
 });
 
-test('level start and win and lose screens render and can be dismissed',()=>{
-  const start=renderToStaticMarkup(createElement(LevelStartScreen,{
-    levelId:5,target:6,onDismiss(){}
-  }));
-  assert.match(start,/sgv-level-start/);
-  assert.match(start,/Level 5/);
-  assert.match(start,/COLLECT/);
-  assert.match(start,/>6</);
-  assert.match(start,/sgv-level-start-dismiss/);
-  assert.deepEqual(dismissLevelScreen('start','tap'),
-    {dismiss:true,advance:false,replay:false,lock:false});
-  assert.deepEqual(dismissLevelScreen('start','skip'),
-    {dismiss:true,advance:false,replay:false,lock:false});
-  const win=renderToStaticMarkup(createElement(LevelEndScreen,{
-    victory:true,score:11,target:8,label:'NEXT',onPrimary(){},onBackdrop(){},onReset(){}
-  }));
-  assert.match(win,/sgv-end-overlay/);
-  assert.match(win,/Level complete!/);
-  assert.match(win,/Honey Collected/);
-  assert.match(win,/Target:\s*8/);
-  assert.match(win,/score-board\.png/);
-  assert.match(win,/empty-complete-jar\.png/);
-  assert.match(win,/sgv-jar-mask/);
-  assert.match(win,/sgv-fluid-surface/);
-  assert.doesNotMatch(win,/sgv-win-star|★/);
-  assert.match(win,/>NEXT</);
-  const lose=renderToStaticMarkup(createElement(LevelEndScreen,{
-    victory:false,score:2,target:8,label:'TRY AGAIN',onPrimary(){},onBackdrop(){}
-  }));
-  assert.match(lose,/Try again!/);
-  assert.match(lose,/>TRY AGAIN</);
-  assert.match(lose,/Drops secured: 2 \/ 8/);
-  assert.deepEqual(dismissLevelScreen('win','cta'),
-    {dismiss:true,advance:true,replay:false,lock:false});
-  assert.deepEqual(dismissLevelScreen('win','skip'),
-    {dismiss:true,advance:true,replay:false,lock:false});
-  assert.deepEqual(dismissLevelScreen('win','backdrop'),
-    {dismiss:false,advance:false,replay:false,lock:false,settle:true});
-  assert.deepEqual(dismissLevelScreen('lose','cta'),
-    {dismiss:true,advance:false,replay:true,lock:false});
-  assert.deepEqual(dismissLevelScreen('lose','skip'),
-    {dismiss:true,advance:false,replay:true,lock:false});
-  assert.deepEqual(dismissLevelScreen('lose','backdrop'),
-    {dismiss:true,advance:false,replay:true,lock:false});
+test('a winning Save pours the pot before the win screen', async() => {
+  const view = await mountFresh();
+  await click(buttonNamed(view.host, 'PLAY'));
+  await click(buttonNamed(view.host, 'START'));
+  await click(enabledPlay(view.host));
+  await skipIfPresent(view.host);
+  await click(enabledPlay(view.host));
+  await skipIfPresent(view.host);
+  const save = [...view.host.querySelectorAll('button')].find(node =>
+    accessibleName(node).startsWith('Save ') && !node.disabled);
+  assert.ok(save, 'Save is available after two cards');
+  await click(save);
+  assert.equal(dialogs(view.host).some(node => /Level complete|Try again/.test(node.textContent)), false,
+    'the win screen waits until the pour has started');
+  assert.match(view.host.textContent, /\+\d+/, 'the pour shows the amount being saved');
+  const {act} = await import('react');
+  await act(async() => {
+    await new Promise(resolve => setTimeout(resolve, 800));
+  });
+  assert.ok(view.host.querySelector('.sgv-pour-stream'), 'the pot pour stream is on screen');
+  await skipIfPresent(view.host);
+  const done = dialogs(view.host).find(node => /Level complete/.test(node.textContent));
+  assert.ok(done, 'skip after the pour lands on the win screen');
+  await view.unmount();
+
+  setReduced(true);
+  const reduced = await mountFresh({reduced:true});
+  await click(buttonNamed(reduced.host, 'PLAY'));
+  await click(buttonNamed(reduced.host, 'START'));
+  await click(enabledPlay(reduced.host));
+  await skipIfPresent(reduced.host);
+  await click(enabledPlay(reduced.host));
+  await skipIfPresent(reduced.host);
+  const reducedSave = [...reduced.host.querySelectorAll('button')].find(node =>
+    accessibleName(node).startsWith('Save ') && !node.disabled);
+  await click(reducedSave);
+  assert.match(reduced.host.textContent, /\+\d+/);
+  assert.equal(reduced.host.querySelector('.sgv-pour-stream'), null);
+  await reduced.unmount();
+  setReduced(false);
 });
 
-test('the game mounts those screens and does not keep the Flip landing band',async()=>{
-  const source=await read('../src/casual/SimplifiedGame.jsx');
-  const board=await read('../src/casual/MinimalBoard.jsx');
-  const css=await read('../src/casual/minimal.css');
-  assert.match(source,/<LevelStartScreen /);
-  assert.match(source,/<LevelEndScreen /);
-  assert.match(source,/dismissLevelScreen\(/);
-  assert.doesNotMatch(source,/flipLandingBand|flip_band_shown|flipChosenPayload|flip_chosen|sgv-flip-band/);
-  assert.doesNotMatch(board,/FlipLandingBand|sgv-flip-band/);
-  assert.doesNotMatch(css,/sgv-flip-band|sgv-flip-band-hatch|sgv-flip-band-chevron/);
-  const levels=await read('../src/casual/onboardingLevels.js');
-  assert.doesNotMatch(levels,/showSnapOverlap/);
+test('Reset progress returns to Level 1', async() => {
+  await boot();
+  setReduced(true);
+  page().localStorage.clear();
+  const {prepareOnboardingJump} = await import('../src/casual/onboardingProgress.js');
+  const {derivedFeatureUnlocks} = await import('../src/casual/featureIntroRegistry.js');
+  const {ONBOARDING_COUNT} = await import('../src/casual/onboardingLevels.js');
+  prepareOnboardingJump(page().localStorage, 8, {
+    levelCount:ONBOARDING_COUNT,
+    introUnlocks:derivedFeatureUnlocks()
+  });
+  const view = await mountGame();
+  assert.match(view.host.textContent, /Level 8/);
+  await click(buttonNamed(view.host, 'Reset onboarding progress and restart Level 1'));
+  assert.match(view.host.textContent, /Level 1/);
+  assert.doesNotMatch(view.host.textContent, /Level 8/);
+  await view.unmount();
+  setReduced(false);
+});
+
+test('a settled win shows a filled jar and the secured score', async() => {
+  const round = winLevel1();
+  const view = await mountStored(round, {reduced:true});
+  const dialog = dialogs(view.host)[0];
+  assert.ok(dialog);
+  assertFilled(dialog, round.game.deal.T);
+  assert.match(accessibleName(dialog), new RegExp(String(round.game.deal.T)));
+  // SimplifiedGame sets these on the HUD, the meter/jars, and the card row
+  // while a win is showing. The stylesheet also sets visibility:hidden, which
+  // this document does not load.
+  for(const region of ['.sgv-hud', '.sgv-middle', '.sgv-controls']){
+    const node = view.host.querySelector(region);
+    assert.ok(node, region);
+    assert.equal(node.getAttribute('aria-hidden'), 'true', region);
+    assert.equal(node.hasAttribute('inert'), true, region);
+  }
+  await view.unmount();
+});
+
+test('win praise reads Nectar, Amber, or Hiveful', () => {
+  const cases = [
+    [4, 11, 'Nectar!'],
+    [4, 18, 'Amber!'],
+    [1, 5, 'Hiveful!']
+  ];
+  for(const [level, score, word] of cases){
+    const praise = praiseFor(honeyTier(level, score));
+    assert.equal(praise.text, word);
+    const html = renderToStaticMarkup(createElement(LevelEndScreen, {
+      victory:true, score, target:5, label:'NEXT', praise
+    }));
+    assert.equal(html.includes(word), true);
+    assert.equal(html.includes(String(score)), true);
+    assert.equal(html.includes('Sweet!'), false);
+  }
+  assert.equal(praiseFor(0), null);
+});
+
+test('skip and reduced motion end on the same final win screen', async() => {
+  await boot();
+  const {playWinCelebration} = await import('../src/casual/winMotion.js');
+  const doc = page().document;
+  function stage(){
+    const card = doc.createElement('div');
+    const praise = doc.createElement('p');
+    praise.textContent = 'Hiveful!';
+    const liquid = doc.createElement('div');
+    liquid.className = 'sgv-fluid-fill';
+    const tally = doc.createElement('p');
+    tally.className = 'sgv-win-tally';
+    const cta = doc.createElement('button');
+    cta.type = 'button';
+    cta.textContent = 'NEXT';
+    card.append(praise, liquid, tally, cta);
+    doc.body.append(card);
+    return {card, praise, liquid, tally, cta, remove(){card.remove();}};
+  }
+  function read(nodes){
+    const fill = page().getComputedStyle(nodes.liquid);
+    return {
+      score:nodes.tally.textContent,
+      praise:nodes.praise.textContent,
+      height:fill.height,
+      opacity:fill.opacity,
+      enabled:!nodes.cta.disabled
+    };
+  }
+  const reducedNodes = stage();
+  const reducedBus = createFxBus({reducedMotion:() => false});
+  playWinCelebration({
+    victory:true, secured:8, target:5, tier:3,
+    praise:reducedNodes.praise, tally:reducedNodes.tally, liquid:reducedNodes.liquid,
+    cta:reducedNodes.cta, card:reducedNodes.card, reduced:true, bus:reducedBus
+  });
+  const reduced = read(reducedNodes);
+  assert.equal(reducedBus.liveParticles(), 0);
+
+  const skippedNodes = stage();
+  const skippedBus = createFxBus({reducedMotion:() => false});
+  const handle = playWinCelebration({
+    victory:true, secured:8, target:5, tier:3,
+    praise:skippedNodes.praise, tally:skippedNodes.tally, liquid:skippedNodes.liquid,
+    cta:skippedNodes.cta, card:skippedNodes.card, reduced:false, bus:skippedBus
+  });
+  handle.cancel();
+  const skipped = read(skippedNodes);
+  assert.equal(skippedBus.liveParticles(), 0);
+  assert.deepEqual(skipped, reduced);
+  assert.equal(skipped.score, '8');
+  assert.equal(skipped.praise, 'Hiveful!');
+  assert.equal(skipped.enabled, true);
+  assert.notEqual(skipped.height, '0%');
+  assert.notEqual(skipped.height, '0px');
+  assert.notEqual(skipped.opacity, '0');
+  reducedNodes.remove();
+  skippedNodes.remove();
+});
+
+test('NEXT advances exactly one level', async() => {
+  const view = await mountStored(winLevel1(), {reduced:true});
+  await click(buttonNamed(view.host, 'NEXT'));
+  assert.match(view.host.textContent, /Level 2/);
+  assert.doesNotMatch(view.host.textContent, /Level 3/);
+  assert.equal(dialogs(view.host).some(node => /Level complete/.test(node.textContent)), false);
+  await view.unmount();
+});
 });

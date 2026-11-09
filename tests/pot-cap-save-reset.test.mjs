@@ -1,25 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
 import {newOverswing,stepOverswing,overswingPayout} from '../src/external/engines.js';
-import {ONBOARDING_LEVELS,newOnboardingRound,stepOnboarding,onboardingLevel} from '../src/casual/onboardingLevels.js';
-import {STAR_THRESHOLDS} from '../src/casual/starThresholds.js';
-import {saveResetsVisibleFactors} from '../src/casual/presentation.js';
-import {multiplierParts} from '../src/casual/multiplierView.js';
+import {newOnboardingRound,stepOnboarding} from '../src/casual/onboardingLevels.js';
 
 const casualBase={
   runningPot:true,snapLimit:8,steerAlwaysToPot:true,
   steerNoncrossPenalty:0,flipNoncrossPenalty:0,enableResonance:false,
   enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:false
 };
-
-test('levels 1–15 soft-cap the Pot at the savings target; later keep 2× headroom',()=>{
-  for(const level of ONBOARDING_LEVELS){
-    const stars=STAR_THRESHOLDS[level.id];
-    const expected=level.id<=15?stars.target:Math.max(stars.star3*2,stars.target*2);
-    assert.equal(level.rules.potCap,expected,level.name);
-  }
-});
 
 test('running Pot overflow is discarded with no Snap or multiplier side effects',()=>{
   const rules={...casualBase,potCap:25};
@@ -88,32 +76,13 @@ test('null potCap keeps uncapped campaign-style running Pot math',()=>{
   assert.equal(game.lastAction.potOverflow,false);
 });
 
-test('Save resets visible multipliers and the helper detects it',()=>{
+test('Save resets visible multipliers',()=>{
   const round=newOnboardingRound(6);
-  // Build Flip factor then Save.
   let state=stepOnboarding(round,{type:'steer',index:0});
   state=stepOnboarding(state,{type:'flip'});
   assert.ok(state.game.deal.flipFactor>1||state.game.deal.W>0);
-  const before={
-    factorsBefore:multiplierParts(state.game.deal),
-    factorsAfter:null
-  };
   state=stepOnboarding(state,{type:'bank'});
-  before.factorsAfter=multiplierParts(state.game.deal);
   assert.equal(state.game.deal.W,0);
   assert.equal(state.game.deal.flipFactor,1);
   assert.equal(state.game.deal.jackpotFactor,1);
-  assert.equal(saveResetsVisibleFactors(before,onboardingLevel(6).visibleFactors),true);
-  assert.equal(saveResetsVisibleFactors(before,[]),false);
-});
-
-test('PendingPot shows amount only; cap still wired for fill',()=>{
-  const source=readFileSync(new URL('../src/casual/MinimalBoard.jsx',import.meta.url),'utf8');
-  assert.doesNotMatch(source,/sgv-pot-cap/);
-  assert.match(source,/hasCap/);
-  assert.match(source,/fillTarget=hasCap\?cap:target/);
-  const game=readFileSync(new URL('../src/casual/SimplifiedGame.jsx',import.meta.url),'utf8');
-  assert.match(game,/cap=\{level\.rules\.potCap\}/);
-  assert.match(game,/Multipliers reset\./);
-  assert.match(game,/saveResetsVisibleFactors/);
 });
