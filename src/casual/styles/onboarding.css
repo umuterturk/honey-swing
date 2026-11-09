@@ -21,8 +21,8 @@
  font-size:clamp(60px,16vw,82px);letter-spacing:-2px;
 }
 .sgv-onboarding .sgv-card-risky{
- outline:4px solid #f26062;outline-offset:-7px;
- box-shadow:0 7px 0 #c3525b,0 11px 13px #b44f5d65,inset 0 0 0 5px #ffedf2;
+ outline:4px solid #3A1A00;
+ box-shadow:0 7px 0 var(--sgv-card-rim),0 11px 12px #6f774958,inset 0 0 0 5px #FFFFFF;
 }
 .sgv-onboarding .sgv-card-risky:after{
  content:'!';position:absolute;right:7px;top:4px;z-index:4;

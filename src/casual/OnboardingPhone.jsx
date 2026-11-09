@@ -15,8 +15,16 @@ export function OnboardingPhone({
 }){
   const {
     level, victory, finished, factorInfoEnabled, available, canBank, canFlip,
-    potDisplay, remaining, hearts, shownHand, bankMessage, bankPulse, flipPulse, pulseIndex
+    potDisplay, remaining, hearts, bankMessage, bankPulse, flipPulse, pulseIndex
   }=readout;
+  const deal=screen.round.game.deal;
+  const slots=level.visibleHandSlots;
+  const sourceHand=screen.committedHand||deal.hand;
+  const handView=sourceHand.slice(0, slots).map((id, engineIndex)=>({
+    id, engineIndex, value:signed(id)
+  })).sort((a, b)=>a.value-b.value||a.engineIndex-b.engineIndex);
+  const bothColours=handView.some(card=>card.value<0)&&handView.some(card=>card.value>0);
+  const firstRedId=bothColours?handView.find(card=>card.value>0).id:null;
   const {view, shownGold, animating, introGate, docking, help, devMenuOpen, factorInfo, ack, beat}=screen;
   return <main className="sgv-page">
     <div ref={rootRef}
@@ -79,13 +87,24 @@ export function OnboardingPhone({
       </div>
       <section className="sgv-controls sgv-tutorial-controls" aria-label="Card actions">
         <div className="sgv-card-shelf" aria-hidden="true"/>
-        <div className="sgv-hand" aria-label="Your cards">
-          {shownHand.map((id, i)=><SimpleCard key={id} id={id} index={i}
-            value={signed(id)} showDirection={true}
-            risky={level.showChances&&wouldSnap(screen.round, {type:'steer', index:i})}
-            highlighted={pulseIndex===i}
-            disabled={finished||animating||!available.some(action=>action.type==='steer'&&action.index===i)}
-            onPlay={(index, element)=>onPlay({type:'steer', index}, element)}/>)}
+        <div className="sgv-hand" aria-label="Your cards"
+          data-compact={slots>=5?'true':undefined}
+          style={{
+            '--hs-hand-slots':String(slots),
+            '--hs-hand-group-extra':bothColours?'var(--hs-hand-group-gap, 10px)':'0px'
+          }}>
+          {handView.map(card=>{
+            const engineIndex=deal.hand.indexOf(card.id);
+            return <SimpleCard key={card.id} id={card.id} index={engineIndex}
+              value={card.value} showDirection={true}
+              groupStart={card.id===firstRedId}
+              risky={level.showChances&&wouldSnap(screen.round, {type:'steer', index:engineIndex})}
+              highlighted={pulseIndex===engineIndex}
+              disabled={finished||animating||!available.some(action=>action.type==='steer'&&action.index===engineIndex)}
+              onPlay={(_index, element)=>onPlay(
+                {type:'steer', index:screen.round.game.deal.hand.indexOf(card.id)}, element
+              )}/>;
+          })}
         </div>
         <div className="sgv-actions sgv-tutorial-actions">
           <button type="button"

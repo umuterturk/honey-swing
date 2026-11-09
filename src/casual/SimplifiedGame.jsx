@@ -14,6 +14,7 @@ import {OnboardingPhone} from './OnboardingPhone.jsx';
 import {browserStorage, dispatchCasualEvent, prefersReducedMotion} from './platform.js';
 import {introCopy, successPlan, takeFirstOutcome} from './presentationSequence.js';
 import {settledPresentation} from './presentation.js';
+import {captureHandPositions} from './motion/handReflow.js';
 import {playOutcome, startPlayMotion} from './playMotion.js';
 import {
   ackAfterCommit, arrivalBegan, arrivalSettled, clearedDock, closedDevMenu, closedFactor, closedStart,
@@ -116,6 +117,7 @@ export default function SimplifiedGame(){
     if(!boardTapDuringIntro(introGateRef.current).play)return;
     const root=rootRef.current;
     const level=onboardingLevel(current.round.levelId);
+    const handBefore=action?.type==='steer'?captureHandPositions(root):null;
     runPresentedAction(current.round, action, presentationRef.current, {
       onCommit({next, change}){
         const record=commitPlay(browserStorage(), {
@@ -128,7 +130,10 @@ export default function SimplifiedGame(){
         }
         const outcome=playOutcome(change, action);
         const first=takeFirstOutcome(seenFactorsRef.current, outcome);
-        updateScreen(state=>ackAfterCommit(state, {
+        updateScreen(state=>ackAfterCommit({
+          ...state,
+          committedHand:action.type==='steer'?next.game.deal.hand.slice():null
+        }, {
           outcome, first, text:first?introCopy(first.kind, change.rewards[0]?.value):null
         }));
       },
@@ -137,11 +142,14 @@ export default function SimplifiedGame(){
         resetMotionRef.current=null;
         lossMotionRef.current=null;
         breakMotionRef.current=null;
-        updateScreen(state=>settledScreen(state, settledPresentation(next)));
+        updateScreen(state=>{
+          const settled=settledScreen(state, settledPresentation(next));
+          return {...settled, committedHand:null};
+        });
       },
       startMotion({change}, complete){
         return startPlayMotion({
-          root, source, action, change, level,
+          root, source, action, change, level, handBefore,
           firstTap:current.round.levelId===1&&current.round.turn===0,
           seenFactors:seenFactorsRef.current,
           cancelRef, resetMotionRef, lossMotionRef, breakMotionRef,
