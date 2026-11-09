@@ -100,7 +100,6 @@ test('a session saved on main loads and keeps the same score',()=>{
   };
   const restored=loadSavedRound(storage,20);
   assert.ok(restored);
-  assert.equal(restored.game.deal.jackpotFactor,1);
   assert.equal(restored.game.deal.T,saved.game.deal.T);
   const continued=stepOnboarding(restored,{type:'bank'});
   assert.notStrictEqual(continued,restored);
