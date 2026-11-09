@@ -48,6 +48,16 @@ function enabledPlay(host){
     accessibleName(node).startsWith('Play ') && !node.disabled);
 }
 
+function saveControl(host){
+  return [...host.querySelectorAll('button')].find(node =>
+    /^SAVE(?: \d+)?$/.test((node.textContent || '').replace(/\s+/g, ' ').trim()));
+}
+
+function enabledPendingSave(host){
+  return [...host.querySelectorAll('button')].some(node =>
+    /^Save \d+ pending drops$/.test(accessibleName(node)) && !node.disabled);
+}
+
 async function skipIfPresent(host){
   const skip = buttonNamed(host, 'Skip animation');
   if(skip)await click(skip);
@@ -102,14 +112,45 @@ test('start, win, and lose screens show a call to action, and skip dismisses the
   await defeat.unmount();
 });
 
-test('dismissing the bank intro shows the level arrival until START', async() => {
+test('Save is not offered until two cards fill the pot', async() => {
+  const view = await mountFresh();
+  await click(buttonNamed(view.host, 'PLAY'));
+  await click(buttonNamed(view.host, 'START'));
+  let save = saveControl(view.host);
+  assert.ok(save, 'Save is on screen');
+  assert.equal(enabledPendingSave(view.host), false);
+  assert.equal(save.disabled, true);
+  assert.equal(accessibleName(save), 'Play 2 more cards to Save.');
+  await click(enabledPlay(view.host));
+  await skipIfPresent(view.host);
+  save = saveControl(view.host);
+  assert.equal(enabledPendingSave(view.host), false);
+  assert.equal(save.disabled, true);
+  assert.equal(accessibleName(save), 'Play 1 more card to Save.');
+  await click(enabledPlay(view.host));
+  await skipIfPresent(view.host);
+  save = saveControl(view.host);
+  assert.ok(save);
+  assert.equal(save.disabled, false);
+  assert.match(accessibleName(save), /^Save \d+ pending drops$/);
+  await view.unmount();
+});
+
+test('PLAY opens a start dialog, then START leaves an enabled Play button', async() => {
   const arrival = await mountFresh();
-  const phone = () => arrival.host.querySelector('.sgv-phone');
-  assert.equal(phone().classList.contains('sgv-level-arrival'), false);
-  await click(buttonNamed(arrival.host, 'PLAY'));
-  assert.equal(phone().classList.contains('sgv-level-arrival'), true);
-  await click(buttonNamed(arrival.host, 'START'));
-  assert.equal(phone().classList.contains('sgv-level-arrival'), false);
+  const play = buttonNamed(arrival.host, 'PLAY');
+  assert.ok(play, 'PLAY is on screen');
+  await click(play);
+  const start = dialogs(arrival.host).find(node => buttonNamed(node, 'START'));
+  assert.ok(start, 'a start dialog is on screen');
+  assert.equal(start.getAttribute('role'), 'dialog');
+  const startButton = buttonNamed(start, 'START');
+  assert.ok(startButton, 'START is on screen');
+  assert.equal(startButton.disabled, false);
+  await click(startButton);
+  const card = enabledPlay(arrival.host);
+  assert.ok(card, 'START leaves an enabled Play button');
+  assert.equal(card.disabled, false);
   await arrival.unmount();
 });
 
