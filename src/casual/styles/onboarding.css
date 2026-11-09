@@ -4,6 +4,7 @@
   position:absolute;inset:0;z-index:21;pointer-events:none;opacity:0;
 }
 .sgv-phone[data-swing-teach] .sgv-meter-section{z-index:23}
+.sgv-phone[data-swing-teach] .sgv-skip-surface{pointer-events:none}
 .sgv-phone[data-swing-teach] .sgv-factor-flyer,
 .sgv-phone[data-swing-teach] .sgv-pot-fly,
 .sgv-phone[data-swing-teach] .sgv-pour-splash{z-index:26}

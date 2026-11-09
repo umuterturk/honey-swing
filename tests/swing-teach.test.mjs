@@ -13,7 +13,7 @@ import {
 } from '../src/casual/swingTeach.js';
 import {cardMotionMarks} from '../src/casual/motionSchedule.js';
 import {
-  accessibleName, boot, buttonNamed, click, closePage, mountGame, page, setReduced
+  accessibleName, boot, buttonNamed, click, closePage, mountGame, page, pressKey, setReduced
 } from './helpers/mount.mjs';
 
 const bank={type:'bank'};
@@ -224,6 +224,43 @@ describe('L3 teach hand on the board', {concurrency:false}, ()=>{
       assert.equal(tween.vars.ease, TEACH_ENTER.ease);
       const save=view.host.querySelector('.sgv-bank');
       assert.equal(save.disabled, true);
+    }finally{
+      await view.unmount();
+    }
+  });
+
+  test('Skip still ends the +3 play, and the −5 spotlight ignores skip', async()=>{
+    const {gsap}=await import('gsap');
+    gsap.ticker.lagSmoothing(0);
+    gsap.ticker.sleep();
+    const view=await mountLevel(3);
+    try{
+      const phone=view.host.querySelector('.sgv-phone');
+      await click(phone.querySelector('[data-card-id="2"]'));
+      const skip=buttonNamed(view.host, 'Skip animation');
+      assert.ok(skip, 'Skip is available on the +3 play');
+      assert.equal(phone.getAttribute('data-swing-teach'), null);
+      await click(skip);
+      const follow=phone.querySelector('[data-card-id="24"]');
+      assert.ok(follow, '+3 skip reveals −5');
+      await click(follow);
+      const dim=phone.querySelector('[data-swing-teach="dim"]');
+      assert.equal(phone.getAttribute('data-swing-teach'), '1');
+      assert.equal(buttonNamed(view.host, 'Skip animation'), null);
+      assert.equal(phone.getAttribute('aria-busy'), 'true');
+      await click(phone);
+      await pressKey(phone, 'Escape');
+      await pressKey(phone, 'Enter');
+      await pressKey(phone, ' ');
+      assert.equal(phone.getAttribute('data-swing-teach'), '1');
+      assert.equal(dim.isConnected, true);
+      assert.equal(phone.getAttribute('aria-busy'), 'true');
+      assert.equal(buttonNamed(view.host, 'Skip animation'), null);
+      const probe=phone.ownerDocument.createElement('button');
+      probe.className='sgv-skip-surface';
+      phone.appendChild(probe);
+      assert.equal(phone.ownerDocument.defaultView.getComputedStyle(probe).pointerEvents, 'none');
+      probe.remove();
     }finally{
       await view.unmount();
     }

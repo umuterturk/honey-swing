@@ -28,6 +28,7 @@ export function OnboardingPhone({
   const bothColours=handView.some(card=>card.value<0)&&handView.some(card=>card.value>0);
   const firstRedId=bothColours?handView.find(card=>card.value>0).id:null;
   const {view, shownGold, animating, introGate, docking, help, devMenuOpen, factorInfo, ack, beat}=screen;
+  const teachSpotlight=rootRef.current?.getAttribute?.('data-swing-teach')==='1';
   return <main className="sgv-page">
     <div ref={rootRef}
       data-honey-win={finished&&victory?'true':undefined}
@@ -142,7 +143,7 @@ export function OnboardingPhone({
         screen, readout, ending, reduced, fx, rootRef, introStartRef, levelReadyRef,
         onDismissFactor, onDismissIntro, onDismissStart, onEndPrimary, onEndBackdrop, onReset
       }))}
-      {animating&&<button type="button" className="sgv-skip-surface" aria-label="Skip animation"
+      {animating&&!teachSpotlight&&<button type="button" className="sgv-skip-surface" aria-label="Skip animation"
         onPointerDown={event=>{event.preventDefault(); event.stopPropagation(); onFinishPresentation();}}
         onClick={event=>{event.preventDefault(); event.stopPropagation(); onFinishPresentation();}}/>}
     </div>

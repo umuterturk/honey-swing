@@ -242,14 +242,18 @@ export default function SimplifiedGame(){
     dispatchCasualEvent('debug_goto_level', {level:id});
     changeLevel(id);
   }
+  function swingTeachActive(){
+    return rootRef.current?.getAttribute('data-swing-teach')==='1';
+  }
   function runSteps(steps){
     let consultSkip=false;
+    const teach=swingTeachActive();
     for(const step of steps){
       if(step==='stopArrival')arrival.stopArrival();
       if(step==='closeStart')updateScreen(closedStart);
       if(step==='clearDock')updateScreen(clearedDock);
-      if(step==='skipPresentation')presentationRef.current.acceptPointerDown();
-      if(step==='consultPointer'&&presentationRef.current.acceptPointerDown()==='skip')consultSkip=true;
+      if(step==='skipPresentation'&&!teach)presentationRef.current.acceptPointerDown();
+      if(step==='consultPointer'&&!teach&&presentationRef.current.acceptPointerDown()==='skip')consultSkip=true;
     }
     return consultSkip;
   }
@@ -283,7 +287,7 @@ export default function SimplifiedGame(){
         gate:introGateRef.current,
         inIntro:!!event.target?.closest?.('.sgv-feature-intro')
       });
-      const block=decision.consultClick&&presentationRef.current.acceptClick()!=='action';
+      const block=!swingTeachActive()&&decision.consultClick&&presentationRef.current.acceptClick()!=='action';
       if(decision.prevent||block)event.preventDefault();
       if(decision.stop||block)event.stopPropagation();
     }}
@@ -302,7 +306,7 @@ export default function SimplifiedGame(){
       if(decision.dismissIntro){
         dismissIntro(event.target?.closest?.('.sgv-feature-intro-play')?'play':'scrim');
       }
-      if(decision.skipPresentation)presentationRef.current.acceptPointerDown();
+      if(decision.skipPresentation&&!swingTeachActive())presentationRef.current.acceptPointerDown();
       if(decision.stopWin)win.stopWin();
       if(decision.endVia){
         applyEndDecision(dismissLevelScreen(
