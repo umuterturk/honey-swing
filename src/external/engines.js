@@ -1,4 +1,3 @@
-import {OVERSWING_TUTORIAL_DECK,OVERSWING_TUTORIAL_STEPS,overswingTutorialExpectedAction} from './overswingTutorial.js';
 import {isRoyal,royalRank,royalValue,royalSuit,KING_INITIAL_BANK_BONUS,KING_DECAY_PER_MOVE} from './overswingRoyals.js';
 
 export const rank = c => isRoyal(c)?royalValue(c):c % 10 + 1;
@@ -56,13 +55,11 @@ function dealSwing(rng,override,royals=[],handSize=8){
 }
 export function newOverswing({seed,mode='short',deckOverride,royals=[],initialHandSize=8}={}){
   const base=seed??Date.now();
-  const tutorial=mode==='tutorial';
   if(!Number.isInteger(initialHandSize)||initialHandSize<2||initialHandSize>8)throw new RangeError('Invalid initial hand size');
   return {game:'overswing',version:14,seed:base,mode,dealIndex:0,dealTotals:[],
-    deal:dealSwing(seeded(base),tutorial?OVERSWING_TUTORIAL_DECK:deckOverride,tutorial?[]:royals,tutorial?8:initialHandSize),
-    tutorialStep:tutorial?0:null,tutorialIntroDone:!tutorial,history:[],status:'playing',
-    last:tutorial?'Learn FLIP, STEER, Pot, and Score before you begin.':
-      'You have 8 cards. Red moves right (+), black moves left (−). FLIP or play a card.'};
+    deal:dealSwing(seeded(base),deckOverride,royals,initialHandSize),
+    history:[],status:'playing',
+    last:'You have 8 cards. Red moves right (+), black moves left (−). FLIP or play a card.'};
 }
 export function overswingMultiplier(d){
   return (d.W+1)*d.flipFactor;
@@ -109,7 +106,7 @@ function clampedRunningPotAdd(current,desired,potCap){
   return {added,overflow:want>added};
 }
 export function overswingActions(s,rules={}){
-  if(s.status!=='playing'||(s.mode==='tutorial'&&!s.tutorialIntroDone))return [];
+  if(s.status!=='playing')return [];
   const effective=overswingEffectiveRules(rules);
   const d=s.deal,a=[];
   if(d.pos<d.deck.length&&(effective.maxFlips===null||d.flips<effective.maxFlips))a.push({type:'flip'});
@@ -129,12 +126,6 @@ export function overswingActions(s,rules={}){
       if(royalRank(id)!=='K')a.push({type:'bank',dropIndex});
     });
     else a.push({type:'bank'});
-  }
-  if(s.mode==='tutorial'){
-    const expected=overswingTutorialExpectedAction(d,s.tutorialStep);
-    return expected?a.filter(action=>action.type===expected.type
-      &&(action.type!=='steer'||action.index===expected.index)
-      &&(action.type!=='bank'||action.dropIndex===expected.dropIndex)):[];
   }
   return a;
 }
@@ -179,9 +170,6 @@ function refillEmptyHand(d,rules){
   return drawn;
 }
 export function stepOverswing(s,a,rules={}){
-  if(s.mode==='tutorial'&&!s.tutorialIntroDone&&s.status==='playing'&&a?.type==='tutorial-start'){
-    return mark({...s,tutorialIntroDone:true},'Basics complete. Start with the highlighted FLIP.');
-  }
   const effective=overswingEffectiveRules(rules);
   if(!a||!overswingActions(s,effective).some(x=>x.type===a.type
       &&(x.type!=='steer'||x.index===a.index&&x.direction===a.direction)
@@ -365,13 +353,6 @@ export function stepOverswing(s,a,rules={}){
       n.lastFlip=null;n.lastAction=null;n.lastRefill=[];
       msg+=' Next deck started.';
     }else n.status='over';
-  }
-  if(n.mode==='tutorial'){
-    n.tutorialStep=s.tutorialStep+1;
-    if(n.tutorialStep===OVERSWING_TUTORIAL_STEPS.length){
-      n.status='tutorial-complete';
-      msg+=' Tutorial complete! You can now play a normal game.';
-    }
   }
   return mark(n,msg);
 }
