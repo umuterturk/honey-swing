@@ -1,4 +1,3 @@
-import {OVERSWING_TUTORIAL_DECK,OVERSWING_TUTORIAL_STEPS,overswingTutorialExpectedAction} from './overswingTutorial.js';
 import {isRoyal,royalRank,royalValue,royalSuit,KING_INITIAL_BANK_BONUS,KING_DECAY_PER_MOVE} from './overswingRoyals.js';
 
 export const rank = c => isRoyal(c)?royalValue(c):c % 10 + 1;
@@ -52,30 +51,28 @@ function dealSwing(rng,override,royals=[],handSize=8){
     handCap:handSize,bankCount:0,scoutNext:null,
     crownBonus:0,resonancePoints:0,
     pot:[],discard:[],S:0,W:0,T:0,swingNo:1,flips:0,plays:0,
-    flipStreak:0,flipFactor:1,jackpotFactor:1};
+    flipStreak:0,flipFactor:1};
 }
 export function newOverswing({seed,mode='short',deckOverride,royals=[],initialHandSize=8}={}){
   const base=seed??Date.now();
-  const tutorial=mode==='tutorial';
   if(!Number.isInteger(initialHandSize)||initialHandSize<2||initialHandSize>8)throw new RangeError('Invalid initial hand size');
   return {game:'overswing',version:14,seed:base,mode,dealIndex:0,dealTotals:[],
-    deal:dealSwing(seeded(base),tutorial?OVERSWING_TUTORIAL_DECK:deckOverride,tutorial?[]:royals,tutorial?8:initialHandSize),
-    tutorialStep:tutorial?0:null,tutorialIntroDone:!tutorial,history:[],status:'playing',
-    last:tutorial?'Learn FLIP, STEER, Pot, and Score before you begin.':
-      'You have 8 cards. Red moves right (+), black moves left (−). FLIP or play a card.'};
+    deal:dealSwing(seeded(base),deckOverride,royals,initialHandSize),
+    history:[],status:'playing',
+    last:'You have 8 cards. Red moves right (+), black moves left (−). FLIP or play a card.'};
 }
 export function overswingMultiplier(d){
-  return (d.W+1)*d.flipFactor*d.jackpotFactor;
+  return (d.W+1)*d.flipFactor;
 }
 // Journey applies these short-lived modifiers at resolution time. Ordinary modes
 // retain the exact v13 defaults; never mutate rules or the hidden deck.
 const OVERSWING_BASE_RULES=Object.freeze({
-  steerNoncrossPenalty:1,flipCrossJackpotGain:1,bankCapacityLoss:1,steerAlwaysToPot:false,
+  steerNoncrossPenalty:1,bankCapacityLoss:1,steerAlwaysToPot:false,
   steerCrossSwingBonus:0,flipNoncrossPenalty:1,snapLimit:10,
   maxFlips:null,bankTax:0,polarityReverse:false,shieldNextFlip:false,
   maxConsecutiveSummons:1,
   // Opt-in teaching gates; defaults preserve the original Overswing engine.
-  enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:true,enableResonance:true,
+  enableSwingFactor:true,enableFlipFactor:true,enableResonance:true,
   // Casual Garden only. runningPot pays each card as Pot += M × rank.
   // flipOnly keeps undealt cards out of the hand so they stay Flip plays.
   // potCap soft-clamps running Pot deposits; null keeps uncapped campaign math.
@@ -84,12 +81,12 @@ const OVERSWING_BASE_RULES=Object.freeze({
 function overswingEffectiveRules(input={}){
   const rules={...OVERSWING_BASE_RULES,...input};
   for(const [name,allowed] of Object.entries({
-    steerNoncrossPenalty:[0,1],flipCrossJackpotGain:[1,2],steerAlwaysToPot:[false,true],
+    steerNoncrossPenalty:[0,1],steerAlwaysToPot:[false,true],
     bankCapacityLoss:[0,1],steerCrossSwingBonus:[0,1],
     flipNoncrossPenalty:[0,1],snapLimit:[8,9,10],
     bankTax:[0,5,10,15],polarityReverse:[false,true],shieldNextFlip:[false,true],
     enableSwingFactor:[false,true],enableFlipFactor:[false,true],
-    enableJackpotFactor:[false,true],enableResonance:[false,true],
+    enableResonance:[false,true],
     runningPot:[false,true],flipOnly:[false,true]
   }))if(!allowed.includes(rules[name]))throw new RangeError('Invalid Overswing rule: '+name);
   if(rules.maxFlips!==null&&(!Number.isInteger(rules.maxFlips)||rules.maxFlips<1||rules.maxFlips>40))
@@ -109,7 +106,7 @@ function clampedRunningPotAdd(current,desired,potCap){
   return {added,overflow:want>added};
 }
 export function overswingActions(s,rules={}){
-  if(s.status!=='playing'||(s.mode==='tutorial'&&!s.tutorialIntroDone))return [];
+  if(s.status!=='playing')return [];
   const effective=overswingEffectiveRules(rules);
   const d=s.deal,a=[];
   if(d.pos<d.deck.length&&(effective.maxFlips===null||d.flips<effective.maxFlips))a.push({type:'flip'});
@@ -130,12 +127,6 @@ export function overswingActions(s,rules={}){
     });
     else a.push({type:'bank'});
   }
-  if(s.mode==='tutorial'){
-    const expected=overswingTutorialExpectedAction(d,s.tutorialStep);
-    return expected?a.filter(action=>action.type===expected.type
-      &&(action.type!=='steer'||action.index===expected.index)
-      &&(action.type!=='bank'||action.dropIndex===expected.dropIndex)):[];
-  }
   return a;
 }
 export function overswingPayout(s,rules={}){
@@ -155,7 +146,7 @@ export function overswingPayout(s,rules={}){
 }
 function resetMultipliers(d){
   d.W=0;d.flipStreak=0;
-  d.flipFactor=1;d.jackpotFactor=1;
+  d.flipFactor=1;
 }
 function clearSwing(d){
   d.S=0;d.pot=[];d.plays=0;d.resonancePoints=0;
@@ -179,9 +170,6 @@ function refillEmptyHand(d,rules){
   return drawn;
 }
 export function stepOverswing(s,a,rules={}){
-  if(s.mode==='tutorial'&&!s.tutorialIntroDone&&s.status==='playing'&&a?.type==='tutorial-start'){
-    return mark({...s,tutorialIntroDone:true},'Basics complete. Start with the highlighted FLIP.');
-  }
   const effective=overswingEffectiveRules(rules);
   if(!a||!overswingActions(s,effective).some(x=>x.type===a.type
       &&(x.type!=='steer'||x.index===a.index&&x.direction===a.direction)
@@ -194,7 +182,7 @@ export function stepOverswing(s,a,rules={}){
   let msg='',ended=false;
   const previousS=d.S,previousW=d.W,previousPot=d.pot.reduce((sum,c)=>sum+rank(c),0)+(d.resonancePoints||0);
   const previousMultiplier=overswingMultiplier(d);
-  const previousFlipFactor=d.flipFactor,previousJackpotFactor=d.jackpotFactor;
+  const previousFlipFactor=d.flipFactor;
   if(a.type==='summon'){
     const card=d.royalQueue.shift();
     d.hand.push(card);d.summonedRoyals.push(card);
@@ -274,15 +262,9 @@ export function stepOverswing(s,a,rules={}){
         d.pot.push(c);destination='pot';
         if(!outcome.swung&&!zeroBreak)d.W=Math.max(0,d.W-effective.flipNoncrossPenalty);
         if(!zeroBreak){
-          // Campaign: a crossing FLIP grows JACKPOT and resets the streak.
-          // Casual running Pot with Jackpot off grows FLIP on that same cross
-          // and keeps the streak, so Swing and Flip both step.
-          const casualCrossGrowsFlip=outcome.swung&&!effective.enableJackpotFactor&&
-            effective.runningPot&&effective.enableFlipFactor;
-          if(outcome.swung&&effective.enableJackpotFactor){
-            d.flipStreak=0;
-            d.jackpotFactor+=effective.flipCrossJackpotGain;
-          }else if(outcome.swung&&!casualCrossGrowsFlip){
+          // A crossing FLIP grows FLIP only on a running Pot with Flip enabled,
+          // and it keeps the streak. Any other crossing FLIP resets the streak.
+          if(outcome.swung&&!(effective.runningPot&&effective.enableFlipFactor)){
             d.flipStreak=0;
           }else if(effective.enableFlipFactor){
             d.flipStreak++;
@@ -325,13 +307,11 @@ export function stepOverswing(s,a,rules={}){
         destination,
         openingSteer:opening&&a.type==='steer',addedToPot,potOverflow,resonanceGained,scouted:royalRank(c)==='J'?d.scoutNext:null,
         flipStreak:d.flipStreak,flipFactor:d.flipFactor,
-        jackpotFactor:d.jackpotFactor,multiplier:overswingMultiplier(d),
+        multiplier:overswingMultiplier(d),
         swingTierGained:d.W>previousW,flipTierGained:d.flipFactor>previousFlipFactor,
-        jackpotTierGained:d.jackpotFactor>previousJackpotFactor,
         modifiersApplied:[
           ...(a.type==='steer'&&!outcome.swung&&!zeroBreak&&effective.steerNoncrossPenalty===0?['steady_hand']:[]),
-          ...(a.type==='steer'&&outcome.swung&&effective.steerCrossSwingBonus>0?['swing_coil']:[]),
-          ...(a.type==='flip'&&outcome.swung&&effective.flipCrossJackpotGain>1?['jackpot_spark']:[])
+          ...(a.type==='steer'&&outcome.swung&&effective.steerCrossSwingBonus>0?['swing_coil']:[])
         ]};
       if(a.type==='flip')n.lastFlip=n.lastAction;
       msg=zeroBreak
@@ -373,13 +353,6 @@ export function stepOverswing(s,a,rules={}){
       n.lastFlip=null;n.lastAction=null;n.lastRefill=[];
       msg+=' Next deck started.';
     }else n.status='over';
-  }
-  if(n.mode==='tutorial'){
-    n.tutorialStep=s.tutorialStep+1;
-    if(n.tutorialStep===OVERSWING_TUTORIAL_STEPS.length){
-      n.status='tutorial-complete';
-      msg+=' Tutorial complete! You can now play a normal game.';
-    }
   }
   return mark(n,msg);
 }

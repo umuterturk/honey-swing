@@ -50,7 +50,6 @@ button.sgv-multiplier-pill{appearance:none;cursor:pointer}
 button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
 .sgv-multiplier-swing{--pill-color:#efc4ee;--pill-rim:#b688c3;--pill-text:#744c9b;min-width:clamp(58px,16vw,72px);padding-left:8px;padding-right:4px}
 .sgv-multiplier-flip{--pill-color:#c9eaff;--pill-rim:#7eb8db;--pill-text:#3f73a9;margin-left:auto;min-width:clamp(58px,16vw,72px);padding-left:8px;padding-right:4px}
-.sgv-multiplier-jackpot{--pill-color:#ffe29a;--pill-rim:#d9ac59;--pill-text:#a46a35}
 .sgv-multiplier-icon{display:block;width:22px;height:22px;object-fit:contain;flex:none;pointer-events:none;user-select:none;-webkit-user-select:none}
 .sgv-multiplier-bee{transform:scaleX(-1)}
 .sgv-multiplier-value{position:relative;z-index:1;line-height:1}

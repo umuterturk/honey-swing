@@ -1,12 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {newOverswing,stepOverswing,overswingPayout} from '../src/external/engines.js';
 import {newOnboardingRound,stepOnboarding} from '../src/casual/onboardingLevels.js';
+import {ONBOARDING_SESSION_KEY} from '../src/casual/onboardingProgress.js';
+import {loadSavedRound} from '../src/casual/sessionRecords.js';
 
 const casualBase={
   runningPot:true,snapLimit:8,steerAlwaysToPot:true,
   steerNoncrossPenalty:0,flipNoncrossPenalty:0,enableResonance:false,
-  enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:false
+  enableSwingFactor:true,enableFlipFactor:true
 };
 
 test('running Pot overflow is discarded with no Snap or multiplier side effects',()=>{
@@ -84,5 +87,26 @@ test('Save resets visible multipliers',()=>{
   state=stepOnboarding(state,{type:'bank'});
   assert.equal(state.game.deal.W,0);
   assert.equal(state.game.deal.flipFactor,1);
-  assert.equal(state.game.deal.jackpotFactor,1);
+});
+
+test('a session saved on main loads and keeps the same score',()=>{
+  const raw=readFileSync(new URL('./fixtures/main-level-6-session.json',import.meta.url),'utf8');
+  const saved=JSON.parse(raw);
+  assert.equal(saved.game.deal.jackpotFactor,1);
+  assert.equal(ONBOARDING_SESSION_KEY,'swing-casual-onboarding-session-v3');
+  const storage={
+    getItem(key){return key===ONBOARDING_SESSION_KEY?raw:null;},
+    setItem(){throw new Error('load must not write');}
+  };
+  const restored=loadSavedRound(storage,20);
+  assert.ok(restored);
+  assert.equal(restored.game.deal.jackpotFactor,1);
+  assert.equal(restored.game.deal.T,saved.game.deal.T);
+  const continued=stepOnboarding(restored,{type:'bank'});
+  assert.notStrictEqual(continued,restored);
+  const stripped=structuredClone(restored);
+  delete stripped.game.deal.jackpotFactor;
+  const without=stepOnboarding(stripped,{type:'bank'});
+  assert.equal(continued.game.deal.T,without.game.deal.T);
+  assert.equal(continued.game.deal.T,saved.game.deal.T+saved.game.deal.potValue);
 });

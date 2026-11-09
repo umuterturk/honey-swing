@@ -2,6 +2,7 @@ import {gsap} from 'gsap';
 import {CARD_ARROW_PATH,cardAccentMix,cardDirection} from '../cardDirection.js';
 import {meterPercent} from '../meterScale.js';
 import {NEEDLE_GLIDE_EASE,cardMotionMarks,flyerOrigin,reducedCardSummary} from '../motionSchedule.js';
+import {FACTORS} from '../factors.js';
 import {flyFactorLabels} from './factorFlyer.js';
 import {animateTapPour} from './potMotion.js';
 import {showReducedCard} from './reducedOutcomes.js';
@@ -270,28 +271,25 @@ export function animateCardAction({
         onPourProgress:value=>{if(alive)onPot(value);}
       }));
     };
-    const hasSwing=(view.rewards||[]).some(reward=>reward.kind==='swing');
-    const hasFlip=(view.rewards||[]).some(reward=>reward.kind==='flip');
-    if(marks.swingFlyer!=null&&hasSwing){
+    for(const flyer of marks.flyers||[]){
+      const factor=FACTORS.find(row=>row.kind===flyer.kind);
       tl.call(()=>{
-        if(!alive||!marker)return;
+        if(!alive||!factor)return;
+        let origin=null;
+        if(factor.flyerFrom==='marker'){
+          if(!marker)return;
+          origin=point(marker,root);
+        }else if(factor.flyerFrom==='flip-button'){
+          const flipBtn=root.querySelector('.sgv-flip');
+          origin=flipBtn?point(flipBtn,root):
+            {x:root.clientWidth*.5,y:root.clientHeight*.82};
+        }
+        if(!origin)return;
         animations.push(flyFactorLabels({
           root,
-          plan:[{kind:'swing',start:0,origin:point(marker,root)}]
+          plan:[{kind:flyer.kind,start:0,origin}]
         }));
-      },[],marks.swingFlyer);
-    }
-    if(marks.flipFlyer!=null&&hasFlip){
-      tl.call(()=>{
-        if(!alive)return;
-        const flipBtn=root.querySelector('.sgv-flip');
-        const origin=flipBtn?point(flipBtn,root):
-          {x:root.clientWidth*.5,y:root.clientHeight*.82};
-        animations.push(flyFactorLabels({
-          root,
-          plan:[{kind:'flip',start:0,origin}]
-        }));
-      },[],marks.flipFlyer);
+      },[],flyer.at);
     }
     if(marks.rewards!=null){
       tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],marks.factors);

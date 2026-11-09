@@ -11,7 +11,7 @@ function fingerprint(round){
     flipCount:round.flipCount,zeroBreakCount:round.zeroBreakCount,
     status:round.game.status,
     T:d.T,S:d.S,W:d.W,flips:d.flips,plays:d.plays,
-    flipFactor:d.flipFactor,jackpotFactor:d.jackpotFactor,
+    flipFactor:d.flipFactor,
     flipStreak:d.flipStreak,bankCount:d.bankCount,handCap:d.handCap,
     potValue:d.potValue??null,
     pot:d.pot,hand:d.hand,discard:d.discard,pos:d.pos

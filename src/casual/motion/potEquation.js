@@ -1,9 +1,5 @@
+import {factorByKind} from '../factors.js';
 import {publicUrl} from '../publicUrl.js';
-
-const POT_EQ_ICONS=Object.freeze({
-  swing:'celebration/daisy-2.png',
-  flip:'bee-smiling-closed-eyes.png'
-});
 function mountPotEquationFlyer(doc,data){
   const label=doc.createElement('span');
   label.className='sgv-pot-fly sgv-pot-fly-equation';
@@ -18,7 +14,7 @@ function mountPotEquationFlyer(doc,data){
     const mul=doc.createElement('span');
     mul.className='sgv-pot-eq-mul';
     mul.textContent='×';
-    const icon=POT_EQ_ICONS[term.kind];
+    const icon=factorByKind(term.kind)?.icon;
     if(icon){
       const img=doc.createElement('img');
       img.className='sgv-pot-eq-icon sgv-pot-eq-icon-'+term.kind;

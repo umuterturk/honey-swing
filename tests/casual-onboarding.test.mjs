@@ -10,7 +10,7 @@ import {simulateOnboardingLevel} from '../scripts/simulate-casual-onboarding.mjs
 
 const flip={type:'flip'},bank={type:'bank'};
 const pot=round=>round.game.deal.potValue;
-const factors=round=>[round.game.deal.W+1,round.game.deal.flipFactor,round.game.deal.jackpotFactor];
+const factors=round=>[round.game.deal.W+1,round.game.deal.flipFactor];
 function play(round,action){
   const next=stepOnboarding(round,action);
   assert.notStrictEqual(next,round,`rejected ${JSON.stringify(action)} on L${round.levelId} turn ${round.turn}`);
@@ -29,7 +29,7 @@ function line(level,values){
 test('running Pot pays only the card just played; Overswing still revalues the whole Pot',()=>{
   const casual={runningPot:true,snapLimit:8,steerAlwaysToPot:true,
     steerNoncrossPenalty:0,flipNoncrossPenalty:0,enableResonance:false,
-    enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:true};
+    enableSwingFactor:true,enableFlipFactor:true};
   let game=newOverswing({deckOverride:[0,4],seed:1,initialHandSize:2});
   game.deal.potValue=20;
   game.deal.pot=[0];
@@ -52,10 +52,10 @@ test('running Pot pays only the card just played; Overswing still revalues the w
   assert.equal(old.lastAction.addedToPot,5);
 });
 
-test('a casual crossing Flip grows Swing and Flip; Overswing still grows Jackpot',()=>{
+test('a crossing Flip grows Swing and Flip',()=>{
   const casual={runningPot:true,snapLimit:8,steerAlwaysToPot:true,
     steerNoncrossPenalty:0,flipNoncrossPenalty:0,enableResonance:false,
-    enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:false};
+    enableSwingFactor:true,enableFlipFactor:true};
   let game=newOverswing({deckOverride:[1,0,25,21],seed:1,initialHandSize:2});
   game=stepOverswing(game,{type:'steer',index:0},casual);
   game=stepOverswing(game,{type:'flip'},casual);
@@ -63,48 +63,61 @@ test('a casual crossing Flip grows Swing and Flip; Overswing still grows Jackpot
   assert.equal(game.deal.W,1);
   assert.equal(game.deal.flipFactor,2);
   assert.equal(game.deal.flipStreak,1);
-  assert.equal(game.deal.jackpotFactor,1);
   assert.equal(game.lastAction.addedToPot,24);
   assert.equal(game.lastAction.swingTierGained,true);
   assert.equal(game.lastAction.flipTierGained,true);
-  assert.equal(game.lastAction.jackpotTierGained,false);
   game=stepOverswing(game,{type:'flip'},casual);
   assert.equal(game.deal.S,-6);
   assert.equal(game.lastAction.swung,false);
   assert.equal(game.deal.flipStreak,2);
   assert.equal(game.deal.flipFactor,3);
-  assert.equal(game.deal.jackpotFactor,1);
   assert.equal(game.lastAction.addedToPot,12);
+});
 
-  const jackpotStillOn={...casual,enableJackpotFactor:true};
-  let kept=newOverswing({deckOverride:[1,0,25],seed:1,initialHandSize:2});
-  kept=stepOverswing(kept,{type:'steer',index:0},jackpotStillOn);
-  kept=stepOverswing(kept,{type:'flip'},jackpotStillOn);
-  assert.equal(kept.deal.flipFactor,1);
-  assert.equal(kept.deal.flipStreak,0);
-  assert.equal(kept.deal.jackpotFactor,2);
-  assert.equal(kept.lastAction.flipTierGained,false);
-  assert.equal(kept.lastAction.jackpotTierGained,true);
+test('a crossing Flip with runningPot off resets the Flip streak',()=>{
+  const rules={runningPot:false,snapLimit:8,steerAlwaysToPot:true,
+    steerNoncrossPenalty:0,flipNoncrossPenalty:0,enableResonance:false,
+    enableSwingFactor:true,enableFlipFactor:true};
+  let game=newOverswing({deckOverride:[1,0,25],seed:1,initialHandSize:2});
+  game=stepOverswing(game,{type:'steer',index:0},rules);
+  game.deal.flipStreak=2;
+  game.deal.flipFactor=3;
+  game=stepOverswing(game,{type:'flip'},rules);
+  assert.equal(game.lastAction.swung,true);
+  assert.equal(game.deal.W,1);
+  assert.equal(game.deal.flipStreak,0);
+  assert.equal(game.deal.flipFactor,3);
+  assert.equal(game.deal.potValue,undefined);
 
-  const campaign={snapLimit:8,steerAlwaysToPot:true,steerNoncrossPenalty:0,
-    flipNoncrossPenalty:0,enableSwingFactor:true,enableFlipFactor:true};
-  let old=newOverswing({deckOverride:[1,0,25],seed:1,initialHandSize:2});
-  old=stepOverswing(old,{type:'steer',index:0},campaign);
-  old=stepOverswing(old,{type:'flip'},campaign);
-  assert.equal(old.deal.W,1);
-  assert.equal(old.deal.flipFactor,1);
-  assert.equal(old.deal.flipStreak,0);
-  assert.equal(old.deal.jackpotFactor,2);
-  assert.equal(old.deal.potValue,undefined);
-  assert.equal(old.lastAction.flipTierGained,false);
-  assert.equal(old.lastAction.jackpotTierGained,true);
+  let defaults=newOverswing({deckOverride:[1,0,25],seed:1,initialHandSize:2});
+  defaults=stepOverswing(defaults,{type:'steer',index:0});
+  defaults.deal.flipStreak=2;
+  defaults=stepOverswing(defaults,{type:'flip'});
+  assert.equal(defaults.lastAction.swung,true);
+  assert.equal(defaults.deal.flipStreak,0);
+  assert.equal(defaults.deal.flipFactor,1);
+});
+
+test('a crossing Flip with Flip disabled resets the streak',()=>{
+  const swingOnly={runningPot:true,snapLimit:8,steerAlwaysToPot:true,
+    steerNoncrossPenalty:0,flipNoncrossPenalty:0,enableResonance:false,
+    enableSwingFactor:true,enableFlipFactor:false};
+  let game=newOverswing({deckOverride:[1,0,25],seed:1,initialHandSize:2});
+  game=stepOverswing(game,{type:'steer',index:0},swingOnly);
+  game.deal.flipStreak=4;
+  game.deal.flipFactor=5;
+  game=stepOverswing(game,{type:'flip'},swingOnly);
+  assert.equal(game.lastAction.swung,true);
+  assert.equal(game.deal.W,1);
+  assert.equal(game.deal.flipStreak,0);
+  assert.equal(game.deal.flipFactor,5);
 });
 
 test('flipOnly does not draw the pile, and Flip stays legal on an empty hand',()=>{
   const deck=[2,1,0];
   const rules={snapLimit:8,steerAlwaysToPot:true,steerNoncrossPenalty:0,
     flipNoncrossPenalty:0,enableResonance:false,runningPot:true,flipOnly:true,
-    enableSwingFactor:true,enableFlipFactor:false,enableJackpotFactor:false};
+    enableSwingFactor:true,enableFlipFactor:false};
   let held=newOverswing({deckOverride:deck,seed:5,initialHandSize:2});
   held=stepOverswing(held,{type:'steer',index:0},rules);
   held=stepOverswing(held,{type:'steer',index:0},rules);
@@ -145,7 +158,7 @@ test('Level 2: both orders fill 6, and a middle pass with Swing off is not a cro
   assert.equal(across.game.deal.S,2);
   assert.equal(across.game.lastAction.swung,true);
   assert.equal(pot(across),6);
-  assert.deepEqual(factors(across),[1,1,1]);
+  assert.deepEqual(factors(across),[1,1]);
   assert.deepEqual(multiplierRewards(across.game.deal,across.game.lastAction),[]);
 });
 
@@ -157,7 +170,7 @@ test('Level 5: the hidden card is a Flip, pays its rank, and never ticks Swing',
   assert.equal(onboardingActions(state).some(action=>action.type==='flip'),true);
   state=play(state,flip);
   assert.equal(state.game.lastAction.addedToPot,1);
-  assert.deepEqual(factors(state),[1,1,1]);
+  assert.deepEqual(factors(state),[1,1]);
   state=play(state,bank);
   assert.equal(state.game.deal.T,6);
   const flipped=line(5,['flip',3,2,'bank']);

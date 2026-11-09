@@ -1,25 +1,13 @@
 import {gsap} from 'gsap';
+import {factorByKind} from '../factors.js';
 import {FACTOR_FLYER_FLIGHT} from '../motionSchedule.js';
 import {publicUrl} from '../publicUrl.js';
 import {point,reducedMotion,removeNodes} from './stage.js';
 
-const FACTOR_FLYER=Object.freeze({
-  swing:Object.freeze({
-    copy:'More Flower',
-    src:publicUrl('celebration/daisy-2.png'),
-    alt:'',
-    flight:FACTOR_FLYER_FLIGHT
-  }),
-  flip:Object.freeze({
-    copy:'More Bee',
-    src:publicUrl('bee-smiling-closed-eyes.png'),
-    alt:'',
-    flight:FACTOR_FLYER_FLIGHT
-  })
-});
 function makeFactorFlyer(kind){
-  const spec=FACTOR_FLYER[kind];
-  if(!spec)return null;
+  const factor=factorByKind(kind);
+  if(!factor?.flyer||!factor.icon)return null;
+  const spec={copy:factor.flyer,src:publicUrl(factor.icon),alt:'',flight:FACTOR_FLYER_FLIGHT};
   const node=document.createElement('span');
   node.className='sgv-factor-flyer sgv-factor-flyer-'+kind;
   node.setAttribute('aria-hidden','true');
@@ -67,7 +55,7 @@ export function flyFactorLabels({root,plan}){
     Object.assign(flyer.style,{
       left:startPoint.x+'px',top:startPoint.y+'px'
     });
-    const flight=FACTOR_FLYER[kind].flight;
+    const flight=FACTOR_FLYER_FLIGHT;
     const appear=0.18;
     const fade=0.16;
     const travel=Math.max(0.40,flight-appear-fade);
