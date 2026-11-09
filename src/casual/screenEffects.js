@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {playWinCelebration} from './winMotion.js';
 import {playLevelStart} from './levelStartMotion.js';
 import {applyHoneyLayout} from './honeyWin.js';
@@ -48,7 +48,7 @@ export function useDebugBridge({fxRef, changeLevel}){
 
 export function useLevelArrival({
   rootRef, fxRef, levelId, fresh, introGate, startOpen, reduced,
-  introStartRef, levelReadyRef, onArrivingSettled
+  introStartRef, levelReadyRef, onArrivingSettled, onArrivalBegan=()=>{}
 }){
   const arrivalRef=useRef(null);
   const [handleOn, setHandleOn]=useState(false);
@@ -75,6 +75,7 @@ export function useLevelArrival({
     banner.textContent='Level '+levelId;
     root.appendChild(banner);
     let alive=true;
+    const plan=levelStartPlan(levelId, {fresh, reduced});
     const handle=playLevelStart({
       banner,
       jar:root.querySelector('.sgv-chest-area'),
@@ -85,6 +86,7 @@ export function useLevelArrival({
     });
     arrivalRef.current=handle;
     setHandleOn(true);
+    onArrivalBegan(plan.motion);
     return ()=>{
       alive=false;
       if(arrivalRef.current===handle)arrivalRef.current=null;
@@ -162,7 +164,7 @@ export function useWinCelebration({
 }
 
 export function useHoneyLayout(rootRef, {active}){
-  useEffect(()=>{
+  useLayoutEffect(()=>{
     const phone=rootRef.current;
     if(!phone)return;
     const apply=()=>{

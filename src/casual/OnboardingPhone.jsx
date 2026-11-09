@@ -1,3 +1,4 @@
+import React from 'react';
 import {signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
 import {FactorInfoOverlay} from './FactorInfoOverlay.jsx';

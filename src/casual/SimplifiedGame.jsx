@@ -72,7 +72,8 @@ export default function SimplifiedGame(){
   const arrival=useLevelArrival({
     rootRef, fxRef, levelId:screen.round.levelId, fresh, introGate:screen.introGate,
     startOpen:screen.startOpen, reduced, introStartRef, levelReadyRef,
-    onArrivingSettled:()=>setFromEffect(arrivalSettled)
+    onArrivingSettled:()=>setFromEffect(arrivalSettled),
+    onArrivalBegan:motion=>setFromEffect(current=>({...current, arriving:motion}))
   });
   const win=useWinCelebration({
     rootRef, fxRef, active:readout.finished&&readout.victory, levelId:screen.round.levelId,
