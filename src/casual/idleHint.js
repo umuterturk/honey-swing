@@ -1,7 +1,7 @@
 import {
   onboardingActions,onboardingFinished,onboardingLevel,onboardingVictory,stepOnboarding
 } from './onboardingLevels.js';
-import {canonicalKey} from '../../scripts/solve-level.mjs';
+import {canonicalKey} from './canonicalKey.js';
 
 // Same identity the solver walks. Sorting the hand and dropping discard keeps
 // the memo on positions the engine can still tell apart.
