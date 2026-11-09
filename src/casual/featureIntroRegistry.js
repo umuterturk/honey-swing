@@ -32,7 +32,7 @@ export const FEATURE_INTROS=Object.freeze({
     icon:'hand',
     name:'Six Cards',
     copyKey:'intro.hand',
-    copy:'Six cards. Steer and Flip to win.',
+    copy:'Six cards. Play and Flip to win.',
     highlightTarget:'hand',
     demoScript:Object.freeze({
       duration:1.4,
