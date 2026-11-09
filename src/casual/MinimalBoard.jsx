@@ -52,7 +52,7 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
        </span>
      </div>
      <img className="sgv-honey-tap" src={publicUrl('honey-tap.png')} alt="" aria-hidden="true" draggable="false"/>
-     <div className="sgv-multipliers" role="group" aria-label="Swing, Flip, Jackpot multipliers">
+     <div className="sgv-multipliers" role="group" aria-label="Swing and Flip multipliers">
        {multipliers
          .filter(({kind})=>!visibleFactors||visibleFactors.includes(kind))
          .slice()

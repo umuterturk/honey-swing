@@ -20,12 +20,12 @@ test('landing exactly on zero resets all multipliers without losing absolute Pot
   game=stepOverswing(game,{type:'steer',index:0},rules); // +3
   game=stepOverswing(game,{type:'steer',index:0},rules); // -4 crossing, S = -1, W = 1
   assert.equal(game.deal.S,-1);
-  assert.deepEqual(multiplierParts(game.deal).map(x=>x.value),[2,1,1]);
+  assert.deepEqual(multiplierParts(game.deal).map(x=>x.value),[2,1]);
   // The hand refills when emptied, so +1 is now in hand, not atop the Flip deck.
   game=stepOverswing(game,{type:'steer',index:0},rules); // +1 exact zero -> Zero Break
   assert.equal(game.lastAction.zeroBreak,true);
   assert.equal(game.deal.S,0);
-  assert.deepEqual(multiplierParts(game.deal).map(x=>x.value),[1,1,1]);
+  assert.deepEqual(multiplierParts(game.deal).map(x=>x.value),[1,1]);
   assert.equal(multiplierRewards(game.deal,game.lastAction).length,0);
   assert.deepEqual(game.deal.pot.map(id=>Math.abs(signed(id))),[3,4,1]);
 });
@@ -43,7 +43,7 @@ test('zero break retains Pot and produces no fake factor awards',()=>{
   assert.equal(p.to,0);
   assert.equal(p.rawPotBefore,7);
   assert.equal(p.rawPotAfter,8);
-  assert.deepEqual(p.factorsAfter.map(f=>f.value),[1,1,1]);
+  assert.deepEqual(p.factorsAfter.map(f=>f.value),[1,1]);
   assert.deepEqual(p.rewards,[]);
 });
 
@@ -59,5 +59,5 @@ test('casual Zero Break still resets Swing tiers and retains pending Pot',()=>{
  assert.equal(game.deal.W,0);
  assert.equal(game.deal.S,0);
  assert.equal(rawPotValue(game.deal),rawBefore+1);
- assert.deepEqual(multiplierParts(game.deal).map(f=>f.value),[1,1,1]);
+ assert.deepEqual(multiplierParts(game.deal).map(f=>f.value),[1,1]);
 });

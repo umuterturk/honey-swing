@@ -52,7 +52,7 @@ function dealSwing(rng,override,royals=[],handSize=8){
     handCap:handSize,bankCount:0,scoutNext:null,
     crownBonus:0,resonancePoints:0,
     pot:[],discard:[],S:0,W:0,T:0,swingNo:1,flips:0,plays:0,
-    flipStreak:0,flipFactor:1,jackpotFactor:1};
+    flipStreak:0,flipFactor:1};
 }
 export function newOverswing({seed,mode='short',deckOverride,royals=[],initialHandSize=8}={}){
   const base=seed??Date.now();
@@ -65,17 +65,17 @@ export function newOverswing({seed,mode='short',deckOverride,royals=[],initialHa
       'You have 8 cards. Red moves right (+), black moves left (−). FLIP or play a card.'};
 }
 export function overswingMultiplier(d){
-  return (d.W+1)*d.flipFactor*d.jackpotFactor;
+  return (d.W+1)*d.flipFactor;
 }
 // Journey applies these short-lived modifiers at resolution time. Ordinary modes
 // retain the exact v13 defaults; never mutate rules or the hidden deck.
 const OVERSWING_BASE_RULES=Object.freeze({
-  steerNoncrossPenalty:1,flipCrossJackpotGain:1,bankCapacityLoss:1,steerAlwaysToPot:false,
+  steerNoncrossPenalty:1,bankCapacityLoss:1,steerAlwaysToPot:false,
   steerCrossSwingBonus:0,flipNoncrossPenalty:1,snapLimit:10,
   maxFlips:null,bankTax:0,polarityReverse:false,shieldNextFlip:false,
   maxConsecutiveSummons:1,
   // Opt-in teaching gates; defaults preserve the original Overswing engine.
-  enableSwingFactor:true,enableFlipFactor:true,enableJackpotFactor:true,enableResonance:true,
+  enableSwingFactor:true,enableFlipFactor:true,enableResonance:true,
   // Casual Garden only. runningPot pays each card as Pot += M × rank.
   // flipOnly keeps undealt cards out of the hand so they stay Flip plays.
   // potCap soft-clamps running Pot deposits; null keeps uncapped campaign math.
@@ -84,12 +84,12 @@ const OVERSWING_BASE_RULES=Object.freeze({
 function overswingEffectiveRules(input={}){
   const rules={...OVERSWING_BASE_RULES,...input};
   for(const [name,allowed] of Object.entries({
-    steerNoncrossPenalty:[0,1],flipCrossJackpotGain:[1,2],steerAlwaysToPot:[false,true],
+    steerNoncrossPenalty:[0,1],steerAlwaysToPot:[false,true],
     bankCapacityLoss:[0,1],steerCrossSwingBonus:[0,1],
     flipNoncrossPenalty:[0,1],snapLimit:[8,9,10],
     bankTax:[0,5,10,15],polarityReverse:[false,true],shieldNextFlip:[false,true],
     enableSwingFactor:[false,true],enableFlipFactor:[false,true],
-    enableJackpotFactor:[false,true],enableResonance:[false,true],
+    enableResonance:[false,true],
     runningPot:[false,true],flipOnly:[false,true]
   }))if(!allowed.includes(rules[name]))throw new RangeError('Invalid Overswing rule: '+name);
   if(rules.maxFlips!==null&&(!Number.isInteger(rules.maxFlips)||rules.maxFlips<1||rules.maxFlips>40))
@@ -155,7 +155,7 @@ export function overswingPayout(s,rules={}){
 }
 function resetMultipliers(d){
   d.W=0;d.flipStreak=0;
-  d.flipFactor=1;d.jackpotFactor=1;
+  d.flipFactor=1;
 }
 function clearSwing(d){
   d.S=0;d.pot=[];d.plays=0;d.resonancePoints=0;
@@ -194,7 +194,7 @@ export function stepOverswing(s,a,rules={}){
   let msg='',ended=false;
   const previousS=d.S,previousW=d.W,previousPot=d.pot.reduce((sum,c)=>sum+rank(c),0)+(d.resonancePoints||0);
   const previousMultiplier=overswingMultiplier(d);
-  const previousFlipFactor=d.flipFactor,previousJackpotFactor=d.jackpotFactor;
+  const previousFlipFactor=d.flipFactor;
   if(a.type==='summon'){
     const card=d.royalQueue.shift();
     d.hand.push(card);d.summonedRoyals.push(card);
@@ -274,15 +274,9 @@ export function stepOverswing(s,a,rules={}){
         d.pot.push(c);destination='pot';
         if(!outcome.swung&&!zeroBreak)d.W=Math.max(0,d.W-effective.flipNoncrossPenalty);
         if(!zeroBreak){
-          // Campaign: a crossing FLIP grows JACKPOT and resets the streak.
-          // Casual running Pot with Jackpot off grows FLIP on that same cross
-          // and keeps the streak, so Swing and Flip both step.
-          const casualCrossGrowsFlip=outcome.swung&&!effective.enableJackpotFactor&&
-            effective.runningPot&&effective.enableFlipFactor;
-          if(outcome.swung&&effective.enableJackpotFactor){
-            d.flipStreak=0;
-            d.jackpotFactor+=effective.flipCrossJackpotGain;
-          }else if(outcome.swung&&!casualCrossGrowsFlip){
+          // A crossing FLIP grows FLIP only on a running Pot with Flip enabled,
+          // and it keeps the streak. Any other crossing FLIP resets the streak.
+          if(outcome.swung&&!(effective.runningPot&&effective.enableFlipFactor)){
             d.flipStreak=0;
           }else if(effective.enableFlipFactor){
             d.flipStreak++;
@@ -325,13 +319,11 @@ export function stepOverswing(s,a,rules={}){
         destination,
         openingSteer:opening&&a.type==='steer',addedToPot,potOverflow,resonanceGained,scouted:royalRank(c)==='J'?d.scoutNext:null,
         flipStreak:d.flipStreak,flipFactor:d.flipFactor,
-        jackpotFactor:d.jackpotFactor,multiplier:overswingMultiplier(d),
+        multiplier:overswingMultiplier(d),
         swingTierGained:d.W>previousW,flipTierGained:d.flipFactor>previousFlipFactor,
-        jackpotTierGained:d.jackpotFactor>previousJackpotFactor,
         modifiersApplied:[
           ...(a.type==='steer'&&!outcome.swung&&!zeroBreak&&effective.steerNoncrossPenalty===0?['steady_hand']:[]),
-          ...(a.type==='steer'&&outcome.swung&&effective.steerCrossSwingBonus>0?['swing_coil']:[]),
-          ...(a.type==='flip'&&outcome.swung&&effective.flipCrossJackpotGain>1?['jackpot_spark']:[])
+          ...(a.type==='steer'&&outcome.swung&&effective.steerCrossSwingBonus>0?['swing_coil']:[])
         ]};
       if(a.type==='flip')n.lastFlip=n.lastAction;
       msg=zeroBreak

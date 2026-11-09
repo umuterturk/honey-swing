@@ -43,28 +43,6 @@ export const FACTORS=Object.freeze([
     flyerAt:'face',
     flyerFrom:'flip-button',
     hold:0
-  }),
-  Object.freeze({
-    kind:'jackpot',
-    dealField:'jackpotFactor',
-    dealAdd:0,
-    gainedFlag:'jackpotTierGained',
-    rulesFlag:'enableJackpotFactor',
-    label:'Jackpot multiplier',
-    copy:null,
-    icon:null,
-    iconClass:null,
-    equationOrder:2,
-    pillOrder:1,
-    flyer:null,
-    introId:null,
-    info:false,
-    dock:'jackpot',
-    outcome:null,
-    outcomeOrder:2,
-    flyerAt:null,
-    flyerFrom:null,
-    hold:0
   })
 ]);
 

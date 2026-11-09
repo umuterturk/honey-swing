@@ -91,11 +91,11 @@ try{
   await page.click('.sgv-flip');
   await page.waitForSelector('.sgv-flying-card',{timeout:1800});
   await awaitIdle(page);
-  assert.deepEqual(await factors(),['×1','×2','×1'],'Safe noncrossing Flip grows Flip only');
+  assert.deepEqual(await factors(),['×1','×2'],'Safe noncrossing Flip grows Flip only');
   await page.click('.sgv-flip');
   await page.waitForSelector('.sgv-flying-card',{timeout:1800});
   await awaitIdle(page);
-  assert.deepEqual(await factors(),['×2','×2','×2'],'Crossing Flip grows Swing and Jackpot');
+  assert.deepEqual(await factors(),['×2','×2'],'Crossing Flip grows Swing and Flip');
   assert.equal(await page.$eval('.sgv-bank',b=>b.disabled),false);
   stable(reset,await layout(page));
   await page.click('.sgv-bank');
