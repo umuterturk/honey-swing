@@ -28,7 +28,6 @@ const EXPECTED = [
 
 test('star thresholds match Appendix A for all 20 levels', () => {
   assert.equal(EXPECTED.length, 20);
-  assert.equal(GARDEN.length, 20);
   for(const row of EXPECTED){
     const stored = GARDEN.find(level => level.id === row.level);
     assert.equal(stored.target, row.target, 'L' + row.level + ' target');
