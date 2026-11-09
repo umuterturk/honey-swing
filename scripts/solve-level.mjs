@@ -101,6 +101,21 @@ function search(levelId,{maxStates,mode='all',stopAtWin=false,paths=false}={}){
   };
 }
 
+// Winning lines versus lines that never swing. Used by the L3/L4 teach gates.
+export function solveSwingGate(levelId,{maxStates=200000}={}){
+  const open=search(levelId,{maxStates,mode:'all',stopAtWin:false});
+  const noSwing=search(levelId,{maxStates,mode:'no-cross',stopAtWin:false});
+  return {
+    levelId,
+    truncated:open.truncated||noSwing.truncated,
+    lines:open.lines,
+    maxT:open.maxT,
+    wins:open.wins,
+    noSwingLines:noSwing.lines,
+    noSwingWins:noSwing.wins
+  };
+}
+
 export function solveLevel(levelId,{maxStates=200000}={}){
   const start=newOnboardingRound(levelId);
   // Flip-only piles never deal into the hand, so every later hand is a subset

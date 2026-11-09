@@ -218,9 +218,11 @@ test('Garden 1 has no forced loss except Level 12, and every level has a win',()
     assert.ok(report.shortestWin,'no win '+id);
     assert.equal(report.deadEnds,0,'dead end '+id);
     // L8 is the first losable level. L9 and L10 stay forced-loss free.
-    if(id<=7||id===9||id===10)assert.equal(report.forcedLosses,0,'forced loss '+id);
-    if(id===8)assert.ok(report.forcedLosses>0,'L8 is the first losable level');
+    if(id<=3||(id>=5&&id<=7)||id===9||id===10)assert.equal(report.forcedLosses,0,'forced loss '+id);
+    if(id===4)assert.ok(report.forcedLosses>0,'L4 no-swing lines lose');
+    if(id===8)assert.ok(report.forcedLosses>0,'L8 still has a losing line');
     if(id===11)assert.equal(report.zeroSnapForced,0,'snap-free forced loss');
-    if(id<=4)assert.equal(report.failedEnds,0,'early fail '+id);
+    if(id<=3)assert.equal(report.failedEnds,0,'early fail '+id);
+    if(id===4)assert.ok(report.failedEnds>0,'L4 can miss the target');
   }
 });

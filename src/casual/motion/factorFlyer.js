@@ -30,7 +30,7 @@ function placeStaticFactor(root,kind,origin){
   return node;
 }
 
-export function flyFactorLabels({root,plan}){
+export function flyFactorLabels({root,plan,bounce=true}){
   if(!root||!plan?.length||reducedMotion())return ()=>{};
   const nodes=[],tweens=[];
   const centeredPoint=(flyer,origin)=>{
@@ -68,9 +68,10 @@ export function flyFactorLabels({root,plan}){
     },start+appear);
     tl.to(flyer,{opacity:0,scale:.55,duration:fade,ease:'power1.in'},start+appear+travel);
     tl.call(()=>{
-      const bounce=gsap.fromTo(target,{scale:.82},
+      if(!bounce)return;
+      const pulse=gsap.fromTo(target,{scale:.82},
         {scale:1,duration:.34,ease:'back.out(2.4)'});
-      tweens.push(bounce);
+      tweens.push(pulse);
     },[],start+appear+travel);
     tweens.push(tl);
   }

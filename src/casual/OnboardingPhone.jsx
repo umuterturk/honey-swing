@@ -6,6 +6,7 @@ import {HorizontalMeter, GlassChest, PendingPot, SimpleCard} from './MinimalBoar
 import {GARDEN_2_START} from './onboardingLevels.js';
 import {wouldSnap} from './onboardingRound.js';
 import {screens} from './screens/index.js';
+import {swingTeachConcealed, visibleHandIds} from './swingTeach.js';
 
 export function OnboardingPhone({
   screen, readout, ending, bankLive, reduced, fx, rootRef, introStartRef, levelReadyRef, phoneClass,
@@ -18,8 +19,9 @@ export function OnboardingPhone({
     potDisplay, remaining, hearts, bankMessage, bankPulse, flipPulse, pulseIndex
   }=readout;
   const deal=screen.round.game.deal;
-  const slots=level.visibleHandSlots;
-  const sourceHand=screen.committedHand||deal.hand;
+  const concealed=swingTeachConcealed(screen.round);
+  const sourceHand=visibleHandIds(screen.round, screen.committedHand||deal.hand);
+  const slots=concealed?Math.max(1, sourceHand.length):level.visibleHandSlots;
   const handView=sourceHand.slice(0, slots).map((id, engineIndex)=>({
     id, engineIndex, value:signed(id)
   })).sort((a, b)=>a.value-b.value||a.engineIndex-b.engineIndex);
