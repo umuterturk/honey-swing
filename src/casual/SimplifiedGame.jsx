@@ -16,9 +16,10 @@ import {LevelEndScreen,LevelStartScreen,dismissLevelScreen} from './levelScreens
 import {bankAssistiveMessage,nextBankAnnouncement,shouldAutoBank} from './bankStatus.js';
 import {focusTargetAfterSkip,isSkipKey,rememberFocus} from './skipFocus.js';
 import {
-  ONBOARDING_SESSION_KEY,ONBOARDING_PROGRESS_KEY,clearOnboardingProgress,
+  ONBOARDING_PROGRESS_KEY,clearOnboardingProgress,
   prepareOnboardingJump,readUnlockedOnboardingLevel
 } from './onboardingProgress.js';
+import {commitPlay,loadSavedRound,saveRound} from './sessionRecords.js';
 import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
 import {FactorInfoOverlay} from './FactorInfoOverlay.jsx';
 import {factorInfoFor} from './factorInfoContent.js';
@@ -31,7 +32,6 @@ import {
   onboardingVictory,wouldSnap,ONBOARDING_COUNT,GARDEN_2_START
 } from './onboardingLevels.js';
 
-const SESSION_KEY=ONBOARDING_SESSION_KEY;
 const PROGRESS_KEY=ONBOARDING_PROGRESS_KEY;
 function prefersReducedMotion(){
   return typeof window!=='undefined'&&
@@ -44,15 +44,10 @@ const event=(name,details={})=>{
   if(typeof window==='undefined')return;
   window.dispatchEvent(new CustomEvent('swing-casual-event',{detail:{name,...details}}));
 };
-function save(round){try{localStorage.setItem(SESSION_KEY,JSON.stringify(round));}catch{}}
+function save(round){saveRound(browserStorage(),round);}
 function initialRound(){
-  try{
-    const state=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
-    if(state&&Number.isInteger(state.levelId)&&state.levelId>=1&&state.levelId<=ONBOARDING_COUNT&&
-      state.game?.game==='overswing'&&state.game.deal&&Number.isInteger(state.turn)&&
-      Number.isInteger(state.snaps)&&Number.isInteger(state.flipCount)&&
-      Number.isInteger(state.zeroBreakCount))return state;
-  }catch{}
+  const saved=loadSavedRound(browserStorage(),ONBOARDING_COUNT);
+  if(saved)return saved;
   // No mid-level session: open at the unlocked level (debug jump / recovery).
   return newOnboardingRound(readUnlockedOnboardingLevel(browserStorage(),ONBOARDING_COUNT));
 }
@@ -456,19 +451,14 @@ export default function SimplifiedGame(){
     // Commit before motion: an interrupted animation or reload never replays a move.
     runPresentedAction(round,action,presentationRef.current,{
       onCommit({next,change}){
-        save(next);
-        event(action.type==='steer'?'card_play':action.type,{
-          level:level.id,turn:next.turn,card:change.signedCard,
-          snap:change.snap,zeroBreak:change.zeroBreak,bankGain:change.bankGain
+        const record=commitPlay(browserStorage(),{
+          next,turnBefore:round.turn,action,change,
+          levelId:level.id,levelCount:ONBOARDING_COUNT,
+          won:onboardingVictory(next)
         });
-        if(round.turn===0)event('first_action',{level:level.id});
-        if(change.snap)event('snap',{level:level.id});
-        if(change.zeroBreak)event('zero_break',{level:level.id});
-        change.rewards.forEach(({kind,value})=>event('factor_changed',{level:level.id,kind,value}));
-        if(onboardingVictory(next)){
-          event('level_complete',{level:level.id,actions:next.turn});
-          if(level.id===ONBOARDING_COUNT)event('onboarding_complete');
-          try{localStorage.setItem(PROGRESS_KEY,String(Math.min(ONBOARDING_COUNT,level.id+1)));}catch{}
+        for(const entry of record.events){
+          const {name,...details}=entry;
+          event(name,details);
         }
         const outcome=change.snap?'snap':change.zeroBreak?'zero':
           change.rewards.some(reward=>reward.kind==='swing')?'cross':

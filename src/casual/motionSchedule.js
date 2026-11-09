@@ -4,7 +4,7 @@
 const thirds=n=>Math.round(n*1000)/1000;
 export const STATIC_OUTCOME_MS=1100;
 export const NEEDLE_GLIDE_EASE='power2.out';
-// Shared with minimalMotion factor flyers — keep factors/end marks in sync.
+// Shared with motion/factorFlyer.js — keep factors/end marks in sync.
 export const FACTOR_FLYER_FLIGHT=0.95;
 
 function inverseNeedleGlideEase(progress){
