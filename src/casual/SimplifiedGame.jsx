@@ -1,9 +1,9 @@
 import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
-import {overswingPayout,signed} from '../external/engines.js';
+import {signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
 import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
 import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour,animateBankTargetCelebrate} from './minimalMotion.js';
-import {rawPotValue,visiblePotPayout,displayOf,settledPresentation,saveResetsVisibleFactors,potAddFlyerPhases} from './presentation.js';
+import {displayOf,settledPresentation,saveResetsVisibleFactors,potAddFlyerPhases} from './presentation.js';
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
 import {applyHoneyLayout} from './honeyWin.js';
 import {playWinCelebration} from './winMotion.js';
@@ -11,9 +11,9 @@ import {playLevelStart} from './levelStartMotion.js';
 import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
 import {createFxBus} from './fx/fxBus.js';
 import {FxLayer} from './fx/FxLayer.jsx';
-import {clearWinMemo,idleHintAction} from './idleHint.js';
+import {clearWinMemo} from './idleHint.js';
 import {LevelEndScreen,LevelStartScreen,dismissLevelScreen} from './levelScreens.js';
-import {bankAssistiveMessage,nextBankAnnouncement,shouldAutoBank} from './bankStatus.js';
+import {nextBankAnnouncement} from './bankStatus.js';
 import {focusTargetAfterSkip,isSkipKey,rememberFocus} from './skipFocus.js';
 import {
   ONBOARDING_PROGRESS_KEY,clearOnboardingProgress,
@@ -27,9 +27,9 @@ import {
   boardTapDuringIntro,dismissFeatureIntro,featureIntroForEntry,introPointerDecision,
   derivedFeatureUnlocks
 } from './featureIntroRegistry.js';
+import {boardReadout} from './boardReadout.js';
 import {
-  newOnboardingRound,onboardingLevel,onboardingActions,onboardingFinished,
-  onboardingVictory,wouldSnap,ONBOARDING_COUNT,GARDEN_2_START
+  newOnboardingRound,onboardingLevel,onboardingVictory,wouldSnap,ONBOARDING_COUNT,GARDEN_2_START
 } from './onboardingLevels.js';
 
 const PROGRESS_KEY=ONBOARDING_PROGRESS_KEY;
@@ -92,28 +92,10 @@ export default function SimplifiedGame(){
   const [bankLive,setBankLive]=useState('');
   const [factorInfo,setFactorInfo]=useState(null);
   const factorInfoOpenerRef=useRef(null);
-  const level=onboardingLevel(round.levelId);
-  const {game}=round,deal=game.deal;
-  const victory=onboardingVictory(round),finished=onboardingFinished(round);
-  const factorInfoEnabled=!animating&&!introGate&&!startOpen&&!finished;
-  const available=finished||animating||introGate||factorInfo?[]:onboardingActions(round);
-  const canBank=available.some(a=>a.type==='bank'&&a.dropIndex==null);
-  const canFlip=available.some(a=>a.type==='flip');
-  const autoBank=shouldAutoBank(available);
-  const potentialPayout=overswingPayout(game,level.rules);
-  // During a Bank pour the committed payout drains. Any other beat shows the
-  // accrued Pot directly, including a multiplied add that is larger than the old total.
-  const potDisplay=feedback==='bank'
-    ?visiblePotPayout(potentialPayout,rawPotValue(deal),view.rawPot)
-    :view.rawPot;
-  const remaining=deal.deck.length-deal.pos;
-  const hearts=Math.max(0,level.maxSnaps-view.snaps);
-  const shownHand=deal.hand.slice(0,level.visibleHandSlots);
-  const bankMessage=bankAssistiveMessage(round);
-  const hint=pulse?idleHintAction(round):null;
-  const bankPulse=hint?.type==='bank';
-  const flipPulse=hint?.type==='flip';
-  const pulseIndex=hint?.type==='steer'?hint.index:null;
+  const {
+    level,deal,victory,finished,factorInfoEnabled,available,canBank,canFlip,autoBank,
+    potDisplay,remaining,hearts,shownHand,bankMessage,bankPulse,flipPulse,pulseIndex,winLabel
+  }=boardReadout({round,view,feedback,animating,introGate,factorInfo,startOpen,pulse});
 
   useEffect(()=>()=>{
     fxRef.current.settle();
@@ -543,8 +525,6 @@ export default function SimplifiedGame(){
     });
   }
 
-  const winLabel=level.id===GARDEN_2_START-1?'LOWER ORCHARD':
-    level.id===ONBOARDING_COUNT?'PLAY AGAIN':'NEXT';
   const ending=successPlan({
     victory,levelId:level.id,secured:deal.T,
     bank:round.game.lastAction?.type==='bank',reduced:prefersReducedMotion()
