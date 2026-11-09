@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test tests/*.test.mjs",
+    "test": "node --import ./tests/register-jsx.mjs --test tests/*.test.mjs",
     "simulate:casual": "node scripts/simulate-casual-onboarding.mjs",
     "verify:release": "node scripts/verify-release.mjs dist"
   },

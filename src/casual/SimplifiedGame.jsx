@@ -6,6 +6,8 @@ import {createFxBus} from './fx/fxBus.js';
 import {boardTapDuringIntro, dismissFeatureIntro, derivedFeatureUnlocks} from './featureIntroRegistry.js';
 import {clearWinMemo} from './idleHint.js';
 import {dismissLevelScreen} from './levelScreens.js';
+import {useHoneyLayout, useWinCelebration} from './screens/levelEnd.jsx';
+import {useLevelArrival} from './screens/levelStart.jsx';
 import {GARDEN_2_START, ONBOARDING_COUNT, onboardingFinished, onboardingLevel, onboardingVictory} from './onboardingLevels.js';
 import {ONBOARDING_PROGRESS_KEY, clearOnboardingProgress, prepareOnboardingJump} from './onboardingProgress.js';
 import {OnboardingPhone} from './OnboardingPhone.jsx';
@@ -20,7 +22,7 @@ import {
 } from './screenState.js';
 import {commitPlay, saveRound} from './sessionRecords.js';
 import {
-  useBoardChrome, useDebugBridge, useHoneyLayout, useLevelArrival, useSkipFocus, useWinCelebration
+  useBoardChrome, useDebugBridge, useSkipFocus
 } from './screenEffects.js';
 
 export default function SimplifiedGame(){

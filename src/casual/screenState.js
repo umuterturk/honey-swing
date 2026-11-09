@@ -5,6 +5,10 @@ import {loadSavedRound} from './sessionRecords.js';
 import {newOnboardingRound, onboardingLevel} from './onboardingLevels.js';
 import {readUnlockedOnboardingLevel} from './onboardingProgress.js';
 
+export {dismissedIntro} from './screens/featureIntro.jsx';
+export {closedStart} from './screens/levelStart.jsx';
+export {openedFactor, closedFactor} from './screens/factorInfo.jsx';
+
 function cleared(){
   return {
     animating:false, feedback:null, pulse:false, beat:'', help:false,
@@ -44,16 +48,6 @@ export function nextLevelId(levelId, levelCount){
   return levelId>=levelCount?levelCount:levelId+1;
 }
 
-export function dismissedIntro(screen, outcome){
-  if(!outcome?.dismissed)return screen;
-  return {
-    ...screen,
-    introGate:outcome.gate,
-    introCard:outcome.intro,
-    startOpen:outcome.handoff==='level-start'?true:screen.startOpen
-  };
-}
-
 export function ackAfterCommit(screen, {outcome, first, text}){
   if(first)return {...screen, ack:{kind:first.kind, text}};
   if(outcome)return {...screen, ack:null};
@@ -71,13 +65,10 @@ export function settledScreen(screen, settled){
   };
 }
 
-export const closedStart=screen=>({...screen, startOpen:false});
 export const clearedDock=screen=>({...screen, docking:false});
 export const toggledHelp=screen=>({...screen, help:!screen.help});
 export const toggledDevMenu=screen=>({...screen, devMenuOpen:!screen.devMenuOpen});
 export const closedDevMenu=screen=>({...screen, devMenuOpen:false});
-export const openedFactor=(screen, kind)=>({...screen, factorInfo:kind});
-export const closedFactor=screen=>({...screen, factorInfo:null});
 export const shownPulse=screen=>({...screen, pulse:true});
 export const dockExpired=screen=>({...screen, docking:false});
 export const arrivalBegan=(screen, motion)=>({...screen, arriving:!!motion});

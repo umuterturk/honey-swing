@@ -2,7 +2,7 @@
 @import './styles/hud.css';
 @import './styles/meter.css';
 @import './styles/board.css';
-@import './styles/honey-win.css';
+@import './screens/levelEnd.css';
 @import './styles/currency.css';
 @import './styles/bottles.css';
 @import './styles/pour.css';

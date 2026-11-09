@@ -99,7 +99,7 @@ Honey fill is the hero. Later beats react to it.
 
 Primary touch points:
 
-- `src/casual/levelScreens.js` — win DOM: slogan decorations, scoreboard overlays; remove overflow/confetti/subline
+- `src/casual/screens/levelEnd.jsx` — win DOM: slogan decorations, scoreboard overlays; remove overflow/confetti/subline
 - `src/casual/honeyWin.js` — replace `HONEY_MOTION` beat table for the 2.0s fill-first sequence; keep fill-max / layout helpers that still apply
 - `src/casual/winMotion.js` — rewrite timeline: pause → jar entrance → fill → Hiveful → scoreboard count → NEXT; shared `paintFinal` for settle/skip/reduced
 - `src/casual/minimal.css` — slots and layering for scoreboard + slogan assets; jar coordinate contract untouched

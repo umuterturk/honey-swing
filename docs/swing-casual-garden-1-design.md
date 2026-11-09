@@ -49,7 +49,7 @@ After a **safe** Steer or Flip:
 2. A **strict cross** is `S ≠ 0`, `next ≠ 0`, and the signs differ. Leaving 0 is not a cross. Landing on 0 is not a cross.
 3. Update factors from this play. On an exact zero, skip this step (the add uses the multiplier already on the board):
    - Strict cross on **Steer or Flip** adds Swing gain `max(1, floor(|S| / 3))` to `W`. Every Garden 1 cross starts from `|S| ≤ 5`, so the gain is **+1** and the pill goes `×1 → ×2` on the first cross.
-   - Strict cross on **Flip** also takes the Flip step below. The streak is **not** reset. There is no Jackpot factor.
+   - Strict cross on **Flip** also takes the Flip step below. The streak is **not** reset. A crossing Flip grows Swing and Flip.
    - Safe non-crossing Flip takes the same Flip step: `streak++`, `flipFactor = max(flipFactor, streak + 1)`.
    - A Steer resets the Flip streak and does **not** reset `flipFactor`. It does not grow Flip.
 4. `M = (W + 1) × flipFactor`
@@ -83,7 +83,7 @@ BANK still requires a non-empty Pot and **two plays** this swing (or an empty de
 - Flying `+N` into the Pot is the **multiplied** add (e.g. crossing `−5` at `×2` flies `+10`).
 - Cross FX (tier 3) plays only when Swing is enabled **and** this play was a strict cross. L2 can pass the middle with Swing off; that is meter motion only.
 
-Overswing campaign defaults must stay untouched, including `jackpotFactor` on a crossing Flip when `enableJackpotFactor` is on. Garden 1 sets that flag **off**. The Flip step on a crossing Flip applies only while `runningPot` is on and Jackpot is off. This is a **casual-rules** payout, not a silent global rewrite.
+Casual levels grow Swing and Flip only. A crossing Flip grows both. `src/external/engines.js` stays the copied rules file. This is a **casual-rules** payout, not a silent global rewrite.
 
 ---
 
@@ -126,7 +126,7 @@ Overswing campaign defaults must stay untouched, including `jackpotFactor` on a 
 - Tutorial titles, lesson strings, help overlay on L1–4
 - Dimmed extra cards / `visibleHandSlots: 1`
 - Flip button with `0 left`
-- A Jackpot pill, or any third multiplier
+- A third multiplier pill
 - Pot dropping when a pill resets
 - Fracture FX on Zero
 - Cross FX while Swing is off
@@ -388,7 +388,7 @@ Do not say “cross zero/center” in a way that makes landing **on** 0 sound li
   - `maxSnaps: 2`, `showChances: true` — two hearts
   - `deck: [1, 20, 4, 6, 22, 2]` → hand `+2, −1, +5`, refill `+7, −3, +3`
   - `initialHandSize: 3`
-  - Swing and Flip on. Flip stays available (the reserve can be Flipped). No Jackpot.
+  - Swing and Flip on. Flip stays available (the reserve can be Flipped). No third multiplier.
   - Do not open on `+2, −2` (that is Zero again).
 - **Safe line (pulse `+2`):**
   1. `+2`, `−1` → Pot 3, BANK → **3** secured. Hand still holds `+5`.
@@ -482,7 +482,7 @@ L13 is playable immediately after L12. Optional non-blocking 7-day drop calendar
 
 ## 9. Implementation order
 
-1. Casual payout = per-card `Pot += M × rank`, with `M = (W + 1) × flipFactor`. A strict cross grows Swing for Steer and Flip. A crossing Flip also takes the Flip step and does not reset the streak. Jackpot stays off. Overswing defaults, including Jackpot, stay unchanged.
+1. Casual payout = per-card `Pot += M × rank`, with `M = (W + 1) × flipFactor`. A strict cross grows Swing for Steer and Flip. A crossing Flip also takes the Flip step and does not reset the streak. There is no third multiplier.
 2. `flipOnly` skips `refillEmptyHand` for that level's undealt cards. Flip stays legal.
 3. Simulator + tests for every Garden 1 deck under the **new** rule:
    - L1–L9 except L4 and L7: 0 forced losses (a state is a forced loss when every continuation banks under the target)

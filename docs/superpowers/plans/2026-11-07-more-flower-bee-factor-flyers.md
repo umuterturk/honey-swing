@@ -4,7 +4,7 @@
 
 **Goal:** Replace Swing/Flip `×value` chip flyers with labeled **More Flower** / **More Bee** text+icon flights timed to zero-cross and Flip face reveal.
 
-**Architecture:** Pure schedule helpers in `motionSchedule.js` compute `zeroCross` and per-kind flyer starts. `animateCardAction` spawns independent GSAP flyers (Swing from live needle at zero-cross; Flip from Flip button at `faceEnd`). Jackpot is ignored by the flyer builder. Reduced motion shows static labels near pills.
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 
 **Tech Stack:** GSAP timelines, DOM flyers, Vite/React board (`MinimalBoard` / `SimplifiedGame`), Node test runner
 
@@ -14,7 +14,7 @@
 - Copy exact: `More Flower` (Swing) / `More Bee` (Flip)
 - Art: `/celebration/daisy-2.png` (Swing), `/bee-smiling-closed-eyes.png` (Flip)
 - Motion: `transform` / `opacity` only on flyers; ≤2 reward flyers per play; cancel cleans nodes + pill scale
-- Jackpot: no flying cue
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 - Snap path: no factor flyers (`rewards: null`)
 - Do not lengthen ordinary (non-reward) card plays
 - Remove Swing `CROSS` tip and reduced `CROSS` string
@@ -24,7 +24,7 @@
 | File | Responsibility |
 |------|----------------|
 | `src/casual/motionSchedule.js` | `zeroCrossMark`, per-kind flyer starts on `cardMotionMarks`, reduced summary copy |
-| `src/casual/minimalMotion.js` | Spawn/fly labeled flyers; wire starts; drop chip/`CROSS`/Jackpot flyers |
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 | `src/casual/minimal.css` | `.sgv-factor-flyer` icon+text chip |
 | `tests/motion-order.test.mjs` | Marks, zero-cross math, reduced copy |
 
@@ -116,7 +116,7 @@ test('reduced motion uses More Flower / More Bee and never CROSS',()=>{
   assert.equal(flip.flower,null);
   const both=reducedCardSummary({
     to:-2,rawPotAfter:13,addedToPot:10,
-    rewards:[{kind:'swing',value:2},{kind:'flip',value:2},{kind:'jackpot',value:2}],
+    A crossing Flip grows Swing and Flip. There is no third multiplier.
     factorsAfter:[]
   });
   assert.equal(both.flower,'More Flower');
@@ -271,7 +271,7 @@ EOF
 
 **Interfaces:**
 - Consumes: `marks.swingFlyer`, `marks.flipFlyer`, `zeroCrossMark` / marks from Task 1; `view.from`, `view.to`, `view.rewards`
-- Produces: `flyFactorLabels({root,rewards,starts,origins})` cancel handle; no Jackpot nodes; no `×N` chips; no `CROSS` tips
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 
 - [ ] **Step 1: Write a failing source contract test**
 
@@ -476,7 +476,7 @@ if(summary.flower){
 
 Remove the old `summary.cross` / `sgv-factor-tip` path.
 
-6. Ensure Jackpot rewards never enter `plan` (only `swing`/`flip` keys in `FACTOR_FLYER`).
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 
 - [ ] **Step 5: Run tests**
 
@@ -566,7 +566,7 @@ EOF
 | More Flower from needle at zero-cross | 1 + 2 |
 | More Bee from Flip button at face reveal | 1 + 2 |
 | Replace × chips for Swing/Flip | 2 |
-| No Jackpot flyer | 2 |
+A crossing Flip grows Swing and Flip. There is no third multiplier.
 | Both can run together | 1 + 2 |
 | Remove CROSS tip / reduced CROSS | 1 + 2 |
 | Reduced motion static labels | 2 |

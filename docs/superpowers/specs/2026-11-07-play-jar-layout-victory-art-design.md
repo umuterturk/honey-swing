@@ -58,7 +58,7 @@ Reuse the Victory hero jar stack for both play jars:
 - Keep a mouth / receive anchor (today’s `.sgv-chest-mouth` or equivalent) for pour targeting
 - Fill percent = secured banked value only
 
-Extract or share the Victory jar layer markup (today’s `heroJar()` in `levelScreens.js`) so play and win do not diverge on asset order or mask wiring.
+Extract or share the Victory jar layer markup (today’s `heroJar()` in `src/casual/screens/levelEnd.jsx`) so play and win do not diverge on asset order or mask wiring.
 
 ## Motion & interaction
 

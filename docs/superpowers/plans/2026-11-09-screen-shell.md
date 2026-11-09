@@ -957,11 +957,12 @@ export function useBoardChrome({
 ```jsx
 import {signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
-import {FactorInfoOverlay} from './FactorInfoOverlay.jsx';
+import {FactorInfoOverlay} from './screens/factorInfo.jsx';
 import {factorInfoFor} from './factorInfoContent.js';
-import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
+import {FeatureIntroOverlay} from './screens/featureIntro.jsx';
 import {FxLayer} from './fx/FxLayer.jsx';
-import {LevelEndScreen, LevelStartScreen} from './levelScreens.js';
+import {LevelEndScreen} from './screens/levelEnd.jsx';
+import {LevelStartScreen} from './screens/levelStart.jsx';
 import {HorizontalMeter, GlassChest, PendingPot, SimpleCard} from './MinimalBoard.jsx';
 import {GARDEN_2_START, wouldSnap} from './onboardingLevels.js';
 
@@ -1051,7 +1052,7 @@ export function OnboardingPhone({
             disabled={!canBank}
             onClick={()=>onPlay({type:'bank'}, rootRef.current?.querySelector('.sgv-pending-pot'))}
             aria-label={canBank?'Save '+potDisplay+' pending drops':bankMessage}>
-            <span className="sgv-action-text">SAVE{canBank?' '+potDisplay:''}</span>
+            <span>SAVE{canBank?' '+potDisplay:''}</span>
           </button>
           <p className="sgv-bank-live" aria-live="polite" aria-atomic="true">{bankLive}</p>
           {level.showFlip&&remaining>0&&<button type="button"
@@ -1062,7 +1063,7 @@ export function OnboardingPhone({
             onClick={event=>onPlay({type:'flip'}, event.currentTarget.querySelector('.sgv-next-card'))}
             aria-label={'Flip a hidden card. '+remaining+' remain'}>
             <span className="sgv-action-icon">⟳</span>
-            <span className="sgv-action-text">FLIP</span>
+            <span>FLIP</span>
             <span className="sgv-flip-next"><span className="sgv-next-card">?</span>
               <small>{remaining} left</small></span>
           </button>}
