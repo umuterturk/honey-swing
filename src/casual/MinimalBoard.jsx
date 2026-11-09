@@ -88,7 +88,7 @@ export function PendingPot({value,cap=null,target=24,bankable=false,onBank,class
  const fill=fluidFillPercent(value,fillTarget,{max:76,smooth:true});
  const Tag=interactive?'button':'div';
  return <Tag type={interactive?'button':undefined}
-   className={'sgv-pending-pot sgv-pot-bottle'+(bankable&&interactive?' sgv-pot-bankable':'')+(!interactive?' sgv-pot-display':'')+(hasCap&&value>=cap?' sgv-pot-full':'')+' '+className}
+   className={'sgv-pending-pot sgv-pot-bottle'+(bankable&&interactive?' sgv-pot-bankable':'')+(!interactive?' sgv-pot-display':'')+' '+className}
    style={{'--pot-fill':fill+'%'}}
    disabled={interactive?!bankable:undefined}
    onClick={interactive?event=>onBank?.(event.currentTarget):undefined}
