@@ -1,3 +1,4 @@
+import {readFile} from 'node:fs/promises';
 import {register} from 'node:module';
 import {Window} from 'happy-dom';
 
@@ -44,6 +45,10 @@ export async function boot(){
     dispatchEvent(){return false;}
   });
   globalThis.matchMedia = win.matchMedia;
+  const css = await readFile(new URL('../../src/casual/minimal.css', import.meta.url), 'utf8');
+  const style = win.document.createElement('style');
+  style.textContent = css;
+  win.document.head.appendChild(style);
   register(new URL('../jsx-loader.mjs', import.meta.url));
   await import('gsap');
   booted = true;
