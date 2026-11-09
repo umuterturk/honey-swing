@@ -171,6 +171,15 @@ test('a settled win shows a filled jar and the secured score', async() => {
   assert.ok(dialog);
   assertFilled(dialog, round.game.deal.T);
   assert.match(accessibleName(dialog), new RegExp(String(round.game.deal.T)));
+  // SimplifiedGame sets these on the HUD, the meter/jars, and the card row
+  // while a win is showing. The stylesheet also sets visibility:hidden, which
+  // this document does not load.
+  for(const region of ['.sgv-hud', '.sgv-middle', '.sgv-controls']){
+    const node = view.host.querySelector(region);
+    assert.ok(node, region);
+    assert.equal(node.getAttribute('aria-hidden'), 'true', region);
+    assert.equal(node.hasAttribute('inert'), true, region);
+  }
   await view.unmount();
 });
 
