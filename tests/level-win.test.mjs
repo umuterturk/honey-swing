@@ -6,8 +6,8 @@ import {GARDEN} from '../src/casual/levels/garden.js';
 const EXPECTED = [
   {level:1, target:5, star2:5, star3:5, auto3:true},
   {level:2, target:6, star2:6, star3:6, auto3:true},
-  {level:3, target:8, star2:11, star3:13, auto3:false},
-  {level:4, target:11, star2:18, star3:24, auto3:false},
+  {level:3, target:10, star2:13, star3:13, auto3:true},
+  {level:4, target:12, star2:13, star3:14, auto3:false},
   {level:5, target:13, star2:18, star3:22, auto3:false},
   {level:6, target:10, star2:22, star3:34, auto3:false},
   {level:7, target:17, star2:28, star3:38, auto3:false},

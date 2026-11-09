@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {createActionPresentation, runPresentedAction} from './actionPresentation.js';
 import {boardClickDecision, boardKeyDecision, boardPointerDecision} from './boardInput.js';
 import {boardReadout} from './boardReadout.js';
@@ -16,6 +16,7 @@ import {introCopy, successPlan, takeFirstOutcome} from './presentationSequence.j
 import {settledPresentation} from './presentation.js';
 import {captureHandPositions} from './motion/handReflow.js';
 import {playOutcome, startPlayMotion} from './playMotion.js';
+import {animateTeachEnter, teachDismissesCrossAck, teachFollowRevealed} from './swingTeach.js';
 import {
   ackAfterCommit, arrivalBegan, arrivalSettled, clearedDock, closedDevMenu, closedFactor, closedStart,
   dismissedIntro, endTransition, initialScreen, levelScreen, openedFactor, phoneClassName,
@@ -41,6 +42,7 @@ export default function SimplifiedGame(){
   const resetMotionRef=useRef(null);
   const lossMotionRef=useRef(null);
   const breakMotionRef=useRef(null);
+  const teachEnterCancel=useRef(null);
   const seenFactorsRef=useRef(new Set());
   const introStartRef=useRef(null);
   const levelReadyRef=useRef(null);
@@ -96,10 +98,12 @@ export default function SimplifiedGame(){
     try{resetMotionRef.current?.();}catch{/* the level change settles next */}
     try{lossMotionRef.current?.();}catch{/* the level change settles next */}
     try{breakMotionRef.current?.();}catch{/* the level change settles next */}
+    try{teachEnterCancel.current?.();}catch{/* the level change settles next */}
     cancelRef.current=null;
     resetMotionRef.current=null;
     lossMotionRef.current=null;
     breakMotionRef.current=null;
+    teachEnterCancel.current=null;
   }
   function changeLevel(id){
     clearWinMemo();
@@ -129,9 +133,12 @@ export default function SimplifiedGame(){
           dispatchCasualEvent(name, details);
         }
         const outcome=playOutcome(change, action);
-        const first=takeFirstOutcome(seenFactorsRef.current, outcome);
+        const first=teachDismissesCrossAck(level.id, outcome)
+          ?null
+          :takeFirstOutcome(seenFactorsRef.current, outcome);
         updateScreen(state=>ackAfterCommit({
           ...state,
+          teachEnter:false,
           committedHand:action.type==='steer'
             ?current.round.game.deal.hand.filter((_,i)=>i!==action.index)
             :null
@@ -146,7 +153,10 @@ export default function SimplifiedGame(){
         breakMotionRef.current=null;
         updateScreen(state=>{
           const settled=settledScreen(state, settledPresentation(next));
-          return {...settled, committedHand:null};
+          return {
+            ...settled, committedHand:null,
+            teachEnter:teachFollowRevealed(current.round, next)
+          };
         });
       },
       startMotion({change}, complete){
@@ -162,6 +172,16 @@ export default function SimplifiedGame(){
       }
     });
   }
+  useLayoutEffect(()=>{
+    if(!screen.teachEnter)return;
+    const cancel=animateTeachEnter(rootRef.current);
+    teachEnterCancel.current=cancel;
+    return ()=>{
+      cancel();
+      if(teachEnterCancel.current===cancel)teachEnterCancel.current=null;
+    };
+  }, [screen.teachEnter, screen.round.levelId, screen.round.turn]);
+
   const bankLive=useBoardChrome({
     rootRef, screen, readout, play, seenFactorsRef, setScreen:setFromEffect
   });
@@ -173,6 +193,7 @@ export default function SimplifiedGame(){
     resetMotionRef.current?.();
     lossMotionRef.current?.();
     breakMotionRef.current?.();
+    teachEnterCancel.current?.();
   }, []);
 
   function dismissIntro(via){
@@ -221,14 +242,18 @@ export default function SimplifiedGame(){
     dispatchCasualEvent('debug_goto_level', {level:id});
     changeLevel(id);
   }
+  function swingTeachActive(){
+    return rootRef.current?.getAttribute('data-swing-teach')==='1';
+  }
   function runSteps(steps){
     let consultSkip=false;
+    const teach=swingTeachActive();
     for(const step of steps){
       if(step==='stopArrival')arrival.stopArrival();
       if(step==='closeStart')updateScreen(closedStart);
       if(step==='clearDock')updateScreen(clearedDock);
-      if(step==='skipPresentation')presentationRef.current.acceptPointerDown();
-      if(step==='consultPointer'&&presentationRef.current.acceptPointerDown()==='skip')consultSkip=true;
+      if(step==='skipPresentation'&&!teach)presentationRef.current.acceptPointerDown();
+      if(step==='consultPointer'&&!teach&&presentationRef.current.acceptPointerDown()==='skip')consultSkip=true;
     }
     return consultSkip;
   }
@@ -262,7 +287,7 @@ export default function SimplifiedGame(){
         gate:introGateRef.current,
         inIntro:!!event.target?.closest?.('.sgv-feature-intro')
       });
-      const block=decision.consultClick&&presentationRef.current.acceptClick()!=='action';
+      const block=!swingTeachActive()&&decision.consultClick&&presentationRef.current.acceptClick()!=='action';
       if(decision.prevent||block)event.preventDefault();
       if(decision.stop||block)event.stopPropagation();
     }}
@@ -281,7 +306,7 @@ export default function SimplifiedGame(){
       if(decision.dismissIntro){
         dismissIntro(event.target?.closest?.('.sgv-feature-intro-play')?'play':'scrim');
       }
-      if(decision.skipPresentation)presentationRef.current.acceptPointerDown();
+      if(decision.skipPresentation&&!swingTeachActive())presentationRef.current.acceptPointerDown();
       if(decision.stopWin)win.stopWin();
       if(decision.endVia){
         applyEndDecision(dismissLevelScreen(

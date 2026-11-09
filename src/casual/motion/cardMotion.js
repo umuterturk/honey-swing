@@ -2,6 +2,7 @@ import {gsap} from 'gsap';
 import {CARD_ARROW_PATH,cardDirection,cardShade} from '../cardDirection.js';
 import {meterPercent} from '../meterScale.js';
 import {NEEDLE_GLIDE_EASE,cardMotionMarks,flyerOrigin,reducedCardSummary} from '../motionSchedule.js';
+import {mountSwingSpotlight,playReleaseTime} from '../swingTeach.js';
 import {FACTORS} from '../factors.js';
 import {flyFactorLabels} from './factorFlyer.js';
 import {animateTapPour} from './potMotion.js';
@@ -288,7 +289,8 @@ export function animateCardAction({
         if(!origin)return;
         animations.push(flyFactorLabels({
           root,
-          plan:[{kind:flyer.kind,start:0,origin}]
+          plan:[{kind:flyer.kind,start:0,origin}],
+          bounce:!view.spotlight
         }));
       },[],flyer.at);
     }
@@ -303,6 +305,14 @@ export function animateCardAction({
       tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],marks.factors);
       tl.call(()=>{},[],marks.end);
     }
+  }
+  if(view.spotlight){
+    const cancelSpot=mountSwingSpotlight({
+      root, plan:view.spotlight, from:view.from, to:view.to, limit
+    });
+    animations.push(cancelSpot);
+    const release=playReleaseTime(marks.end, view.spotlight);
+    tl.call(()=>cancelSpot(), [], release);
   }
   return ()=>{
     alive=false;tl.kill();

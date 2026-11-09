@@ -1,6 +1,7 @@
 import {newOverswing,stepOverswing,overswingActions,applySwing,signed} from '../external/engines.js';
 import {FACTORS} from './factors.js';
 import {GARDEN} from './levels/garden.js';
+import {filterTeachActions} from './swingTeach.js';
 
 // One shared casual rules object. potCap, flipOnly, and the factor flags
 // are copied from the record onto each level's rules.
@@ -83,10 +84,10 @@ export function onboardingActions(round){
   if(onboardingFinished(round))return [];
   const level=onboardingLevel(round.levelId);
   const available=overswingActions(round.game,level.rules);
-  return available.filter(a=>
+  return filterTeachActions(round, available.filter(a=>
     (level.showFlip||a.type!=='flip')&&
     (!(a.type==='bank')||(!level.requiresZeroBreak||round.zeroBreakCount>0))
-  );
+  ));
 }
 export function stepOnboarding(round,action){
   const level=onboardingLevel(round.levelId);

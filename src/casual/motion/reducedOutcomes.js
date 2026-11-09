@@ -1,4 +1,5 @@
 import {STATIC_OUTCOME_MS,reducedBankSummary,reducedCardSummary} from '../motionSchedule.js';
+import {mountSwingSpotlight} from '../swingTeach.js';
 import {mountPotEquationFlyer} from './potEquation.js';
 import {placeStaticFactor} from './factorFlyer.js';
 import {placeStatic,point,removeNodes,replaceStatic} from './stage.js';
@@ -27,6 +28,12 @@ function showReducedCard(root,view){
     });
     root.appendChild(node);
     nodes.push(node);
+  }
+  if(view.spotlight){
+    const cancelSpot=mountSwingSpotlight({
+      root, plan:view.spotlight, from:view.from, to:view.to, limit:view.meterLimit||8
+    });
+    nodes.push({remove:cancelSpot});
   }
   for(const flyer of summary.flyers||[]){
     const pill=root.querySelector('[data-factor="'+flyer.kind+'"]');
