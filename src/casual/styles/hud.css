@@ -1,0 +1,23 @@
+/* Small, stable top HUD. The score and hearts are deliberately outside the chest. */
+.sgv-hud{flex:none;display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:54px;max-width:100%;position:relative;z-index:3}
+.sgv-level{height:48px;min-width:124px;padding:5px 18px 5px 9px;display:flex;align-items:center;gap:7px;white-space:nowrap;border-radius:27px;border:4px solid #f8eaff;background:linear-gradient(#ad88f4,#855cc9);box-shadow:0 5px 0 #6143ac,0 8px 12px #56579a5c,inset 0 3px #f5d6ff82;color:#fff;text-shadow:0 2px #65519d;font-size:clamp(16px,4vw,21px)}
+.sgv-level span{display:grid;place-items:center;flex:none;width:36px;height:36px;margin-left:-6px;border-radius:50%;background:linear-gradient(#ffe999,#f7b542);border:3px solid #fff4c1;box-shadow:0 2px 0 #d58c37;color:#fff1bd;text-shadow:0 2px #d09140;font-size:26px}
+.sgv-level strong{font-weight:1000;letter-spacing:-.3px}
+.sgv-hud-right{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.sgv-gold-counter{min-width:71px;height:40px;display:flex;align-items:center;justify-content:center;gap:7px;padding:4px 13px 5px 6px;border:3px solid #fff5d5;border-radius:22px;background:linear-gradient(#fff9e7,#ffe6b3);box-shadow:0 4px 0 #dcb483,0 6px 12px #9b937e5c;color:#865b30}
+.sgv-gold-counter strong{min-width:1.2ch;text-align:center;font-size:20px;font-weight:1000;font-variant-numeric:tabular-nums}
+.sgv-gold-icon{display:grid;place-items:center;width:26px;height:26px;flex:none;border-radius:50%;background:linear-gradient(#ffe96d,#ffbc28);color:#fff7d2;font-size:19px;text-shadow:0 2px #ce842f;border:2px solid #f9eab9;box-shadow:0 2px 0 #c28d3d}
+.sgv-lives{display:flex;align-items:center;gap:2px;min-width:72px;height:40px;justify-content:center;padding:4px 6px;background:#fff5e3d9;border:3px solid #fff7f1;border-radius:23px;box-shadow:0 4px 0 #d8c3b2;color:#f66391}
+.sgv-heart{font-size:26px;line-height:1;text-shadow:0 2px #ca4771;filter:drop-shadow(0 1px #fff)}
+.sgv-heart-empty{color:#cfcad5;text-shadow:0 1px #bcb3c2}
+.sgv-wasp-flyer{
+ position:absolute;z-index:40;height:42px;width:auto;margin-left:-21px;margin-top:-21px;
+ pointer-events:none;user-select:none;-webkit-user-select:none;will-change:transform,opacity;
+ filter:drop-shadow(0 3px 4px #5a204088);display:block;
+}
+.sgv-heart-pop{
+ position:absolute;z-index:41;margin-left:-0.5em;margin-top:-0.55em;font-size:28px;line-height:1;
+ color:#f66391;text-shadow:0 2px #ca4771;filter:drop-shadow(0 2px 3px #5a204066);
+ pointer-events:none;user-select:none;-webkit-user-select:none;will-change:transform,opacity;
+}
+

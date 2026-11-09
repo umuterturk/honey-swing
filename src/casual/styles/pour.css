@@ -1,0 +1,189 @@
+/* Keep only one main bottom action. Reserve the rest of the control strip
+   for future abilities rather than filling it with redundant controls. */
+.sgv-actions{
+ display:flex;align-items:center;justify-content:center;
+ grid-template-columns:none;
+}
+.sgv-actions .sgv-flip{
+ flex:0 1 345px;width:min(100%,345px);
+ min-width:0;
+}
+/* The pour has a gentle amber core. Measuring the tilted bottle lip in JS
+   keeps this flow attached even on devices with large safe areas. */
+.sgv-pour-stream{
+ position:absolute;z-index:22;inset:0;overflow:visible;
+ pointer-events:none;opacity:1;will-change:opacity;
+}
+.sgv-pour-stream-glow{
+ stroke:#ffe99b;opacity:.65;filter:drop-shadow(0 0 4px #ffe89c);
+}
+.sgv-pour-stream-core{stroke:#ffbe46;opacity:1}
+@media(max-width:365px){
+ .sgv-bottle-pair .sgv-bank-bottle{width:96px;height:118px}
+ .sgv-bottle-pair .sgv-pending-pot{width:88px;height:110px}
+}
+@media(max-height:730px){
+ .sgv-bottle-pair{padding-bottom:4px}
+}
+@media(max-height:580px){
+ .sgv-bottle-pair .sgv-pot-amount{font-size:17px}
+ .sgv-actions .sgv-flip{max-height:55px}
+}
+@media(prefers-reduced-motion:reduce){
+ 
+ .sgv-pour-stream{display:none}
+}
+
+
+/* The little Pot is physically lifted to this open Bank mouth before pouring.
+   The orange stream now spans only the short distance between glass lips. */
+.sgv-bottle-pair .sgv-chest-mouth{top:10%;z-index:7}
+.sgv-bottle-pair .sgv-goal-progress{
+ top:55%;bottom:auto;left:50%;right:auto;transform:translate(-50%,-50%);
+ min-width:0;width:max-content;max-width:96%;
+ background:transparent;border:0;border-radius:0;box-shadow:none;
+ padding:0;gap:2px;display:flex;align-items:center;
+ color:#754c35;text-align:center;text-shadow:0 1px 2px #fff7d9,0 0 4px #fff7c3;
+}
+.sgv-bottle-pair .sgv-goal-progress span{
+ font-size:clamp(9px,2.6vw,12px);letter-spacing:1px;line-height:1.05;
+ text-shadow:0 1px 2px #fff8dc;
+}
+.sgv-bottle-pair .sgv-goal-progress strong{
+ font-size:clamp(19px,5.1vw,25px);line-height:1.05;
+ letter-spacing:-.025em;color:#754c35;
+ text-shadow:0 1px 2px #fff9da,0 0 5px #fff3b8;
+}
+.sgv-multiplier-pill::before{display:none}
+.sgv-event-bank .sgv-pot-liquid{transition:none}
+.sgv-event-bank .sgv-fluid-fill{transition:height .12s linear,opacity .1s linear}
+.sgv-pour-stream{
+ filter:none;opacity:1;z-index:24;pointer-events:none;
+}
+/* Tap→Pot stream lives in the jar stack at honey depth (under lights + front). */
+.sgv-victory-jar-art > .sgv-pour-stream{
+ z-index:2;inset:auto;right:auto;bottom:auto;overflow:visible;
+}
+.sgv-pour-stream-glow{stroke:#ffedb9;opacity:.7;filter:none}
+.sgv-pour-stream-core{stroke:#ffbb43;opacity:.97;filter:none}
+.sgv-pour-splash{
+ position:absolute;z-index:24;width:27px;height:10px;
+ transform:translate(-50%,-50%);border:2px solid #fff5bf;
+ border-radius:50%;box-shadow:0 0 9px #ffe79bba;
+ background:#ffd46e6e;pointer-events:none;will-change:transform,opacity;
+}
+.sgv-pour-splash::before,.sgv-pour-splash::after{
+ content:"";position:absolute;top:-9px;width:6px;height:9px;
+ border-radius:60% 60% 50% 50%;background:#ffdc7c;
+ border:1px solid #fff8cb;transform:rotate(22deg);
+}
+.sgv-pour-splash::before{left:3px;transform:rotate(-28deg)}
+.sgv-pour-splash::after{right:4px}
+.sgv-bank-score-fly{
+ font-size:clamp(20px,5.6vw,26px);text-shadow:0 2px #b98b53,0 4px 8px #594b3970;
+}
+
+/* Gentle ambient life: cloud drift exists already. Add leaf motion and slight
+   waterfall shimmer without JavaScript or work on the main thread. */
+.sg-cloud-one{animation-duration:23s}
+.sg-cloud-two{animation-duration:29s}
+@keyframes sgv-cloud{to{transform:translateX(25px)}}
+.sg-foreground-leaves path{
+ transform-box:fill-box;transform-origin:50% 20%;
+ animation:sgv-wind-leaf 5.4s ease-in-out infinite alternate;
+}
+.sg-foreground-leaves path:nth-child(even){animation-duration:6.9s;animation-delay:-2.5s}
+.sg-foreground-leaves path:nth-child(3n){animation-duration:4.6s;animation-delay:-1.1s}
+@keyframes sgv-wind-leaf{
+ from{transform:rotate(-2.4deg) translateX(-1px)}
+ to{transform:rotate(3deg) translateX(2px)}
+}
+.sg-waterfall path:nth-child(3){
+ animation:sgv-water-shimmer 3.1s ease-in-out infinite alternate;
+}
+@keyframes sgv-water-shimmer{from{opacity:.50}to{opacity:.85}}
+@media(max-width:365px){
+ .sgv-bottle-pair .sgv-goal-progress strong{font-size:18px}
+ .sgv-bottle-pair .sgv-goal-progress span{font-size:9px}
+}
+@media(max-height:580px){
+ .sgv-bottle-pair .sgv-goal-progress strong{font-size:17px}
+}
+@media(prefers-reduced-motion:reduce){
+ .sg-foreground-leaves path,.sg-waterfall path:nth-child(3){animation:none}
+ .sg-cloud-one,.sg-cloud-two{animation:none}
+ .sgv-event-bank .sgv-pot-liquid,.sgv-event-bank .sgv-fluid-fill{transition:none}
+ .sgv-pour-splash{display:none}
+}
+
+/* The small bottle is the Bank CTA. No separate payout pill. */
+.sgv-bottle-pair .sgv-pot-bankable .sgv-jar-front{
+ filter:brightness(1.08);
+}
+.sgv-bottle-pair .sgv-pot-bankable:active .sgv-jar-front{filter:brightness(1.13)}
+@media(prefers-reduced-motion:reduce){
+ .sgv-bottle-pair .sgv-pot-bankable .sgv-jar-front{filter:brightness(1.08)}
+}
+
+
+/* P0: plain magnitude on the scale; LEFT / RIGHT communicates direction. */
+.sgv-meter-side{
+ position:absolute;z-index:2;top:2px;font-size:clamp(8px,2.15vw,10px);
+ font-weight:1000;line-height:1;letter-spacing:.03em;color:#714462;
+ text-shadow:0 1px 1px #fff3dc;
+}
+.sgv-meter-side-left{left:5px}
+.sgv-meter-side-right{right:5px}
+.sgv-meter-number:has(.sgv-marker-direction){
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ min-width:53px;gap:0;padding:2px 6px 3px;line-height:1;
+}
+.sgv-marker-direction{
+ display:block;font-size:9px;line-height:1.02;letter-spacing:.02em;
+ color:#9e566b;font-weight:1000;
+}
+.sgv-meter-number strong{font-size:16px;line-height:1.04;font-weight:1000}
+.sgv-card-direction{
+ position:relative;z-index:1;display:block;font-weight:1000;
+ letter-spacing:.09em;font-size:clamp(10px,2.8vw,14px);
+ line-height:1.08;color:var(--sgv-card-color);
+ text-shadow:0 1px 2px #fff9ee;white-space:nowrap;
+}
+.sgv-card:has(.sgv-card-direction) strong{
+ font-size:clamp(36px,10vw,61px);line-height:1;
+}
+.sgv-flying-card .sgv-card-direction{font-size:clamp(10px,2.8vw,13px)}
+
+/* No wooden or white oval cap on either open-top glass vessel. */
+.sgv-pot-bottle-mouth,.sgv-pot-bottle-rim,
+.sgv-bottle-pair .sgv-chest-rim{display:none!important}
+.sgv-bottle-pair .sgv-pot-bottle-glass{
+ border-top:3px solid #b4eef6cc;
+}
+
+/* Short, temporary fracture on the pending Pot; the two hazards differ:
+   Snap cracks brightly and drains, Zero Break visibly heals without loss. */
+.sgv-pot-fracture{
+ position:absolute;z-index:8;inset:0;width:100%;height:100%;
+ pointer-events:none;overflow:visible;transform-origin:50% 48%;
+ will-change:transform,opacity;
+}
+.sgv-pot-fracture path{
+ fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;
+}
+.sgv-pot-fracture-snap path{
+ stroke:#fff7ea;filter:drop-shadow(0 0 3px #f04b70);
+}
+.sgv-pot-fracture-zero path{
+ stroke:#f2ffff;stroke-width:3;filter:drop-shadow(0 0 3px #50b8f0);
+}
+@media(max-height:580px){
+ .sgv-card-direction{font-size:10px}
+ .sgv-card:has(.sgv-card-direction) strong{font-size:clamp(31px,8.8vw,40px)}
+ .sgv-meter-side{font-size:8px}
+}
+@media(prefers-reduced-motion:reduce){
+ .sgv-pot-fracture{display:none}
+}
+
+

@@ -192,7 +192,7 @@ export function honeyLayout(width,height,insets={}){
   const jarGap=compact?14:12;
   const ctaH=70;
   // Raise NEXT above the home indicator. Short phones lift less so the jar
-  // stays readable; keep in sync with .sgv-honey-cta-wrap in minimal.css.
+  // stays readable; keep in sync with .sgv-honey-cta-wrap in styles/honey-win.css.
   const ctaLift=short?36:ctaH;
   const ctaY=height-bottom-16-ctaH-ctaLift;
   const limit=ctaY-12;

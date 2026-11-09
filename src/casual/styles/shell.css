@@ -1,0 +1,14 @@
+:root{font-family:ui-rounded,"Arial Rounded MT Bold",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;font-synthesis:none;color:#704b69;background:#79d0e9;--honey-scrim:#1a0f12;--honey-scrim-opacity:1;--honey-text-backing:transparent;--honey-praise-h1:#fff0cf;--honey-praise-h1-outline:#704b69;--honey-praise-h2:#f0c14a;--honey-praise-h2-outline:#5a3a12;--honey-praise-h3:#ffe08a;--honey-praise-h3-outline:#5a3a12;--honey-praise-h3-glow:0 0 18px #f0c14a88;--honey-body:#e8a317;--honey-depth:#c47a0a;--honey-surface:#ffe08a;--honey-count:#f0c14a;--honey-count-outline:#3b2410;--honey-subline:#fff0cf;--honey-glass-rim:#acd7f7;--ease-out:cubic-bezier(.2,.8,.2,1);--ease-back:cubic-bezier(.34,1.56,.64,1);--fs-xxl:44px;--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px)}
+*{box-sizing:border-box}
+html,body,#root{width:100%;height:100%;margin:0}
+body{overscroll-behavior:none}
+button{font:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
+.sgv-page{height:100dvh;min-height:490px;width:100%;overflow:hidden;background:linear-gradient(#70c8f5,#a8e6c2);display:flex;justify-content:center;user-select:none;-webkit-user-select:none}
+.sgv-phone{position:relative;isolation:isolate;display:flex;flex-direction:column;width:min(100%,560px);height:100%;min-width:0;max-width:100%;overflow:hidden;padding:calc(env(safe-area-inset-top,0px) + 12px) 16px calc(env(safe-area-inset-bottom,0px) + 28px);background:linear-gradient(#73cafa,#d8f6df 56%,#78c477)}
+.sgv-phone>.sg-garden{position:absolute;inset:0;z-index:-2;width:100%;height:100%;pointer-events:none}
+.sgv-atmosphere{position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse at 50% 49%,#faffd96e,transparent 66%);pointer-events:none}
+.sg-cloud-one{animation:sgv-cloud 21s ease-in-out infinite alternate}
+.sg-cloud-two{animation:sgv-cloud 27s ease-in-out infinite alternate-reverse}
+@keyframes sgv-cloud{to{transform:translateX(13px)}}
+

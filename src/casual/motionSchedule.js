@@ -80,7 +80,7 @@ export function cardMotionMarks({type='steer',snap=false,rewards=[],from,to}={})
   };
 }
 
-// Must match .sgv-meter-scale horizontal inset in minimal.css (marker/tick % scale).
+// Must match .sgv-meter-scale horizontal inset in styles/meter.css (marker/tick % scale).
 export const METER_SCALE_INSET_X=12;
 
 // Reward flyers use the committed meter percent, never the marker's live left.

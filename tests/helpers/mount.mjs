@@ -1,6 +1,6 @@
-import {readFile} from 'node:fs/promises';
 import {register} from 'node:module';
 import {Window} from 'happy-dom';
+import {loadCasualCss} from './styles.mjs';
 
 let win;
 let reduced = false;
@@ -45,7 +45,7 @@ export async function boot(){
     dispatchEvent(){return false;}
   });
   globalThis.matchMedia = win.matchMedia;
-  const css = await readFile(new URL('../../src/casual/minimal.css', import.meta.url), 'utf8');
+  const css = await loadCasualCss();
   const style = win.document.createElement('style');
   style.textContent = css;
   win.document.head.appendChild(style);

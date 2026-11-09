@@ -1,0 +1,62 @@
+/* Top/bottom springs: absorb leftover height outside the play stack.
+   Bottom is weighted 2.5× so tall phones show more garden below SAVE. */
+.sgv-spring-top{flex:1 1 0;min-height:0;min-width:0;pointer-events:none}
+.sgv-spring-bottom{flex:2.5 1 0;min-height:0;min-width:0;pointer-events:none}
+
+/* Middle is a stable flex column; no popup/button text can alter meter width.
+   flex:none + min-height:0 keeps it fixed-height so springs absorb tall-screen leftover. */
+.sgv-middle{position:relative;min-width:0;min-height:0;width:100%;flex:none;display:flex;flex-direction:column;align-items:center;gap:4px}
+.sgv-mini-hint{flex:none;align-self:center;display:flex;align-items:center;justify-content:center;width:min(96%,375px);min-height:26px;height:26px;margin-top:4px;color:#76537f;font-size:clamp(12px,3vw,14px);line-height:1.2;font-weight:900;text-align:center;text-shadow:0 2px #fffee7;white-space:nowrap;overflow:hidden}
+.sgv-meter-section{position:relative;z-index:2;flex:none;width:min(100%,540px);min-width:0;max-width:100%;height:auto;min-height:clamp(126px,19dvh,178px);padding:4px clamp(6px,2vw,12px) 0;display:flex;flex-direction:column;justify-content:flex-end;overflow:visible}
+.sgv-meter-caption{display:none}
+.sgv-meter-name{font-size:clamp(13px,3.5vw,17px);color:#7853aa;text-shadow:0 2px #fff7e5}
+.sgv-meter-current b{color:#e14d8d;font-variant-numeric:tabular-nums;font-size:17px}
+/* margin-top reserves crown room (scales with meter width); honeycomb pulls back into it. */
+.sgv-meter{position:relative;width:100%;min-width:0;height:148px;flex:none;overflow:visible;margin-top:calc(90% * 347 / 1758)}
+.sgv-meter-track{position:absolute;inset:4px 0 auto;height:60px;border-radius:18px;border:7px solid #f7b536;background:linear-gradient(90deg,#ec6e89 0%,#d598c0 22%,#dec7f2 40%,#fff0cf 50%,#dec7f2 60%,#d598c0 78%,#ec6e89 100%);box-shadow:0 6px 0 #9b6e94,0 9px 15px #65599868,inset 0 3px 3px #ffffff91,inset 0 -4px #a4698c63}
+/* Honeycomb at 0.9× meter width; bottom 117 native px overlap the track (scaled). Crown = 464-117. */
+.sgv-honeycomb{position:absolute;z-index:3;left:5%;top:4px;width:90%;height:auto;margin-top:calc(-90% * 347 / 1758);display:block;pointer-events:none;user-select:none;-webkit-user-select:none}
+/* Tap at 1/5 asset size (274→54.8); top ~1.6px overlap (8/5) seats it on the track. */
+.sgv-honey-tap{position:absolute;z-index:4;left:50%;top:60.5px;height:54.8px;width:auto;max-width:none;transform:translateX(-50%);pointer-events:none;user-select:none;-webkit-user-select:none;display:block}
+.sgv-meter-centerline{position:absolute;z-index:1;left:50%;top:-8px;width:9px;height:53px;border-radius:5px;background:linear-gradient(#ff8b8b,#e52c51);border:2px solid #ffe2cf;box-shadow:0 0 8px #f134597c,0 1px 3px #aa5362;transform:translateX(-50%)}
+/* Marker rail shares the tick scale inset; z above honeycomb/tap/multipliers, under wasps. */
+.sgv-meter-marker-rail{position:absolute;z-index:8;left:12px;right:12px;top:4px;height:60px;pointer-events:none}
+.sgv-meter-marker{position:absolute;top:50%;transform:translate(-50%,-50%);height:52px;width:48px;display:flex;align-items:center;justify-content:center;transition:left .32s cubic-bezier(.17,.72,.31,1.22);pointer-events:none}
+.sgv-meter-marker.sgv-marker-gsap{transition:none}
+/* Identical inset and percentage scale for the marker and each in-track number.
+   Horizontal inset must stay in sync with METER_SCALE_INSET_X (motionSchedule.js / flyerOrigin).
+   No justify-content:space-between (whose endpoint glyph widths caused misalignment). */
+.sgv-meter-scale{position:absolute;z-index:2;inset:0 12px;pointer-events:none}
+.sgv-meter-ticks{position:absolute;z-index:1;inset:0;pointer-events:none}
+.sgv-meter-tick{
+ position:absolute;top:50%;transform:translate(-50%,-50%);
+ color:#67456f;font-size:clamp(10px,2.9vw,13px);font-weight:1000;
+ line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums;
+ text-shadow:0 1px 2px #fffce5,0 0 3px #fffce5;
+}
+.sgv-meter-tick-zero{color:#fffef1;text-shadow:0 1px 2px #a12f51,0 0 2px #a12f51}
+.sgv-meter-wasp{
+ position:absolute;z-index:9;top:10px;height:42px;width:auto;
+ pointer-events:none;user-select:none;-webkit-user-select:none;
+ display:block;filter:drop-shadow(0 2px 3px #5a204088);
+}
+.sgv-meter-wasp-left{left:2px;transform:scaleX(-1)}
+.sgv-meter-wasp-right{right:2px;left:auto}
+/* Engine factors as small charms under the meter. Flip sits on the right. */
+.sgv-multipliers{position:absolute;z-index:5;left:9%;right:9%;top:76px;display:flex;align-items:flex-start;justify-content:flex-start;gap:clamp(6px,2vw,12px)}
+.sgv-multiplier-pill{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:clamp(48px,13vw,59px);height:31px;padding:2px 7px 3px;border-radius:18px;border:3px solid #fff8e9;box-shadow:0 4px 0 var(--pill-rim),0 6px 8px #776a8040,inset 0 2px #ffffffa1;background:linear-gradient(#fff5e0,var(--pill-color));font-size:clamp(16px,4.3vw,21px);font-weight:1000;color:var(--pill-text);text-shadow:0 1px #fff9;font-variant-numeric:tabular-nums;white-space:nowrap;transform-origin:50% 0%}
+.sgv-multiplier-pill::before{content:"";position:absolute;z-index:-1;left:50%;top:-19px;width:3px;height:19px;border-radius:2px;background:#f2e0cbd9;box-shadow:0 0 2px #8e6179;transform:translateX(-50%)}
+button.sgv-multiplier-pill{appearance:none;cursor:pointer}
+button.sgv-multiplier-pill:disabled{cursor:default;opacity:1}
+.sgv-multiplier-swing{--pill-color:#efc4ee;--pill-rim:#b688c3;--pill-text:#744c9b;min-width:clamp(58px,16vw,72px);padding-left:8px;padding-right:4px}
+.sgv-multiplier-flip{--pill-color:#c9eaff;--pill-rim:#7eb8db;--pill-text:#3f73a9;margin-left:auto;min-width:clamp(58px,16vw,72px);padding-left:8px;padding-right:4px}
+.sgv-multiplier-jackpot{--pill-color:#ffe29a;--pill-rim:#d9ac59;--pill-text:#a46a35}
+.sgv-multiplier-icon{display:block;width:22px;height:22px;object-fit:contain;flex:none;pointer-events:none;user-select:none;-webkit-user-select:none}
+.sgv-multiplier-bee{transform:scaleX(-1)}
+.sgv-multiplier-value{position:relative;z-index:1;line-height:1}
+.sgv-factor-flyer{position:absolute;z-index:25;display:inline-flex;align-items:center;gap:5px;min-height:32px;padding:4px 10px 5px;border-radius:17px;border:3px solid #fff8cd;background:linear-gradient(#fff6bb,#ffd35f);box-shadow:0 3px 0 #d69b42,0 5px 10px #a8764d70;color:#885326;font-size:13px;font-weight:1000;line-height:1;white-space:nowrap;pointer-events:none;transform-origin:center;will-change:transform,opacity}
+.sgv-factor-flyer img{width:20px;height:20px;object-fit:contain;flex:none;pointer-events:none}
+.sgv-event-snap .sgv-meter-track{animation:sgv-meter-shake .4s ease}
+@keyframes sgv-meter-shake{0%,100%{translate:0 0}20%,60%{translate:-7px 0}40%,80%{translate:7px 0}}
+.sgv-flight-center{position:absolute;left:50%;top:41%;width:1px;height:1px;pointer-events:none}
+

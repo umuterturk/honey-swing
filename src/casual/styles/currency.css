@@ -1,0 +1,316 @@
+/* P0: an open, unstable Pot and an independent secured target, both OUTSIDE glass. */
+.sgv-pending-pot{
+ position:absolute;z-index:9;left:clamp(0px,1.6vw,12px);bottom:clamp(3px,1.4dvh,12px);
+ width:clamp(107px,29vw,137px);height:clamp(67px,9dvh,81px);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+ padding:13px 4px 5px;
+ border:4px solid #ffe7ac;border-radius:18px 18px 34px 34px;
+ background:linear-gradient(#f8d39a 0%,#dda46a 42%,#9d6041 100%);
+ box-shadow:inset 0 4px #fff0c0bd,inset 0 -5px #86503685,
+  0 5px 0 #975d3c,0 8px 13px #536b4771;
+ color:#fff9dd;
+}
+.sgv-pending-pot::after{
+ content:"";position:absolute;z-index:0;left:4%;right:4%;top:-6px;height:12px;
+ border:3px solid #ffe9ba;border-radius:50%;
+ background:linear-gradient(#ffe9af,#ce945d);
+ box-shadow:0 2px 0 #915536;
+}
+ .sgv-pot-label{position:relative;z-index:1;font-size:clamp(11px,2.9vw,14px);font-weight:1000;letter-spacing:1px;line-height:1.1;
+ text-shadow:0 2px #995631}
+ .sgv-pot-amount{position:relative;z-index:1;display:flex;gap:4px;align-items:center;font-size:clamp(23px,6vw,30px);font-weight:1000;
+ font-variant-numeric:tabular-nums;line-height:1.04;color:#754b35;text-shadow:0 2px 2px #fffce8,0 0 7px #fff7d1}
+.sgv-pot-amount .sgv-pot-drop{font-size:19px;color:#ffe574;filter:drop-shadow(0 1px #c38939)}
+.sgv-pot-coins{position:absolute;z-index:-1;top:-19px;right:8px;color:#ffe985;
+ text-shadow:0 2px #ca863e;font-size:16px;letter-spacing:-4px;opacity:.75}
+.sgv-goal-progress{
+ position:absolute;z-index:8;right:clamp(0px,1.6vw,12px);bottom:clamp(6px,1.7dvh,14px);
+ min-width:clamp(103px,27vw,129px);padding:7px 8px 8px;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+ border:3px solid #fff7d3;border-radius:19px;
+ background:linear-gradient(#fffef3e8,#ffe8beef);
+ box-shadow:0 4px 0 #cfac78,0 7px 10px #4b8b6d4a;color:#8b633b;
+ font-variant-numeric:tabular-nums;pointer-events:none;
+}
+.sgv-goal-progress span{font-size:clamp(10px,2.7vw,12px);font-weight:1000;letter-spacing:.45px;line-height:1}
+.sgv-goal-progress strong{font-size:clamp(17px,4.7vw,23px);font-weight:1000;line-height:1.03;white-space:nowrap}
+.sgv-pot-fly{
+ position:absolute;z-index:26;min-width:54px;height:39px;margin-left:-27px;margin-top:-19px;
+ display:grid;place-items:center;padding:3px 8px;border-radius:20px;
+ border:3px solid #fff4b8;background:linear-gradient(#fff4ae,#ffc949 70%,#f1aa2e);
+ box-shadow:0 4px 0 #ca8630,0 6px 9px #895c3480;color:#8f561e;
+ font-size:22px;font-weight:1000;font-variant-numeric:tabular-nums;
+ text-shadow:0 1px #fff7b2;pointer-events:none;will-change:transform,opacity;
+}
+.sgv-pot-fly.sgv-pot-fly-equation{
+ min-width:0;width:max-content;max-width:min(92vw,300px);margin-left:0;margin-top:-16px;
+ padding:4px 12px 5px;border-radius:16px;border-width:3px;
+ box-shadow:0 3px 0 #ca8630,0 5px 9px #895c3480;
+ font-size:clamp(14px,3.8vw,19px);font-weight:1000;letter-spacing:-.02em;line-height:1;
+ white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+}
+.sgv-pot-eq-rank,.sgv-pot-eq-mul,.sgv-pot-eq-factor,.sgv-pot-eq-arrow,.sgv-pot-eq-result{
+ font-variant-numeric:tabular-nums;line-height:1;
+}
+.sgv-pot-eq-term{display:inline-flex;align-items:center;gap:3px}
+.sgv-pot-eq-icon{
+ width:1.35em;height:1.35em;object-fit:contain;display:block;
+ filter:drop-shadow(0 1px 1px #a96a3088);
+}
+.sgv-pot-eq-mul{opacity:.75;font-size:.92em}
+.sgv-pot-eq-arrow{margin:0 1px;opacity:.85}
+.sgv-pot-eq-result{font-size:1.05em}
+.sgv-pot-fly.sgv-pot-fly-equation.sgv-static-outcome{
+ animation:sgv-pot-eq-drift 6.6s linear forwards,sgv-pot-eq-fadeout 1s ease-in 5.6s forwards;
+}
+@keyframes sgv-pot-eq-drift{
+ from{transform:translateX(-50%) translateY(0)}
+ to{transform:translateX(-50%) translateY(-32px)}
+}
+@keyframes sgv-pot-eq-fadeout{
+ from{opacity:1}
+ to{opacity:0}
+}
+/* The center is a reset line; only the edges represent Snap danger. */
+.sgv-meter-track[data-edge-danger="true"]{
+ box-shadow:0 6px 0 #9b6e94,0 9px 15px #65599868,
+ inset 0 3px 3px #ffffff91,inset 7px 0 9px #e94b72a0,
+ inset -7px 0 9px #e94b72a0;
+}
+.sgv-event-zero_break .sgv-meter-centerline{animation:sgv-zero-reset .48s ease}
+@keyframes sgv-zero-reset{
+ 0%,100%{filter:none}
+ 35%{filter:brightness(1.4) drop-shadow(0 0 8px #75edff);background:#a7effa}
+}
+.sgv-event-snap .sgv-pending-pot{animation:sgv-pot-shake .37s ease}
+@keyframes sgv-pot-shake{0%,100%{translate:0 0}25%{translate:-5px 0}50%{translate:5px 0}75%{translate:-3px 0}}
+.sgv-chest-area{pointer-events:none}
+.sgv-gold-counter strong,.sgv-pot-amount,.sgv-goal-progress strong{font-variant-numeric:tabular-nums}
+@media(max-width:365px){
+ .sgv-pending-pot{width:99px;height:56px;left:0;border-width:3px}
+ .sgv-goal-progress{min-width:96px;right:0;padding:6px 5px}
+ .sgv-pot-amount{font-size:23px}.sgv-goal-progress strong{font-size:17px}
+}
+@media(max-height:730px){
+ .sgv-pending-pot{height:59px;width:112px;bottom:1px;padding-top:11px;padding-bottom:4px}
+ .sgv-goal-progress{bottom:3px;padding:5px 7px;min-width:104px}
+ .sgv-pot-amount{font-size:22px}
+}
+@media(max-height:580px){
+ .sgv-pending-pot{width:92px;height:49px;bottom:0;padding-top:9px;padding-bottom:3px}
+ .sgv-bottle-pair .sgv-pot-amount{font-size:15px}
+ .sgv-goal-progress{min-width:94px;bottom:0;padding:4px 6px}
+ .sgv-goal-progress strong{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+ .sgv-event-zero_break .sgv-meter-centerline,.sgv-event-snap .sgv-pending-pot,.sgv-event-snap .sgv-meter-track{animation:none}
+}
+
+.sgv-pot-resonance{position:absolute;top:-23px;right:0;padding:1px 5px;border:2px solid #fff1bf;border-radius:10px;background:#ffce67;color:#975b2a;font-size:9px;font-weight:1000;white-space:nowrap;text-shadow:none;box-shadow:0 2px #bc7a34;pointer-events:none}
+
+/* iPhone width/height safeguards: Bank stays a two-line control at every breakpoint. */
+@media(max-width:365px){
+ .sgv-bank{gap:3px;padding:2px 3px 4px}
+
+
+
+}
+@media(max-height:580px){
+ .sgv-bank{padding-top:2px;padding-bottom:3px}
+
+ .sgv-bank-copy .sgv-action-text{font-size:19px}
+
+}
+
+
+/* P0 currency convention: every amount is represented by an embossed coin,
+   never by a star. Stars are reserved for level achievements. */
+.sgv-coin-symbol{
+ --coin-size:24px;
+ display:inline-block;position:relative;flex:none;
+ width:var(--coin-size);height:var(--coin-size);aspect-ratio:1;
+ border-radius:50%;border:2px solid #fff0a4;
+ background:linear-gradient(135deg,#fff5b5 0%,#ffdb54 41%,#f8ab24 80%,#dc8b1f);
+ box-shadow:inset 0 2px 2px #fff9d4a6,inset 0 -2px 2px #a7662f6b,0 2px 0 #b77730;
+}
+.sgv-coin-symbol::before{
+ content:"";position:absolute;inset:19%;border:2px solid #d59531;border-radius:50%;
+ box-shadow:inset 0 1px 1px #fff5ab,0 1px 1px #fff3a4bd;
+}
+.sgv-coin-symbol::after{
+ content:"";position:absolute;left:25%;top:15%;width:22%;height:26%;
+ border-radius:50%;background:#fff6c2a6;transform:rotate(30deg);
+}
+.sgv-gold-icon.sgv-coin-symbol{--coin-size:26px;font-size:0}
+.sgv-pot-amount .sgv-pot-coin{--coin-size:22px;filter:drop-shadow(0 1px 1px #99602f77)}
+.sgv-bank-title{
+ display:block;font-size:clamp(22px,5.7vw,29px);font-weight:1000;
+ line-height:1.06;letter-spacing:.025em;white-space:nowrap;
+ text-shadow:0 2px #2269a7,0 1px #91e9ff7a;
+}
+.sgv-bank-reward{
+ min-width:76px;min-height:23px;display:flex;align-items:center;justify-content:center;
+ gap:6px;padding:1px 6px;border-radius:15px;
+ background:#0e66aa8f;box-shadow:inset 0 1px 2px #05477d77;
+ font-variant-numeric:tabular-nums;
+}
+.sgv-bank-coin{--coin-size:20px}
+.sgv-bank-reward strong{
+ color:#fff4a9;font-size:clamp(18px,4.8vw,24px);font-weight:1000;
+ line-height:1;letter-spacing:-.02em;white-space:nowrap;
+ text-shadow:0 2px #165785;
+}
+.sgv-bank:disabled .sgv-bank-reward{
+ background:#16578548;box-shadow:none;opacity:.58;
+}
+/* This is an inset coin pile, not a star pile. Each item adds a minted rim. */
+.sgv-gold-piece{font-size:0}
+.sgv-gold-piece::before{
+ content:"";position:absolute;inset:19%;border:1.5px solid #cf8a24;
+ border-radius:50%;box-shadow:inset 0 1px #fff6ae,0 1px #fff4a281;
+}
+.sgv-gold-piece::after{
+ content:"";position:absolute;top:19%;left:26%;width:20%;height:22%;
+ border-radius:50%;background:#fff4bf9c;
+}
+.sgv-intro-coin{font-size:0;position:relative}
+.sgv-intro-coin::before{
+ content:"";position:absolute;inset:17%;border:6px solid #df9930;border-radius:50%;
+ box-shadow:0 2px #fff8bd,inset 0 2px #fff7bf;
+}
+.sgv-intro-coin::after{
+ content:"";position:absolute;top:22%;left:28%;width:17%;height:21%;
+ border-radius:50%;background:#fff7c7ad;
+}
+.sgv-flying-gold{font-size:0}
+.sgv-flying-gold::before{
+ content:"";position:absolute;inset:19%;border:2px solid #d59531;border-radius:50%;
+ box-shadow:inset 0 1px #fff6bb,0 1px #fff6bb;
+}
+.sgv-flying-gold::after{
+ content:"";position:absolute;top:18%;left:23%;width:20%;height:22%;
+ border-radius:50%;background:#fff9cc9c;
+}
+.sgv-bank-score-fly{
+ position:absolute;z-index:27;pointer-events:none;opacity:0;
+ transform:translate(-50%,-50%);
+ color:#fff2a2;font-size:clamp(24px,6.2vw,35px);font-weight:1000;
+ font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap;
+ text-shadow:0 3px 0 #ad712c,0 5px 12px #503a2888;
+ will-change:transform,opacity;
+}
+@media(max-width:365px){
+ .sgv-bank{padding:3px 5px 5px;gap:1px}
+ .sgv-bank-title{font-size:21px}
+ .sgv-bank-reward{min-height:22px;gap:4px;padding:0 5px}
+ .sgv-bank-coin{--coin-size:18px}
+ .sgv-bank-reward strong{font-size:18px}
+}
+@media(max-height:580px){
+ .sgv-bank{gap:0;padding:2px 5px 3px}
+ .sgv-bank-title{font-size:19px}
+ .sgv-bank-reward{min-height:20px}
+ .sgv-bank-coin{--coin-size:17px}
+ .sgv-bank-reward strong{font-size:17px}
+}
+
+/* Snap spends the visible Pot; coins tumble down but the glass remains untouched. */
+.sgv-lost-coin{filter:saturate(.75);z-index:29}
+@media(prefers-reduced-motion:reduce){
+ .sgv-bank-score-fly,.sgv-lost-coin{display:none}
+}
+
+
+/* V0.7 approved glass-and-fluid redesign: small center tank, centered target tag,
+   compact Pot and one movable red needle. All sizes are responsive to portrait. */
+.sgv-drop-icon{
+ --drop-rim:#ffe8ab;
+ display:block;flex:none;width:var(--drop-size,24px);height:calc(var(--drop-size,24px) * 1.2);
+ color:#ffc844;filter:drop-shadow(0 2px 1px #b17c3677);overflow:visible;
+}
+.sgv-gold-icon.sgv-drop-icon{
+ --drop-size:24px;width:24px;height:29px;border:0;border-radius:0;
+ background:none;box-shadow:none;padding:0;
+}
+.sgv-bank-coin.sgv-drop-icon{--drop-size:18px;color:#ffe080}
+.sgv-pot-drop.sgv-drop-icon{--drop-size:21px;color:#ffb833}
+.sgv-bank{
+ --sgv-rim:#398b88;background:linear-gradient(#98dfcd,#5db7ad 65%,#368f94);
+ color:#fffdf2;text-shadow:0 2px #397d7d;
+}
+.sgv-bank-title{text-shadow:0 2px #39817d}
+.sgv-bank-reward{background:#267e8170;box-shadow:inset 0 1px 2px #165b6680}
+.sgv-bank-reward strong{text-shadow:0 2px #2b797b}
+.sgv-bank:disabled{filter:saturate(.75);opacity:.8}
+
+/* Needle uses the glossy honeycomb-cell PNG; value sits in the recessed well. */
+.sgv-meter-needle{
+ position:absolute;left:50%;top:50%;width:44.8px;height:48px;min-width:44.8px;padding:0;
+ display:grid;place-items:center;transform:translate(-50%,-50%);
+ border:0;background:transparent;pointer-events:none;
+ filter:drop-shadow(0 2px 0 #8a420ecc) drop-shadow(0 4px 6px #5a280866);
+}
+.sgv-meter-needle-art{
+ position:absolute;inset:0;width:100%;height:100%;display:block;
+ object-fit:contain;pointer-events:none;user-select:none;-webkit-user-select:none;
+}
+.sgv-meter-needle-value{
+ position:relative;z-index:1;margin:0;padding:0 2px 1px;
+ color:#fff8e6;font-size:17.6px;font-weight:1000;font-variant-numeric:tabular-nums;
+ line-height:1;letter-spacing:-.02em;
+ text-shadow:0 1px 0 #7a2e06,0 2px 0 #5a2204,0 0 5px #ffb84a88;
+}
+.sgv-event-zero_break .sgv-meter-needle{animation:sgv-zero-reset .48s ease}
+
+/* The compact tank stays centered; the goal is physically attached to its rim. */
+.sgv-chest-area{align-items:center;justify-content:center;min-height:112px}
+.sgv-chest-art{
+ width:clamp(180px,54vw,295px);height:clamp(125px,21dvh,210px);
+ max-width:80%;filter:drop-shadow(0 8px 8px #488c665a);
+}
+.sgv-chest-body{
+ background:linear-gradient(110deg,#b8eafc67 0%,#ffffff45 24%,#f7ffff13 45%,#8acbf830 83%,#b0ebfb69);
+}
+.sgv-chest-inner{inset:7px 5px 3px;border-radius:21%;overflow:hidden}
+.sgv-fluid-fill{
+ position:absolute;z-index:1;left:0;right:0;bottom:0;
+ background:linear-gradient(180deg,#fff0ab 0%,#ffcd58 26%,#ffb63e 68%,#e8a23f 100%);
+ border-radius:13px 13px 20px 20px;
+ box-shadow:inset 0 7px 15px #fff9bf9c,inset 0 -4px 6px #da8d2588,0 -2px 10px #ffe9ab70;
+ transition:height .18s ease-out,opacity .12s ease;
+ pointer-events:none;will-change:height;
+}
+.sgv-fluid-surface{
+ position:absolute;top:-5px;left:-3%;right:-3%;height:13px;
+ border-radius:50%;background:linear-gradient(#fffde3,#fff2ad 35%,#ffd36d 85%);
+ box-shadow:0 0 8px #fff3bb88;
+ animation:sgv-fluid-wave 2.4s ease-in-out infinite alternate;
+ transform-origin:center;
+}
+@keyframes sgv-fluid-wave{
+ from{transform:translateY(1px) rotate(-1.2deg) scaleX(.98)}
+ to{transform:translateY(-1px) rotate(1.2deg) scaleX(1.02)}
+}
+.sgv-fluid-bubble{
+ position:absolute;display:block;bottom:17%;width:7px;height:7px;border:1.5px solid #fffbdd;
+ border-radius:50%;background:#fff7c24d;box-shadow:inset 0 1px #fffdf0;
+ animation:sgv-fluid-bubbles 3.1s ease-in-out infinite;
+}
+.sgv-fluid-bubble-a{left:22%;animation-delay:-.6s}
+.sgv-fluid-bubble-b{left:60%;width:5px;height:5px;animation-delay:-1.4s}
+.sgv-fluid-bubble-c{left:84%;animation-delay:-2.3s}
+@keyframes sgv-fluid-bubbles{
+ 0%{transform:translateY(0) scale(.7);opacity:.25}
+ 50%{opacity:.8}
+ 100%{transform:translateY(-18px) scale(1.05);opacity:0}
+}
+.sgv-goal-progress{
+ position:absolute;z-index:10;left:50%;right:auto;top:-15px;bottom:auto;
+ transform:translateX(-50%);min-width:clamp(112px,31vw,145px);
+ padding:5px 10px 6px;gap:2px;border-radius:22px;white-space:nowrap;
+ box-shadow:0 4px 0 #cfac78,0 6px 9px #4b8b6d39;
+}
+.sgv-goal-progress span{font-size:clamp(10px,2.6vw,12px)}
+.sgv-goal-progress strong{font-size:clamp(18px,4.9vw,24px)}
+.sgv-chest-rim{top:10%}
+
