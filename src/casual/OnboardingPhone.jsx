@@ -1,13 +1,11 @@
 import React from 'react';
 import {signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
-import {FactorInfoOverlay} from './FactorInfoOverlay.jsx';
-import {factorInfoFor} from './factorInfoContent.js';
-import {FeatureIntroOverlay} from './FeatureIntroOverlay.jsx';
 import {FxLayer} from './fx/FxLayer.jsx';
-import {LevelEndScreen, LevelStartScreen} from './levelScreens.js';
 import {HorizontalMeter, GlassChest, PendingPot, SimpleCard} from './MinimalBoard.jsx';
-import {GARDEN_2_START, wouldSnap} from './onboardingLevels.js';
+import {GARDEN_2_START} from './onboardingLevels.js';
+import {wouldSnap} from './onboardingRound.js';
+import {screens} from './screens/index.js';
 
 export function OnboardingPhone({
   screen, readout, ending, bankLive, reduced, fx, rootRef, introStartRef, levelReadyRef, phoneClass,
@@ -16,10 +14,10 @@ export function OnboardingPhone({
   onEndPrimary, onEndBackdrop, onFinishPresentation
 }){
   const {
-    level, deal, victory, finished, factorInfoEnabled, available, canBank, canFlip,
-    potDisplay, remaining, hearts, shownHand, bankMessage, bankPulse, flipPulse, pulseIndex, winLabel
+    level, victory, finished, factorInfoEnabled, available, canBank, canFlip,
+    potDisplay, remaining, hearts, shownHand, bankMessage, bankPulse, flipPulse, pulseIndex
   }=readout;
-  const {view, shownGold, animating, introGate, introCard, docking, help, devMenuOpen, factorInfo, startOpen, ack, beat, successSettled}=screen;
+  const {view, shownGold, animating, introGate, docking, help, devMenuOpen, factorInfo, ack, beat}=screen;
   return <main className="sgv-page">
     <div ref={rootRef}
       data-honey-win={finished&&victory?'true':undefined}
@@ -119,17 +117,10 @@ export function OnboardingPhone({
         <li>Pill × this card</li>
         <li>0 keeps the Pot. Snap empties it.</li>
       </ul>}
-      {factorInfo&&factorInfoFor(factorInfo)&&<FactorInfoOverlay
-        info={factorInfoFor(factorInfo)} onDismiss={onDismissFactor}/>}
-      {introGate&&introCard&&<FeatureIntroOverlay intro={introCard}
-        reduced={reduced} bus={fx} onDismiss={onDismissIntro}
-        levelId={screen.round.levelId} introStartRef={introStartRef} levelReadyRef={levelReadyRef}/>}
-      {startOpen&&!introGate&&!finished&&!animating&&<LevelStartScreen
-        levelId={level.id} target={level.target} onDismiss={onDismissStart}/>}
-      {finished&&<LevelEndScreen victory={victory} score={deal.T} target={level.target}
-        label={victory?winLabel:'TRY AGAIN'} orchard={!!ending.orchard} settled={successSettled}
-        praise={ending.praise} reduced={victory&&!ending.motion}
-        onPrimary={onEndPrimary} onBackdrop={onEndBackdrop} onReset={onReset}/>}
+      {screens.map(renderScreen=>renderScreen({
+        screen, readout, ending, reduced, fx, rootRef, introStartRef, levelReadyRef,
+        onDismissFactor, onDismissIntro, onDismissStart, onEndPrimary, onEndBackdrop, onReset
+      }))}
       {animating&&<button type="button" className="sgv-skip-surface" aria-label="Skip animation"
         onPointerDown={event=>{event.preventDefault(); event.stopPropagation(); onFinishPresentation();}}
         onClick={event=>{event.preventDefault(); event.stopPropagation(); onFinishPresentation();}}/>}

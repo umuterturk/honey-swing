@@ -1,0 +1,15 @@
+/* Level start stays up until a tap or skip. That tap only dismisses the screen.
+   It does not enter the card, Bank, or Snap presentation lock. */
+.sgv-level-start{
+  position:absolute;z-index:27;inset:0;display:grid;place-items:center;
+  background:#496d728f;pointer-events:auto;
+}
+.sgv-level-start .sgv-end-card{position:relative}
+.sgv-level-start .sgv-intro-target{
+  position:relative;left:auto;top:auto;width:auto;margin:8px 0;
+  transform:none;opacity:1;animation:none;filter:none;pointer-events:none;
+}
+.sgv-level-start .sgv-level-start-dismiss{pointer-events:auto}
+@media(prefers-reduced-motion:reduce){
+  .sgv-level-start .sgv-intro-target{animation:none;opacity:1;transform:none}
+}

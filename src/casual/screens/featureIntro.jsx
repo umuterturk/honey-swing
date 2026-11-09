@@ -1,5 +1,16 @@
-import {createElement,useEffect,useLayoutEffect,useRef} from 'react';
-import {playFeatureIntroEnter} from './featureIntroMotion.js';
+import {createElement, useEffect, useLayoutEffect, useRef} from 'react';
+import {playFeatureIntroEnter} from '../featureIntroMotion.js';
+import {useBoardCover} from './coverBoard.js';
+
+export function dismissedIntro(screen, outcome){
+  if(!outcome?.dismissed)return screen;
+  return {
+    ...screen,
+    introGate:outcome.gate,
+    introCard:outcome.intro,
+    startOpen:outcome.handoff==='level-start'?true:screen.startOpen
+  };
+}
 
 function BankJarIcon(){
   return createElement('svg',{
@@ -31,8 +42,9 @@ function BankDemo({intro,reduced}){
 
 // One NEW! card. PLAY and the scrim both dismiss; the board underneath does not.
 export function FeatureIntroOverlay({
-  intro,reduced=false,bus=null,onDismiss,levelId=0,introStartRef=null,levelReadyRef=null
+  intro,reduced=false,bus=null,onDismiss,levelId=0,introStartRef=null,levelReadyRef=null,rootRef=null
 }){
+  useBoardCover(rootRef);
   const scrimRef=useRef(null);
   const cardRef=useRef(null);
   const playRef=useRef(null);
@@ -80,4 +92,21 @@ export function FeatureIntroOverlay({
       }
     },'PLAY')
   ));
+}
+
+export function renderFeatureIntro({
+  screen, reduced, fx, onDismissIntro, introStartRef, levelReadyRef, rootRef
+}){
+  if(!screen.introGate||!screen.introCard)return null;
+  return createElement(FeatureIntroOverlay,{
+    key:'feature-intro',
+    intro:screen.introCard,
+    reduced,
+    bus:fx,
+    onDismiss:onDismissIntro,
+    levelId:screen.round.levelId,
+    introStartRef,
+    levelReadyRef,
+    rootRef
+  });
 }

@@ -1,0 +1,6 @@
+/* Factor pill info: lock play; keep pills above the dialog so a second tap can swap. */
+.sgv-phone[data-factor-info="true"] .sgv-controls{pointer-events:none}
+.sgv-phone[data-factor-info="true"] .sgv-hand{pointer-events:none}
+.sgv-phone[data-factor-info="true"] .sgv-actions{pointer-events:none}
+.sgv-phone[data-factor-info="true"] .sgv-meter-section{z-index:41}
+.sgv-phone[data-factor-info="true"] .sgv-multipliers{pointer-events:auto}
