@@ -1,0 +1,6 @@
+
+/* Win burst paints over the result card (z 30) and under NEW! (z 40).
+   pointer-events stays none so the CTA and backdrop still receive the tap. */
+.sgv-fx-layer{position:absolute;inset:0;z-index:35;overflow:hidden;pointer-events:none}
+.sgv-fx-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+

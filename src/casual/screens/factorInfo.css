@@ -1,4 +1,5 @@
-/* Factor pill info: lock play; keep pills above the dialog so a second tap can swap. */
+/* Factor pill info: lock play; keep pills above the dialog so a second tap can swap.
+   The same rules are inlined in featureIntro.css so the built cascade matches main. */
 .sgv-phone[data-factor-info="true"] .sgv-controls{pointer-events:none}
 .sgv-phone[data-factor-info="true"] .sgv-hand{pointer-events:none}
 .sgv-phone[data-factor-info="true"] .sgv-actions{pointer-events:none}
