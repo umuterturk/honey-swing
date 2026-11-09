@@ -1,5 +1,5 @@
-// Every approved tuning knob lives here. Change a profile here and both modes pick it up.
-// Numbers are the spec's proposed defaults (approved for this harness), not measured play.
+// Change a profile here and both modes pick it up.
+// Defaults approved by Umut on 2026-11-09 (profiles + 9 question defaults). Model output, not measured player data.
 
 export const HARNESS_VERSION=1
 export const ENGINE_BASELINE='823a67f8a2fd2bbab840fbfe166edc77d0d310e3'
