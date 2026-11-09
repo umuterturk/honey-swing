@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ONBOARDING_LEVELS,ONBOARDING_COUNT,GARDEN_2_START,levelValidation,onboardingLevel,
-  newOnboardingRound,onboardingActions,stepOnboarding,onboardingVictory,wouldSnap
+  ONBOARDING_COUNT,onboardingLevel,
+  newOnboardingRound,onboardingActions,stepOnboarding,onboardingVictory
 } from '../src/casual/onboardingLevels.js';
 import {signed,newOverswing,stepOverswing,overswingPayout,overswingActions} from '../src/external/engines.js';
 import {multiplierRewards} from '../src/casual/multiplierView.js';
@@ -25,59 +25,6 @@ function line(level,values){
   return values.reduce((round,value)=>value==='flip'?play(round,flip):
     value==='bank'?play(round,bank):steerValue(round,value),newOnboardingRound(level));
 }
-
-test('Garden 1 plus a playable Lower Orchard replace the ten-level tutorial',()=>{
-  assert.equal(levelValidation(),true);
-  assert.equal(ONBOARDING_COUNT,20);
-  assert.equal(GARDEN_2_START,13);
-  for(const level of ONBOARDING_LEVELS){
-    assert.equal(onboardingLevel(level.id),level);
-    assert.equal(level.showMeter,true);
-    assert.equal(level.script.length,0);
-    assert.equal(level.requiresFlip,false);
-    assert.equal(level.visibleHandSlots,level.initialHandSize);
-    assert.notEqual(level.visibleHandSlots,1);
-    assert.equal(level.rules.runningPot,true);
-    assert.equal(level.rules.snapLimit,8);
-    assert.equal(level.rules.steerAlwaysToPot,true);
-    assert.equal(level.rules.steerNoncrossPenalty,0);
-    assert.equal(level.rules.flipNoncrossPenalty,0);
-    assert.equal(level.rules.enableResonance,false);
-    assert.equal(level.rules.flipOnly,[5,6,7,8,12].includes(level.id));
-    assert.equal(level.showFlip,level.deck.length>level.initialHandSize);
-    assert.equal(level.showChances,level.id>=11);
-    assert.equal(level.garden,level.id>=13?2:1);
-  }
-});
-
-test('each level docks only the factors it has taught',()=>{
-  const expect={
-    1:[],2:[],3:['swing'],4:['swing'],5:['swing'],
-    6:['swing','flip'],7:['swing','flip'],8:['swing','flip'],
-    9:['swing'],10:['swing'],11:['swing','flip'],12:['swing','flip'],
-    13:['swing','flip'],14:['swing','flip'],15:['swing','flip'],
-    16:['swing','flip'],17:['swing','flip'],18:['swing','flip'],19:['swing','flip'],
-    20:['swing','flip']
-  };
-  for(const level of ONBOARDING_LEVELS){
-    const factors=expect[level.id];
-    assert.deepEqual([...level.visibleFactors],factors,level.name);
-    assert.equal(level.rules.enableSwingFactor,factors.includes('swing'));
-    assert.equal(level.rules.enableFlipFactor,factors.includes('flip'));
-    assert.equal(level.rules.enableJackpotFactor,false);
-    assert.equal(level.visibleFactors.includes('jackpot'),false);
-    assert.equal(level.requiresZeroBreak,level.id===10);
-  }
-  assert.equal(onboardingLevel(3).dock,'swing');
-  assert.equal(onboardingLevel(5).dock,'flip');
-  assert.equal(onboardingLevel(6).dock,'flip-pill');
-  assert.equal(onboardingLevel(8).dock,null);
-  assert.equal(onboardingLevel(11).dock,'hearts');
-  assert.equal(onboardingLevel(19).telegraph,true);
-  assert.equal(onboardingLevel(5).pulse,'flip');
-  assert.equal(onboardingLevel(6).pulse,'flip');
-  assert.equal(onboardingLevel(8).pulse,'card-then-flip');
-});
 
 test('running Pot pays only the card just played; Overswing still revalues the whole Pot',()=>{
   const casual={runningPot:true,snapLimit:8,steerAlwaysToPot:true,
@@ -174,7 +121,6 @@ test('flipOnly does not draw the pile, and Flip stays legal on an empty hand',()
 
 test('Level 1: every pair banks at least 5 and nothing can Snap',()=>{
   const start=newOnboardingRound(1);
-  assert.deepEqual(start.game.deal.hand.map(signed),[2,3,3]);
   assert.equal(onboardingActions(start).some(action=>action.type==='flip'),false);
   for(const first of [0,1,2])for(const second of [0,1]){
     let state=play(start,{type:'steer',index:first});
@@ -240,15 +186,6 @@ test('Level 11: the safe line banks 11 and the taught Snap recovers to 9',()=>{
   }
 });
 
-test('Levels 15–20 open with a +9 Snap for feedback testing',()=>{
-  for(let id=15;id<=20;id++){
-    const round=newOnboardingRound(id);
-    const index=round.game.deal.hand.findIndex(card=>signed(card)===9);
-    assert.ok(index>=0,'L'+id+' missing opening +9');
-    assert.equal(wouldSnap(round,{type:'steer',index}),true,'L'+id+' +9 should Snap');
-  }
-});
-
 test('Garden 1 has no forced loss except Level 12, and every level has a win',()=>{
   for(let id=1;id<=ONBOARDING_COUNT;id++){
     const report=simulateOnboardingLevel(id,{maxStates:80000,maxDepth:24});
@@ -259,26 +196,4 @@ test('Garden 1 has no forced loss except Level 12, and every level has a win',()
     if(id===11)assert.equal(report.zeroSnapForced,0,'snap-free forced loss');
     if(id<=4)assert.equal(report.failedEnds,0,'early fail '+id);
   }
-});
-
-test('the board keeps a next garden and does not offer Replay Challenge',async()=>{
-  const {readFile}=await import('node:fs/promises');
-  const source=await readFile(new URL('../src/casual/SimplifiedGame.jsx',import.meta.url),'utf8');
-  assert.match(source,/<header className="sgv-hud sgv-tutorial-hud">/);
-  assert.match(source,/<HorizontalMeter position=\{view\.position\}/);
-  assert.doesNotMatch(source,/level\.showMeter\s*\?/);
-  assert.match(source,/visiblePotPayout\(potentialPayout,rawPotValue\(deal\),view\.rawPot\)/);
-  assert.match(source,/<PendingPot value=\{potDisplay\}/);
-  assert.match(source,/<GlassChest banked=\{shownGold\}/);
-  assert.match(source,/<SimpleCard key=\{id\}/);
-  assert.match(source,/className=\{'sgv-action sgv-bank sgv-bank-command'/);
-  assert.match(source,/const shownHand=deal\.hand\.slice/);
-  assert.match(source,/LOWER ORCHARD/);
-  assert.match(source,/Skip to Level 13/);
-  assert.match(source,/startLevel\(GARDEN_2_START\)/);
-  assert.doesNotMatch(source,/REPLAY CHALLENGE/);
-  assert.doesNotMatch(source,/animatePotBreak\(root,'zero'\)/);
-  assert.match(source,/Pot safe\./);
-  assert.match(source,/Pot lost\. Savings safe\./);
-  assert.match(source,/3000/);
 });

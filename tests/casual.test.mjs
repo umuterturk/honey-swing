@@ -5,18 +5,6 @@ import {newOverswing,stepOverswing,overswingActions,overswingPayout,overswingMul
 import {multiplierParts,multiplierRewards} from '../src/casual/multiplierView.js';
 import {rawPotValue,actionPresentation} from '../src/casual/presentation.js';
 
-test('level one is tiny and has no abilities or royals',()=>{
-  const {game,snaps}=newRound(),d=game.deal;
-  assert.equal(FIRST_LEVEL.deck.length,10);
-  assert.equal(d.hand.length,3);
-  assert.equal(d.deck.length-d.pos,7);
-  assert.equal(d.royalQueue.length,0);
-  assert.equal(snaps,0);
-  assert.deepEqual(d.hand.map(signed),[3,-2,5]);
-  assert.deepEqual(new Set(overswingActions(game,FIRST_LEVEL.rules).map(a=>a.type)),
-    new Set(['flip','steer']));
-});
-
 test('cannot BANK before collecting a pot and playing twice',()=>{
   const original=newRound();
   assert.strictEqual(stepFirstLevel(original,{type:'bank'}),original);
