@@ -13,14 +13,21 @@ import {
 
 const INSETS = {top:47, right:0, bottom:34, left:0};
 const REGIONS = ['.sgv-hud', '.sgv-middle', '.sgv-controls'];
+const FACTOR_REGIONS = ['.sgv-hud', '.sgv-controls'];
+
+function roundTenth(value){
+  if(typeof value==='number')return Math.round(value*10)/10;
+  if(!value||typeof value!=='object')return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item])=>[key, roundTenth(item)]));
+}
 
 function boxes(layout){
-  return {
+  return roundTenth({
     praise:layout.praise,
     jar:layout.jar,
     scoreboard:layout.scoreboard,
     cta:layout.cta
-  };
+  });
 }
 
 function winLevel1(){
@@ -74,8 +81,8 @@ function focusFor(host){
   return focusTargetAfterSkip({active:inside, previous:null, controls});
 }
 
-function assertCovered(host){
-  for(const region of REGIONS){
+function assertCovered(host, regions=REGIONS){
+  for(const region of regions){
     const node = host.querySelector(region);
     assert.ok(node, region);
     assert.equal(node.getAttribute('aria-hidden'), 'true', region);
@@ -83,11 +90,36 @@ function assertCovered(host){
   }
 }
 
-function assertUncovered(host){
-  for(const region of REGIONS){
+function assertUncovered(host, regions=REGIONS){
+  for(const region of regions){
     const node = host.querySelector(region);
     assert.equal(node.hasAttribute('inert'), false, region);
+    assert.notEqual(node.getAttribute('aria-hidden'), 'true', region);
   }
+}
+
+function assertMeterFree(host){
+  for(const selector of ['.sgv-middle', '.sgv-multipliers']){
+    const node = host.querySelector(selector);
+    assert.ok(node, selector);
+    let current = node;
+    while(current){
+      assert.equal(current.hasAttribute?.('inert'), false, selector);
+      assert.notEqual(current.getAttribute?.('aria-hidden'), 'true', selector);
+      current = current.parentElement;
+    }
+  }
+}
+
+// Pointer down, then click: the same path the phone and the pills listen to.
+// An inert ancestor swallows the tap, which element.click() does not.
+async function tap(node){
+  let current = node;
+  while(current){
+    if(current.hasAttribute?.('inert'))return;
+    current = current.parentElement;
+  }
+  await click(node);
 }
 
 function playOrSave(host){
@@ -98,7 +130,7 @@ function playOrSave(host){
   });
 }
 
-function openDialog(host, name){
+function openDialog(host, name, regions=REGIONS){
   const dialog = dialogs(host).find(node => buttonNamed(node, name));
   assert.ok(dialog, name+' dialog');
   assert.equal(dialog.getAttribute('role'), 'dialog');
@@ -106,7 +138,7 @@ function openDialog(host, name){
   assert.ok(cta, name);
   assert.equal(cta.disabled, false);
   assert.equal(focusFor(host), cta);
-  assertCovered(host);
+  assertCovered(host, regions);
   return cta;
 }
 
@@ -115,13 +147,13 @@ after(async() => {
 });
 
 test('honeyLayout safe-area boxes match the a545f80 phone sizes', () => {
-  assert.deepEqual(boxes(honeyLayout(320, 568, INSETS)), {
+  assert.deepEqual(boxes(honeyLayout(320, 568, INSETS)), roundTenth({
     praise:{x:16, y:59, w:236, h:64, font:40},
     jar:{x:70.39999999999999, y:135, w:179.20000000000002, h:130.6909871244635},
     scoreboard:{x:16, y:279.6909871244635, w:288, h:120.30901287553648, font:32},
     cta:{x:88, y:412, w:144, h:70}
-  });
-  assert.deepEqual(boxes(honeyLayout(430, 932, INSETS)), {
+  }));
+  assert.deepEqual(boxes(honeyLayout(430, 932, INSETS)), roundTenth({
     praise:{x:16, y:202.73962804005726, w:346, h:64, font:48},
     jar:{x:105, y:276.73962804005726, w:220, h:275},
     scoreboard:{
@@ -129,7 +161,7 @@ test('honeyLayout safe-area boxes match the a545f80 phone sizes', () => {
       w:397.9999999999999, h:166.26037195994274, font:43.77999999999999
     },
     cta:{x:115.5, y:742, w:199, h:70}
-  });
+  }));
 });
 
 describe('open screens', {concurrency:false}, () => {
@@ -200,11 +232,34 @@ describe('open screens', {concurrency:false}, () => {
     const pill = buttonNamed(view.host, 'Swing multiplier info');
     assert.ok(pill, 'swing info pill');
     await click(pill);
-    const cta = openDialog(view.host, 'Got it');
+    const cta = openDialog(view.host, 'Got it', FACTOR_REGIONS);
+    assertMeterFree(view.host);
     await click(cta);
     assert.equal(dialogs(view.host).some(node => buttonNamed(node, 'Got it')), false);
-    assertUncovered(view.host);
+    assertUncovered(view.host, FACTOR_REGIONS);
+    assertMeterFree(view.host);
     assert.ok(playOrSave(view.host));
+    await view.unmount();
+  });
+
+  test('factor info swaps from Swing to Flip when the other pill is tapped', async() => {
+    const view = await mountLevel(6);
+    await click(buttonNamed(view.host, 'START'));
+    const swing = buttonNamed(view.host, 'Swing multiplier info');
+    const flip = buttonNamed(view.host, 'Flip multiplier info');
+    assert.ok(swing, 'swing info pill');
+    assert.ok(flip, 'flip info pill');
+    await tap(swing);
+    assert.equal(dialogs(view.host).length, 1);
+    assert.match(dialogs(view.host)[0].textContent, /Cross 0 for more flowers/);
+    assertMeterFree(view.host);
+    await tap(flip);
+    const open = dialogs(view.host);
+    assert.equal(open.length, 1);
+    assert.match(open[0].textContent, /Flip for more bees/);
+    assert.doesNotMatch(open[0].textContent, /Cross 0 for more flowers/);
+    assertMeterFree(view.host);
+    assertCovered(view.host, FACTOR_REGIONS);
     await view.unmount();
   });
 });

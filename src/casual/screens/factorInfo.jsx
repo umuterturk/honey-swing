@@ -1,6 +1,6 @@
 import {createElement, useEffect, useRef} from 'react';
 import {factorInfoFor} from '../factorInfoContent.js';
-import {useBoardCover} from './coverBoard.js';
+import {FACTOR_COVER, useBoardCover} from './coverBoard.js';
 
 export const openedFactor=(screen, kind)=>({...screen, factorInfo:kind});
 export const closedFactor=screen=>({...screen, factorInfo:null});
@@ -8,7 +8,7 @@ export const closedFactor=screen=>({...screen, factorInfo:null});
 // Short how-it-works card for Swing / Flip pills. Reuses feature-intro skin;
 // omits the new badge and demo strip.
 export function FactorInfoOverlay({info,onDismiss,rootRef=null}){
-  useBoardCover(rootRef);
+  useBoardCover(rootRef, FACTOR_COVER);
   const gotItRef=useRef(null);
   useEffect(()=>{gotItRef.current?.focus?.();},[info?.kind]);
   useEffect(()=>{
