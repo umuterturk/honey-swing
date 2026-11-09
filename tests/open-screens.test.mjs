@@ -202,6 +202,8 @@ describe('open screens', {concurrency:false}, () => {
     await click(cta);
     assert.match(view.host.textContent, /Level 2/);
     assert.doesNotMatch(view.host.textContent, /Level 3/);
+    const catchUp = dialogs(view.host).find(node => buttonNamed(node, 'PLAY'));
+    if(catchUp)await click(buttonNamed(catchUp, 'PLAY'));
     const start = dialogs(view.host).find(node => buttonNamed(node, 'START'));
     assert.ok(start);
     await click(buttonNamed(start, 'START'));
@@ -217,6 +219,8 @@ describe('open screens', {concurrency:false}, () => {
     await click(cta);
     assert.match(view.host.textContent, /Level 4/);
     assert.doesNotMatch(view.host.textContent, /Level 5/);
+    const catchUp = dialogs(view.host).find(node => buttonNamed(node, 'PLAY'));
+    if(catchUp)await click(buttonNamed(catchUp, 'PLAY'));
     const start = dialogs(view.host).find(node => buttonNamed(node, 'START'));
     assert.ok(start);
     await click(buttonNamed(start, 'START'));

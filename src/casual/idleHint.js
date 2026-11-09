@@ -1,27 +1,15 @@
 import {
   onboardingActions,onboardingFinished,onboardingLevel,onboardingVictory,stepOnboarding
 } from './onboardingLevels.js';
+import {canonicalKey} from './canonicalKey.js';
 
-// Same state identity the onboarding simulator walks. A position wins when the
-// engine can still reach the level target; this does not invent a second rules path.
-function fingerprint(round){
-  const d=round.game.deal;
-  return JSON.stringify({
-    levelId:round.levelId,turn:round.turn,snaps:round.snaps,
-    flipCount:round.flipCount,zeroBreakCount:round.zeroBreakCount,
-    status:round.game.status,
-    T:d.T,S:d.S,W:d.W,flips:d.flips,plays:d.plays,
-    flipFactor:d.flipFactor,
-    flipStreak:d.flipStreak,bankCount:d.bankCount,handCap:d.handCap,
-    potValue:d.potValue??null,
-    pot:d.pot,hand:d.hand,discard:d.discard,pos:d.pos
-  });
-}
+// Same identity the solver walks. Sorting the hand and dropping discard keeps
+// the memo on positions the engine can still tell apart.
 const winMemo=new Map();
 export function clearWinMemo(){winMemo.clear();}
 export function winMemoSize(){return winMemo.size;}
 export function hasWinningContinuation(round){
-  const key=fingerprint(round);
+  const key=canonicalKey(round);
   if(winMemo.has(key))return winMemo.get(key);
   if(onboardingVictory(round)){winMemo.set(key,true);return true;}
   if(onboardingFinished(round)){winMemo.set(key,false);return false;}

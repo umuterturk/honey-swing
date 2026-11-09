@@ -1,4 +1,5 @@
 import {ONBOARDING_PROGRESS_KEY, ONBOARDING_SESSION_KEY} from './onboardingProgress.js';
+import {onboardingLevel} from './onboardingLevels.js';
 
 function readItem(storage, key){
   if(!storage)return null;
@@ -21,7 +22,16 @@ export function loadSavedRound(storage, levelCount){
   if(!isInteger(state.turn)||!isInteger(state.snaps)||
     !isInteger(state.flipCount)||!isInteger(state.zeroBreakCount))return null;
   if(state.game?.game!=='overswing'||!state.game.deal)return null;
+  if(!sameDeck(state.levelId, state.game.deal.deck))return null;
   return state;
+}
+
+function sameDeck(levelId, deck){
+  let expected;
+  try{expected=onboardingLevel(levelId).deck;}catch{return false;}
+  if(!Array.isArray(deck)||deck.length!==expected.length)return false;
+  for(let i=0;i<deck.length;i++)if(deck[i]!==expected[i])return false;
+  return true;
 }
 
 export function saveRound(storage, round){

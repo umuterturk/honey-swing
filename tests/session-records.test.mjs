@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   ONBOARDING_PROGRESS_KEY, ONBOARDING_SESSION_KEY
 } from '../src/casual/onboardingProgress.js';
+import {onboardingLevel} from '../src/casual/onboardingLevels.js';
 import {commitPlay, loadSavedRound, saveRound} from '../src/casual/sessionRecords.js';
 
 function memoryStorage(seed = {}){
@@ -17,9 +18,11 @@ function memoryStorage(seed = {}){
 }
 
 function savedRound(levelId = 2){
+  let deck=[1,2,3];
+  try{deck=[...onboardingLevel(levelId).deck];}catch{/* an out-of-range id is rejected before the deck is read */}
   return {
     levelId, turn: 1, snaps: 0, flipCount: 0, zeroBreakCount: 0,
-    game: {game: 'overswing', deal: {T: 0}}
+    game: {game: 'overswing', deal: {T: 0, deck}}
   };
 }
 
@@ -41,6 +44,17 @@ test('loadSavedRound returns a valid saved round', () => {
     [ONBOARDING_SESSION_KEY]: JSON.stringify(savedRound(4))
   });
   assert.deepEqual(loadSavedRound(storage, 20), savedRound(4));
+});
+
+test('loadSavedRound drops a saved round whose deck is not the level deck', () => {
+  const stale = savedRound(8);
+  stale.game.deal.deck = [1, 2, 3];
+  const storage = memoryStorage({
+    [ONBOARDING_SESSION_KEY]: JSON.stringify(stale),
+    [ONBOARDING_PROGRESS_KEY]: '8'
+  });
+  assert.equal(loadSavedRound(storage, 20), null);
+  assert.equal(storage.data[ONBOARDING_PROGRESS_KEY], '8');
 });
 
 test('loadSavedRound rejects a missing, broken, or out-of-range session', () => {

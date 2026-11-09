@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ONBOARDING_SESSION_KEY, SEEN_FEATURE_INTROS_KEY} from '../src/casual/onboardingProgress.js';
+import {ONBOARDING_PROGRESS_KEY, ONBOARDING_SESSION_KEY, SEEN_FEATURE_INTROS_KEY} from '../src/casual/onboardingProgress.js';
+import {dismissFeatureIntro} from '../src/casual/featureIntroRegistry.js';
 import {newOnboardingRound, ONBOARDING_COUNT} from '../src/casual/onboardingLevels.js';
 import {dismissLevelScreen} from '../src/casual/levelScreens.js';
 import {
@@ -44,7 +45,8 @@ test('initialScreen resumes a mid-level round with the start screen closed', () 
 });
 
 test('levelScreen resets gold and opens the start screen when no intro is waiting', () => {
-  const motion=levelScreen(3, {storage:memoryStorage(), reduced:false});
+  const seen=memoryStorage({[SEEN_FEATURE_INTROS_KEY]:JSON.stringify(['bank'])});
+  const motion=levelScreen(3, {storage:seen, reduced:false});
   assert.equal(motion.round.levelId, 3);
   assert.equal(motion.shownGold, 0);
   assert.equal(motion.view.position, motion.round.game.deal.S);
@@ -55,9 +57,50 @@ test('levelScreen resets gold and opens the start screen when no intro is waitin
   assert.equal(motion.animating, false);
   assert.equal(motion.help, false);
   assert.equal(motion.devMenuOpen, false);
-  const reduced=levelScreen(3, {storage:memoryStorage(), reduced:true});
+  const reduced=levelScreen(3, {storage:memoryStorage({[SEEN_FEATURE_INTROS_KEY]:JSON.stringify(['bank'])}), reduced:true});
   assert.equal(reduced.arriving, false);
   assert.equal(reduced.docking, true);
+});
+
+test('a fresh level 13 shows the six-card intro after Save is seen', () => {
+  const storage=memoryStorage({[SEEN_FEATURE_INTROS_KEY]:JSON.stringify(['bank'])});
+  const screen=levelScreen(13, {storage, reduced:true});
+  assert.equal(screen.introGate, true);
+  assert.equal(screen.introCard.id, 'hand');
+  assert.equal(screen.startOpen, false);
+});
+
+test('level 16 with a seen-set shows the six-card intro once', () => {
+  const storage=memoryStorage({
+    [SEEN_FEATURE_INTROS_KEY]:JSON.stringify(['bank']),
+    [ONBOARDING_PROGRESS_KEY]:'16'
+  });
+  const first=levelScreen(16, {storage, reduced:true});
+  assert.equal(first.introGate, true);
+  assert.equal(first.introCard.id, 'hand');
+  const dismissed=dismissFeatureIntro({levelId:16, storage, via:'play'});
+  assert.equal(dismissed.id, 'hand');
+  const second=levelScreen(16, {storage, reduced:true});
+  assert.equal(second.introGate, false);
+  assert.equal(second.startOpen, true);
+});
+
+test('a stale mid-level deck restarts that level and keeps progress', () => {
+  for(const levelId of [8, 13, 16, 20]){
+    const round=newOnboardingRound(levelId);
+    round.turn=3;
+    round.game.deal.deck=[9, 9, 9];
+    const storage=memoryStorage({
+      [ONBOARDING_SESSION_KEY]:JSON.stringify(round),
+      [ONBOARDING_PROGRESS_KEY]:String(levelId),
+      [SEEN_FEATURE_INTROS_KEY]:JSON.stringify(['bank','hand'])
+    });
+    const screen=initialScreen({storage, levelCount:ONBOARDING_COUNT, reduced:true});
+    assert.equal(screen.round.levelId, levelId);
+    assert.equal(screen.round.turn, 0);
+    assert.notDeepEqual(screen.round.game.deal.deck, [9, 9, 9]);
+    assert.equal(storage.getItem(ONBOARDING_PROGRESS_KEY), String(levelId));
+  }
 });
 
 test('a seen bank intro lets level 1 open the start screen', () => {

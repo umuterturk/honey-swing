@@ -25,6 +25,23 @@ export const FEATURE_INTROS=Object.freeze({
     copy:'Save honey into your Savings.',
     highlightTarget:'bank',
     demoScript:BANK_DEMO
+  }),
+  hand:Object.freeze({
+    id:'hand',
+    unlockLevel:13,
+    icon:'hand',
+    name:'Six Cards',
+    copyKey:'intro.hand',
+    copy:'Six cards. Play and Flip to win.',
+    highlightTarget:'hand',
+    demoScript:Object.freeze({
+      duration:1.4,
+      cycles:2,
+      frames:Object.freeze([
+        Object.freeze({id:'hand'}),
+        Object.freeze({id:'flip'})
+      ])
+    })
   })
 });
 
@@ -46,6 +63,7 @@ export function introFeatureIdsForLevel(level,previous=null){
   }
   if(level.requiresZeroBreak&&!previous?.requiresZeroBreak)ids.push('zero');
   if(level.showChances&&!previous?.showChances)ids.push('snap');
+  if((level.visibleHandSlots||0)>=5&&(previous?.visibleHandSlots||0)<5)ids.push('hand');
   return ids;
 }
 
@@ -95,16 +113,14 @@ export function validateFeatureIntroRegistry(levels,registry){
 
 validateFeatureIntroRegistry();
 
-function introIdsAtLevel(levelId,levels=ONBOARDING_LEVELS){
-  return derivedFeatureUnlocks(levels)
-    .filter(row=>row.unlockLevel===levelId)
-    .map(row=>row.id);
-}
-
 export function nextUnseenIntro(seenSet,levelId,levels=ONBOARDING_LEVELS,registry=FEATURE_INTROS){
-  const unlocked=new Set(introIdsAtLevel(levelId,levels));
+  const unlock=new Map(derivedFeatureUnlocks(levels).map(row=>[row.id,row.unlockLevel]));
   for(const id of Object.keys(registry)){
-    if(unlocked.has(id)&&!seenSet?.has(id)&&registry[id])return registry[id];
+    const row=registry[id];
+    if(!row||seenSet?.has(id))continue;
+    const at=unlock.get(id);
+    if(at==null||at!==row.unlockLevel||at>levelId)continue;
+    return row;
   }
   return null;
 }
