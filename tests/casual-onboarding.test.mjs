@@ -62,55 +62,55 @@ test('a crossing Flip grows Swing and Flip',()=>{
   assert.equal(game.deal.S,-4);
   assert.equal(game.deal.W,1);
   assert.equal(game.deal.flipFactor,2);
-  assert.equal(game.deal.flipStreak,1);
   assert.equal(game.lastAction.addedToPot,24);
   assert.equal(game.lastAction.swingTierGained,true);
   assert.equal(game.lastAction.flipTierGained,true);
   game=stepOverswing(game,{type:'flip'},casual);
   assert.equal(game.deal.S,-6);
   assert.equal(game.lastAction.swung,false);
-  assert.equal(game.deal.flipStreak,2);
   assert.equal(game.deal.flipFactor,3);
   assert.equal(game.lastAction.addedToPot,12);
 });
 
-test('a crossing Flip with runningPot off resets the Flip streak',()=>{
+test('a crossing Flip with runningPot off does not grow Flip',()=>{
   const rules={runningPot:false,snapLimit:8,steerAlwaysToPot:true,
     steerNoncrossPenalty:0,flipNoncrossPenalty:0,enableResonance:false,
     enableSwingFactor:true,enableFlipFactor:true};
-  let game=newOverswing({deckOverride:[1,0,25],seed:1,initialHandSize:2});
+  let game=newOverswing({deckOverride:[1,0,25,21],seed:1,initialHandSize:2});
   game=stepOverswing(game,{type:'steer',index:0},rules);
-  game.deal.flipStreak=2;
-  game.deal.flipFactor=3;
   game=stepOverswing(game,{type:'flip'},rules);
   assert.equal(game.lastAction.swung,true);
   assert.equal(game.deal.W,1);
-  assert.equal(game.deal.flipStreak,0);
-  assert.equal(game.deal.flipFactor,3);
+  assert.equal(game.deal.flipFactor,1);
+  assert.equal(game.lastAction.addedToPot,6);
   assert.equal(game.deal.potValue,undefined);
+  game=stepOverswing(game,{type:'flip'},rules);
+  assert.equal(game.lastAction.swung,false);
+  assert.equal(game.deal.flipFactor,2);
+  assert.equal(game.lastAction.addedToPot,2);
 
   let defaults=newOverswing({deckOverride:[1,0,25],seed:1,initialHandSize:2});
   defaults=stepOverswing(defaults,{type:'steer',index:0});
-  defaults.deal.flipStreak=2;
   defaults=stepOverswing(defaults,{type:'flip'});
   assert.equal(defaults.lastAction.swung,true);
-  assert.equal(defaults.deal.flipStreak,0);
   assert.equal(defaults.deal.flipFactor,1);
+  assert.equal(defaults.lastAction.addedToPot,6);
+  assert.equal(defaults.deal.potValue,undefined);
 });
 
-test('a crossing Flip with Flip disabled resets the streak',()=>{
+test('a crossing Flip with Flip disabled keeps the Flip factor',()=>{
   const swingOnly={runningPot:true,snapLimit:8,steerAlwaysToPot:true,
     steerNoncrossPenalty:0,flipNoncrossPenalty:0,enableResonance:false,
     enableSwingFactor:true,enableFlipFactor:false};
-  let game=newOverswing({deckOverride:[1,0,25],seed:1,initialHandSize:2});
+  let game=newOverswing({deckOverride:[1,0,25,4],seed:1,initialHandSize:2});
   game=stepOverswing(game,{type:'steer',index:0},swingOnly);
-  game.deal.flipStreak=4;
-  game.deal.flipFactor=5;
+  game=stepOverswing(game,{type:'flip'},{...swingOnly,enableFlipFactor:true});
+  assert.equal(game.deal.flipFactor,2);
   game=stepOverswing(game,{type:'flip'},swingOnly);
   assert.equal(game.lastAction.swung,true);
-  assert.equal(game.deal.W,1);
-  assert.equal(game.deal.flipStreak,0);
-  assert.equal(game.deal.flipFactor,5);
+  assert.equal(game.deal.W,2);
+  assert.equal(game.deal.flipFactor,2);
+  assert.equal(game.lastAction.addedToPot,30);
 });
 
 test('flipOnly does not draw the pile, and Flip stays legal on an empty hand',()=>{

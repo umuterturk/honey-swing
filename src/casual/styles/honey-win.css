@@ -1,7 +1,7 @@
-/* Honey win sits above the FX canvas (z 35) so CSS confetti is not covered. */
-.sgv-honey-win{display:block;z-index:36;overflow:visible;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;container-type:size;--honey-focus-x:calc(var(--honey-jar-left,60.8px) + var(--honey-jar-width,198.4px) / 2);--honey-focus-y:calc(var(--honey-jar-top,94px) + var(--honey-jar-height,248px) / 2)}
+/* Honey win sits above the FX canvas (z 35). */
+.sgv-honey-win{display:block;z-index:36;overflow:visible;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;container-type:size;--honey-jar-left:60.8px;--honey-jar-top:94px;--honey-jar-width:198.4px;--honey-jar-height:248px;--honey-focus-x:calc(var(--honey-jar-left) + var(--honey-jar-width) / 2);--honey-focus-y:calc(var(--honey-jar-top) + var(--honey-jar-height) / 2)}
 .sgv-honey-win .sgv-honey-scrim{position:absolute;inset:0;z-index:0;background:linear-gradient(180deg,transparent 62%,rgba(0,0,0,.18) 100%),radial-gradient(ellipse at var(--honey-focus-x) var(--honey-focus-y),transparent 24%,rgba(9,34,43,.44) 68%),radial-gradient(ellipse at 50% 42%,transparent 46%,rgba(0,0,0,.24) 100%);opacity:var(--honey-scrim-opacity);backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:auto}
-.sgv-honey-win .sgv-honey-warm-light,.sgv-honey-win .sgv-honey-foliage-rear,.sgv-honey-win .sgv-honey-foliage-front,.sgv-honey-win .sgv-honey-confetti{position:absolute;inset:0;pointer-events:none}
+.sgv-honey-win .sgv-honey-warm-light,.sgv-honey-win .sgv-honey-foliage-rear,.sgv-honey-win .sgv-honey-foliage-front{position:absolute;inset:0;pointer-events:none}
 .sgv-honey-win .sgv-honey-warm-light{z-index:1;background:
   radial-gradient(ellipse 48% 42% at var(--honey-focus-x) calc(var(--honey-focus-y) - 8%),#fffef6f0 0%,#fff4c8aa 26%,#ffe9a055 50%,transparent 72%),
   radial-gradient(ellipse 78% 64% at var(--honey-focus-x) var(--honey-focus-y),#fff6d866 0%,#ffe4a033 38%,transparent 68%)}
@@ -58,22 +58,6 @@
 @media(max-width:365px),(max-height:580px){
   .sgv-honey-win .sgv-cele-leaf-medium,.sgv-honey-win .sgv-cele-leaf-big,.sgv-honey-win .sgv-cele-daisy-small{display:none}
 }
-.sgv-honey-win .sgv-honey-confetti{z-index:12;overflow:visible}
-.sgv-honey-win .sgv-confetti{position:absolute;left:calc(var(--honey-jar-left,60.8px) + var(--honey-jar-width,198.4px) * .5 - 8px);top:calc(var(--honey-jar-top,94px) + var(--honey-jar-height,248px) * .42);width:16px;height:44px;border-radius:999px 4px;opacity:0;pointer-events:none;transform-origin:50% 50%;box-shadow:inset -3px 0 0 #ffffff66,0 2px 3px #00000033;animation:sgv-confetti-burst .9s cubic-bezier(.2,.85,.25,1) both}
-.sgv-honey-win .sgv-confetti-ribbon{border-radius:999px 4px}
-/* Pop → arc up/out → fall. X monotone. Curl = rotateZ + scaleX. No skew. */
-@keyframes sgv-confetti-burst{
-  0%{opacity:0;transform:translate(0,8px) rotate(var(--sgv-c-rot,0deg)) scale(.7,1)}
-  8%{opacity:1;transform:translate(calc(var(--sgv-c-dx) * .35),calc(var(--sgv-c-lift,60px) * -1)) rotate(calc(var(--sgv-c-rot,0deg) + 40deg * var(--sgv-c-flip,1))) scale(1,.85)}
-  35%{opacity:1;transform:translate(calc(var(--sgv-c-dx) * .55),calc(var(--sgv-c-lift,60px) * -.3)) rotate(calc(var(--sgv-c-rot,0deg) + 110deg * var(--sgv-c-flip,1))) scale(.55,1)}
-  65%{opacity:1;transform:translate(calc(var(--sgv-c-dx) * .85),calc(var(--sgv-c-fall,140px) * .45)) rotate(calc(var(--sgv-c-rot,0deg) + 200deg * var(--sgv-c-flip,1))) scale(1,1)}
-  100%{opacity:0;transform:translate(var(--sgv-c-dx),var(--sgv-c-fall,140px)) rotate(calc(var(--sgv-c-rot,0deg) + 280deg * var(--sgv-c-flip,1))) scale(.7,.85)}
-}
-/* Reduced motion only. Settled remount must not kill an in-flight burst. */
-.sgv-win-static .sgv-confetti{animation:none;opacity:0}
-.sgv-honey-win .sgv-honey-overflow{display:none;position:absolute;left:0;right:0;top:-8px;height:34px;opacity:0;pointer-events:none}
-.sgv-honey-win .sgv-honey-mark{position:absolute;top:0;transform:translateX(-50%);border-radius:999px;background:linear-gradient(var(--honey-surface),var(--honey-body))}
-.sgv-honey-win .sgv-honey-drip{top:8px;border-radius:40% 40% 50% 50%}
 .sgv-honey-win .sgv-honey-cta-wrap{
   position:absolute;z-index:10;left:50%;
   bottom:calc(var(--safe-bottom) + 20px + 70px);
@@ -140,8 +124,6 @@
 .sgv-honey-win .sgv-end-card .sgv-honey-reset:focus-visible,.sgv-honey-win .sgv-end-cta:focus-visible{outline:4px solid #4269f9;outline-offset:4px}
 .sgv-win-static .sgv-honey-scrim,.sgv-honey-final .sgv-honey-scrim,.sgv-success-settled.sgv-honey-win .sgv-honey-scrim{opacity:var(--honey-scrim-opacity)}
 .sgv-win-static .sgv-win-praise,.sgv-honey-final .sgv-win-praise,.sgv-success-settled .sgv-win-praise{opacity:1;transform:none}
-.sgv-win-static .sgv-honey-subline,.sgv-honey-final .sgv-honey-subline,.sgv-success-settled .sgv-honey-subline{opacity:.9}
-.sgv-win-static .sgv-honey-overflow,.sgv-honey-final .sgv-honey-overflow,.sgv-success-settled .sgv-honey-overflow{opacity:1;transform:none}
 .sgv-win-static .sgv-honey-foliage-rear,.sgv-honey-final .sgv-honey-foliage-rear,.sgv-success-settled .sgv-honey-foliage-rear,
 .sgv-win-static .sgv-honey-foliage-front,.sgv-honey-final .sgv-honey-foliage-front,.sgv-success-settled .sgv-honey-foliage-front{opacity:1;transform:none}
 
@@ -155,7 +137,6 @@
  .sgv-hud-right{gap:5px}
  .sgv-lives{min-width:60px;padding-left:4px;padding-right:4px}
  .sgv-heart{font-size:22px}
- .sgv-mini-hint{font-size:11px}
  .sgv-action{font-size:19px;gap:4px}
  .sgv-action-icon{font-size:23px}
  .sgv-flip-next{padding-left:5px;margin-left:2px}
@@ -164,7 +145,6 @@
  .sgv-phone{padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
  .sgv-hud{min-height:43px}
  .sgv-level{height:42px}
- .sgv-mini-hint{height:21px;min-height:21px;margin-top:4px}
  .sgv-meter-section{height:auto;min-height:clamp(108px,17dvh,136px);padding-top:1px}
  .sgv-chest-art{height:clamp(145px,25dvh,200px)}
  /* Fixed controls height at 730; springs absorb tall-screen leftover above/below stack */
@@ -177,7 +157,6 @@
  .sgv-level{height:36px}.sgv-hud{min-height:36px}
  .sgv-gold-counter,.sgv-lives{height:35px}
  .sgv-meter-section{height:auto;min-height:102px}
- .sgv-mini-hint{display:none}
  .sgv-chest-art{height:133px}
  .sgv-controls{height:168px}
  .sgv-hand{height:80px;margin-bottom:8px}
@@ -187,7 +166,7 @@
  .sgv-action{height:55px}
 }
 @media(prefers-reduced-motion:reduce){
- .sg-cloud-one,.sg-cloud-two,.sgv-glass-spark,.sgv-gold-piece,.sgv-meter-bonus{animation:none}
+ .sg-cloud-one,.sg-cloud-two{animation:none}
  .sgv-meter-marker,.sgv-card,.sgv-action{transition:none}
  .sgv-intro-target{animation:sgv-target-fly 0.01s forwards}
 }

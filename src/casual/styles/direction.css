@@ -32,11 +32,8 @@
 .sgv-flying-card .sgv-card-arrow{width:clamp(32px,8vw,46px);height:clamp(26px,6vw,36px)}
 .sgv-flying-card:has(.sgv-card-arrow) strong{font-size:clamp(37px,9.5vw,56px)}
 
-/* The meter's location already conveys left versus right, so only magnitudes
-   remain. Removing the hint restores space for the bottles and later abilities. */
 /* Keep honeycomb clear of the HUD on phones; never pull the meter upward. */
 .sgv-meter-section{margin-top:clamp(6px,1.4dvh,14px)}
-.sgv-meter-side,.sgv-marker-direction{display:none}
 
 /* Center the secured progress inside the glass, away from the platform lip.
    No plaque or new background; use a light type outline for fluid contrast. */

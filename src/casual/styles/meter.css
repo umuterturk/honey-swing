@@ -6,11 +6,7 @@
 /* Middle is a stable flex column; no popup/button text can alter meter width.
    flex:none + min-height:0 keeps it fixed-height so springs absorb tall-screen leftover. */
 .sgv-middle{position:relative;min-width:0;min-height:0;width:100%;flex:none;display:flex;flex-direction:column;align-items:center;gap:4px}
-.sgv-mini-hint{flex:none;align-self:center;display:flex;align-items:center;justify-content:center;width:min(96%,375px);min-height:26px;height:26px;margin-top:4px;color:#76537f;font-size:clamp(12px,3vw,14px);line-height:1.2;font-weight:900;text-align:center;text-shadow:0 2px #fffee7;white-space:nowrap;overflow:hidden}
 .sgv-meter-section{position:relative;z-index:2;flex:none;width:min(100%,540px);min-width:0;max-width:100%;height:auto;min-height:clamp(126px,19dvh,178px);padding:4px clamp(6px,2vw,12px) 0;display:flex;flex-direction:column;justify-content:flex-end;overflow:visible}
-.sgv-meter-caption{display:none}
-.sgv-meter-name{font-size:clamp(13px,3.5vw,17px);color:#7853aa;text-shadow:0 2px #fff7e5}
-.sgv-meter-current b{color:#e14d8d;font-variant-numeric:tabular-nums;font-size:17px}
 /* margin-top reserves crown room (scales with meter width); honeycomb pulls back into it. */
 .sgv-meter{position:relative;width:100%;min-width:0;height:148px;flex:none;overflow:visible;margin-top:calc(90% * 347 / 1758)}
 .sgv-meter-track{position:absolute;inset:4px 0 auto;height:60px;border-radius:18px;border:7px solid #f7b536;background:linear-gradient(90deg,#ec6e89 0%,#d598c0 22%,#dec7f2 40%,#fff0cf 50%,#dec7f2 60%,#d598c0 78%,#ec6e89 100%);box-shadow:0 6px 0 #9b6e94,0 9px 15px #65599868,inset 0 3px 3px #ffffff91,inset 0 -4px #a4698c63}
@@ -18,7 +14,6 @@
 .sgv-honeycomb{position:absolute;z-index:3;left:5%;top:4px;width:90%;height:auto;margin-top:calc(-90% * 347 / 1758);display:block;pointer-events:none;user-select:none;-webkit-user-select:none}
 /* Tap at 1/5 asset size (274→54.8); top ~1.6px overlap (8/5) seats it on the track. */
 .sgv-honey-tap{position:absolute;z-index:4;left:50%;top:60.5px;height:54.8px;width:auto;max-width:none;transform:translateX(-50%);pointer-events:none;user-select:none;-webkit-user-select:none;display:block}
-.sgv-meter-centerline{position:absolute;z-index:1;left:50%;top:-8px;width:9px;height:53px;border-radius:5px;background:linear-gradient(#ff8b8b,#e52c51);border:2px solid #ffe2cf;box-shadow:0 0 8px #f134597c,0 1px 3px #aa5362;transform:translateX(-50%)}
 /* Marker rail shares the tick scale inset; z above honeycomb/tap/multipliers, under wasps. */
 .sgv-meter-marker-rail{position:absolute;z-index:8;left:12px;right:12px;top:4px;height:60px;pointer-events:none}
 .sgv-meter-marker{position:absolute;top:50%;transform:translate(-50%,-50%);height:52px;width:48px;display:flex;align-items:center;justify-content:center;transition:left .32s cubic-bezier(.17,.72,.31,1.22);pointer-events:none}

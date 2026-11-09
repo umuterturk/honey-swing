@@ -16,13 +16,9 @@
  background:linear-gradient(#ffe9af,#ce945d);
  box-shadow:0 2px 0 #915536;
 }
- .sgv-pot-label{position:relative;z-index:1;font-size:clamp(11px,2.9vw,14px);font-weight:1000;letter-spacing:1px;line-height:1.1;
- text-shadow:0 2px #995631}
  .sgv-pot-amount{position:relative;z-index:1;display:flex;gap:4px;align-items:center;font-size:clamp(23px,6vw,30px);font-weight:1000;
  font-variant-numeric:tabular-nums;line-height:1.04;color:#754b35;text-shadow:0 2px 2px #fffce8,0 0 7px #fff7d1}
 .sgv-pot-amount .sgv-pot-drop{font-size:19px;color:#ffe574;filter:drop-shadow(0 1px #c38939)}
-.sgv-pot-coins{position:absolute;z-index:-1;top:-19px;right:8px;color:#ffe985;
- text-shadow:0 2px #ca863e;font-size:16px;letter-spacing:-4px;opacity:.75}
 .sgv-goal-progress{
  position:absolute;z-index:8;right:clamp(0px,1.6vw,12px);bottom:clamp(6px,1.7dvh,14px);
  min-width:clamp(103px,27vw,129px);padding:7px 8px 8px;
@@ -77,7 +73,6 @@
  inset 0 3px 3px #ffffff91,inset 7px 0 9px #e94b72a0,
  inset -7px 0 9px #e94b72a0;
 }
-.sgv-event-zero_break .sgv-meter-centerline{animation:sgv-zero-reset .48s ease}
 @keyframes sgv-zero-reset{
  0%,100%{filter:none}
  35%{filter:brightness(1.4) drop-shadow(0 0 8px #75edff);background:#a7effa}
@@ -103,10 +98,8 @@
  .sgv-goal-progress strong{font-size:16px}
 }
 @media(prefers-reduced-motion:reduce){
- .sgv-event-zero_break .sgv-meter-centerline,.sgv-event-snap .sgv-pending-pot,.sgv-event-snap .sgv-meter-track{animation:none}
+ .sgv-event-snap .sgv-pending-pot,.sgv-event-snap .sgv-meter-track{animation:none}
 }
-
-.sgv-pot-resonance{position:absolute;top:-23px;right:0;padding:1px 5px;border:2px solid #fff1bf;border-radius:10px;background:#ffce67;color:#975b2a;font-size:9px;font-weight:1000;white-space:nowrap;text-shadow:none;box-shadow:0 2px #bc7a34;pointer-events:none}
 
 /* iPhone width/height safeguards: Bank stays a two-line control at every breakpoint. */
 @media(max-width:365px){
@@ -117,62 +110,9 @@
 }
 @media(max-height:580px){
  .sgv-bank{padding-top:2px;padding-bottom:3px}
-
- .sgv-bank-copy .sgv-action-text{font-size:19px}
-
 }
 
 
-/* P0 currency convention: every amount is represented by an embossed coin,
-   never by a star. Stars are reserved for level achievements. */
-.sgv-coin-symbol{
- --coin-size:24px;
- display:inline-block;position:relative;flex:none;
- width:var(--coin-size);height:var(--coin-size);aspect-ratio:1;
- border-radius:50%;border:2px solid #fff0a4;
- background:linear-gradient(135deg,#fff5b5 0%,#ffdb54 41%,#f8ab24 80%,#dc8b1f);
- box-shadow:inset 0 2px 2px #fff9d4a6,inset 0 -2px 2px #a7662f6b,0 2px 0 #b77730;
-}
-.sgv-coin-symbol::before{
- content:"";position:absolute;inset:19%;border:2px solid #d59531;border-radius:50%;
- box-shadow:inset 0 1px 1px #fff5ab,0 1px 1px #fff3a4bd;
-}
-.sgv-coin-symbol::after{
- content:"";position:absolute;left:25%;top:15%;width:22%;height:26%;
- border-radius:50%;background:#fff6c2a6;transform:rotate(30deg);
-}
-.sgv-gold-icon.sgv-coin-symbol{--coin-size:26px;font-size:0}
-.sgv-pot-amount .sgv-pot-coin{--coin-size:22px;filter:drop-shadow(0 1px 1px #99602f77)}
-.sgv-bank-title{
- display:block;font-size:clamp(22px,5.7vw,29px);font-weight:1000;
- line-height:1.06;letter-spacing:.025em;white-space:nowrap;
- text-shadow:0 2px #2269a7,0 1px #91e9ff7a;
-}
-.sgv-bank-reward{
- min-width:76px;min-height:23px;display:flex;align-items:center;justify-content:center;
- gap:6px;padding:1px 6px;border-radius:15px;
- background:#0e66aa8f;box-shadow:inset 0 1px 2px #05477d77;
- font-variant-numeric:tabular-nums;
-}
-.sgv-bank-coin{--coin-size:20px}
-.sgv-bank-reward strong{
- color:#fff4a9;font-size:clamp(18px,4.8vw,24px);font-weight:1000;
- line-height:1;letter-spacing:-.02em;white-space:nowrap;
- text-shadow:0 2px #165785;
-}
-.sgv-bank:disabled .sgv-bank-reward{
- background:#16578548;box-shadow:none;opacity:.58;
-}
-/* This is an inset coin pile, not a star pile. Each item adds a minted rim. */
-.sgv-gold-piece{font-size:0}
-.sgv-gold-piece::before{
- content:"";position:absolute;inset:19%;border:1.5px solid #cf8a24;
- border-radius:50%;box-shadow:inset 0 1px #fff6ae,0 1px #fff4a281;
-}
-.sgv-gold-piece::after{
- content:"";position:absolute;top:19%;left:26%;width:20%;height:22%;
- border-radius:50%;background:#fff4bf9c;
-}
 .sgv-intro-coin{font-size:0;position:relative}
 .sgv-intro-coin::before{
  content:"";position:absolute;inset:17%;border:6px solid #df9930;border-radius:50%;
@@ -181,15 +121,6 @@
 .sgv-intro-coin::after{
  content:"";position:absolute;top:22%;left:28%;width:17%;height:21%;
  border-radius:50%;background:#fff7c7ad;
-}
-.sgv-flying-gold{font-size:0}
-.sgv-flying-gold::before{
- content:"";position:absolute;inset:19%;border:2px solid #d59531;border-radius:50%;
- box-shadow:inset 0 1px #fff6bb,0 1px #fff6bb;
-}
-.sgv-flying-gold::after{
- content:"";position:absolute;top:18%;left:23%;width:20%;height:22%;
- border-radius:50%;background:#fff9cc9c;
 }
 .sgv-bank-score-fly{
  position:absolute;z-index:27;pointer-events:none;opacity:0;
@@ -201,23 +132,13 @@
 }
 @media(max-width:365px){
  .sgv-bank{padding:3px 5px 5px;gap:1px}
- .sgv-bank-title{font-size:21px}
- .sgv-bank-reward{min-height:22px;gap:4px;padding:0 5px}
- .sgv-bank-coin{--coin-size:18px}
- .sgv-bank-reward strong{font-size:18px}
 }
 @media(max-height:580px){
  .sgv-bank{gap:0;padding:2px 5px 3px}
- .sgv-bank-title{font-size:19px}
- .sgv-bank-reward{min-height:20px}
- .sgv-bank-coin{--coin-size:17px}
- .sgv-bank-reward strong{font-size:17px}
 }
 
-/* Snap spends the visible Pot; coins tumble down but the glass remains untouched. */
-.sgv-lost-coin{filter:saturate(.75);z-index:29}
 @media(prefers-reduced-motion:reduce){
- .sgv-bank-score-fly,.sgv-lost-coin{display:none}
+ .sgv-bank-score-fly{display:none}
 }
 
 
@@ -232,15 +153,11 @@
  --drop-size:24px;width:24px;height:29px;border:0;border-radius:0;
  background:none;box-shadow:none;padding:0;
 }
-.sgv-bank-coin.sgv-drop-icon{--drop-size:18px;color:#ffe080}
 .sgv-pot-drop.sgv-drop-icon{--drop-size:21px;color:#ffb833}
 .sgv-bank{
  --sgv-rim:#398b88;background:linear-gradient(#98dfcd,#5db7ad 65%,#368f94);
  color:#fffdf2;text-shadow:0 2px #397d7d;
 }
-.sgv-bank-title{text-shadow:0 2px #39817d}
-.sgv-bank-reward{background:#267e8170;box-shadow:inset 0 1px 2px #165b6680}
-.sgv-bank-reward strong{text-shadow:0 2px #2b797b}
 .sgv-bank:disabled{filter:saturate(.75);opacity:.8}
 
 /* Needle uses the glossy honeycomb-cell PNG; value sits in the recessed well. */
@@ -271,7 +188,6 @@
 .sgv-chest-body{
  background:linear-gradient(110deg,#b8eafc67 0%,#ffffff45 24%,#f7ffff13 45%,#8acbf830 83%,#b0ebfb69);
 }
-.sgv-chest-inner{inset:7px 5px 3px;border-radius:21%;overflow:hidden}
 .sgv-fluid-fill{
  position:absolute;z-index:1;left:0;right:0;bottom:0;
  background:linear-gradient(180deg,#fff0ab 0%,#ffcd58 26%,#ffb63e 68%,#e8a23f 100%);
@@ -312,5 +228,4 @@
 }
 .sgv-goal-progress span{font-size:clamp(10px,2.6vw,12px)}
 .sgv-goal-progress strong{font-size:clamp(18px,4.9vw,24px)}
-.sgv-chest-rim{top:10%}
 
