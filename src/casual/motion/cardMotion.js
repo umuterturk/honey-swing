@@ -1,5 +1,5 @@
 import {gsap} from 'gsap';
-import {CARD_ARROW_PATH,cardAccentMix,cardDirection} from '../cardDirection.js';
+import {CARD_ARROW_PATH,cardDirection,cardShade} from '../cardDirection.js';
 import {meterPercent} from '../meterScale.js';
 import {NEEDLE_GLIDE_EASE,cardMotionMarks,flyerOrigin,reducedCardSummary} from '../motionSchedule.js';
 import {FACTORS} from '../factors.js';
@@ -222,7 +222,8 @@ export function animateCardAction({
   if(action.type==='flip'&&marks.faceEnd!=null)tl.call(()=>{
     if(!alive)return;
     clone.className='sgv-card sgv-flying-card sgv-card-'+cardDirection(view.signedCard);
-    clone.style.setProperty('--sgv-card-mix',cardAccentMix(view.signedCard));
+    clone.setAttribute('data-shade',String(cardShade(view.signedCard)));
+    clone.style.removeProperty('--sgv-card-mix');
     clone.innerHTML='<svg class="sgv-card-arrow" viewBox="0 0 80 58" aria-hidden="true">'+
       '<path d="'+CARD_ARROW_PATH+'"/></svg>'+
       '<strong>'+Math.abs(view.signedCard)+'</strong>';

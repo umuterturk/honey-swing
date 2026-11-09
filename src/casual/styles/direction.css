@@ -1,19 +1,33 @@
-/* Approved directional card language. Suit no longer determines card colors:
-   LEFT is green, RIGHT is blue. Higher ranks tint the face and rim more strongly. */
-.sgv-card-left{
- --sgv-card-color:#139344;
- --sgv-card-rim:color-mix(in srgb,#a9d891,#28b75b var(--sgv-card-mix,30%));
- background:linear-gradient(145deg,#f1ffea 0%,
-   color-mix(in srgb,#e7fbdc,#95e98b var(--sgv-card-mix,30%)) 58%,
-   color-mix(in srgb,#cdf3b4,#43c96a var(--sgv-card-mix,30%)) 100%);
+/* Left (value < 0) is blue. Right (value > 0) is red. Shade follows |value|. */
+:root{
+ --hs-hand-group-gap:10px;
+ --hs-blue-1:#E0F0FF;--hs-blue-ink-1:#0A2A5E;
+ --hs-blue-2:#B8D9FF;--hs-blue-ink-2:#0A2A5E;
+ --hs-blue-3:#8DBDF7;--hs-blue-ink-3:#0A2A5E;
+ --hs-blue-4:#649EEA;--hs-blue-ink-4:#0A2A5E;
+ --hs-blue-5:#2563C4;--hs-blue-ink-5:#FFFFFF;
+ --hs-blue-6:#0F3A80;--hs-blue-ink-6:#FFFFFF;
+ --hs-red-1:#FFE3E3;--hs-red-ink-1:#5C0A14;
+ --hs-red-2:#FFC2C2;--hs-red-ink-2:#5C0A14;
+ --hs-red-3:#FF9C9C;--hs-red-ink-3:#5C0A14;
+ --hs-red-4:#F57272;--hs-red-ink-4:#5C0A14;
+ --hs-red-5:#CC2E2E;--hs-red-ink-5:#FFFFFF;
+ --hs-red-6:#8E1420;--hs-red-ink-6:#FFFFFF;
 }
-.sgv-card-right{
- --sgv-card-color:#006dcf;
- --sgv-card-rim:color-mix(in srgb,#91c7e8,#117be0 var(--sgv-card-mix,30%));
- background:linear-gradient(145deg,#f1fcff 0%,
-   color-mix(in srgb,#d8f3ff,#8bcaff var(--sgv-card-mix,30%)) 58%,
-   color-mix(in srgb,#bee9fb,#2a92f4 var(--sgv-card-mix,30%)) 100%);
-}
+.sgv-card-left{--sgv-card-rim:#0A2A5E}
+.sgv-card-right{--sgv-card-rim:#5C0A14}
+.sgv-card-left[data-shade="1"]{background:var(--hs-blue-1);--sgv-card-color:var(--hs-blue-ink-1)}
+.sgv-card-left[data-shade="2"]{background:var(--hs-blue-2);--sgv-card-color:var(--hs-blue-ink-2)}
+.sgv-card-left[data-shade="3"]{background:var(--hs-blue-3);--sgv-card-color:var(--hs-blue-ink-3)}
+.sgv-card-left[data-shade="4"]{background:var(--hs-blue-4);--sgv-card-color:var(--hs-blue-ink-4)}
+.sgv-card-left[data-shade="5"]{background:var(--hs-blue-5);--sgv-card-color:var(--hs-blue-ink-5)}
+.sgv-card-left[data-shade="6"]{background:var(--hs-blue-6);--sgv-card-color:var(--hs-blue-ink-6)}
+.sgv-card-right[data-shade="1"]{background:var(--hs-red-1);--sgv-card-color:var(--hs-red-ink-1)}
+.sgv-card-right[data-shade="2"]{background:var(--hs-red-2);--sgv-card-color:var(--hs-red-ink-2)}
+.sgv-card-right[data-shade="3"]{background:var(--hs-red-3);--sgv-card-color:var(--hs-red-ink-3)}
+.sgv-card-right[data-shade="4"]{background:var(--hs-red-4);--sgv-card-color:var(--hs-red-ink-4)}
+.sgv-card-right[data-shade="5"]{background:var(--hs-red-5);--sgv-card-color:var(--hs-red-ink-5)}
+.sgv-card-right[data-shade="6"]{background:var(--hs-red-6);--sgv-card-color:var(--hs-red-ink-6)}
 .sgv-card:has(.sgv-card-arrow){gap:clamp(3px,1.05vw,7px)}
 .sgv-card-arrow{
  position:relative;z-index:1;flex:none;display:block;
@@ -66,6 +80,17 @@
  .sgv-card:has(.sgv-card-arrow) strong{font-size:clamp(31px,8.4vw,39px)}
  .sgv-bottle-pair .sgv-goal-progress strong{font-size:clamp(20px,5.5vw,24px)}
 }
+
+/* A level with 5 or more slots keeps this fit for the whole level. */
+.sgv-hand[data-compact="true"]{padding:0;--hs-card-gap:4px;--hs-group-margin:calc(var(--hs-hand-group-gap,10px) - var(--hs-card-gap))}
+.sgv-hand[data-compact="true"] .sgv-card{border-width:3px}
+.sgv-hand[data-compact="true"] .sgv-card-arrow{width:26px;height:20px}
+.sgv-hand[data-compact="true"] .sgv-card:has(.sgv-card-arrow) strong,
+.sgv-hand[data-compact="true"] .sgv-card strong{font-size:28px}
+.sgv-card[data-shade="5"] strong,
+.sgv-card[data-shade="6"] strong{text-shadow:0 2px #00000040}
+.sgv-card[data-shade="5"] .sgv-card-arrow,
+.sgv-card[data-shade="6"] .sgv-card-arrow{filter:drop-shadow(0 2px 0 #00000040)}
 
 
 

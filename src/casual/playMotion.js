@@ -2,6 +2,7 @@ import {
   animateBankPour,animateBankTargetCelebrate,animateCardAction,animateFactorReset,
   animatePotBreak,animateSnapLoss
 } from './minimalMotion.js';
+import {animateHandReflow} from './motion/handReflow.js';
 import {motionKind} from './actionPresentation.js';
 import {FACTORS} from './factors.js';
 import {potAddFlyerPhases,saveResetsVisibleFactors} from './presentation.js';
@@ -49,7 +50,7 @@ export function factorsFell(change){
 // Starts the presentation for a commit that already happened. Returned function
 // cancels every timeline this play owns. It does not change the engine round.
 export function startPlayMotion({
-  root,source,action,change,level,firstTap,seenFactors,
+  root,source,action,change,level,firstTap,seenFactors,handBefore,
   cancelRef,resetMotionRef,lossMotionRef,breakMotionRef,
   setView,setFeedback,setBeat,setShownGold,setAnimating,setPulse,setHelp
 }, complete){
@@ -59,7 +60,9 @@ export function startPlayMotion({
   setPulse(false);setHelp(false);
   resetMotionRef.current?.();breakMotionRef.current?.();
   resetMotionRef.current=null;breakMotionRef.current=null;
+  let cancelReflow=()=>{};
   const cancelAll=()=>{
+    cancelReflow();
     cancelRef.current?.();resetMotionRef.current?.();
     lossMotionRef.current?.();breakMotionRef.current?.();
   };
@@ -89,6 +92,7 @@ export function startPlayMotion({
     return cancelAll;
   }
   change.rewards.forEach(({kind})=>seenFactors.add(kind));
+  if(action.type==='steer')cancelReflow=animateHandReflow(root, handBefore);
   cancelRef.current=animateCardAction({
     root,source,action,view:cardMotionView(change,{firstTap,level}),
     onMeter:position=>{

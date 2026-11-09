@@ -67,11 +67,11 @@
  from{opacity:1}
  to{opacity:0}
 }
-/* The center is a reset line; only the edges represent Snap danger. */
+/* The center is a reset line. Both ends share one snap-danger cue. */
 .sgv-meter-track[data-edge-danger="true"]{
  box-shadow:0 6px 0 #9b6e94,0 9px 15px #65599868,
- inset 0 3px 3px #ffffff91,inset 7px 0 9px #e94b72a0,
- inset -7px 0 9px #e94b72a0;
+ inset 0 3px 3px #ffffff91,inset 7px 0 9px #FFF4B0,
+ inset -7px 0 9px #FFF4B0,inset 0 0 0 2px #3A1A00;
 }
 @keyframes sgv-zero-reset{
  0%,100%{filter:none}

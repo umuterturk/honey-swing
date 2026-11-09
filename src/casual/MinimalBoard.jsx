@@ -1,7 +1,7 @@
 import React from 'react';
 import {meterPercent,meterMarks} from './meterScale.js';
 import {fluidFillPercent} from './presentation.js';
-import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from './cardDirection.js';
+import {CARD_ARROW_PATH,cardDirection,cardShade} from './cardDirection.js';
 import {VictoryJarArt} from './VictoryJarArt.js';
 import {factorByKind} from './factors.js';
 import {publicUrl} from './publicUrl.js';
@@ -133,11 +133,13 @@ export function IntroTarget({target,onDone,sequence}){
  </div>;
 }
 
-export function SimpleCard({id,index,value,disabled,onPlay,showDirection=true,risky=false,highlighted=false}){
+export function SimpleCard({id,index,value,disabled,onPlay,showDirection=true,risky=false,highlighted=false,groupStart=false}){
  const direction=cardDirection(value);
  return <button type="button"
    className={'sgv-card sgv-card-'+direction+(!showDirection?' sgv-card-number-only':'')+(risky?' sgv-card-risky':'')+(highlighted?' sgv-attention':'')}
-   style={{'--sgv-card-mix':cardAccentMix(value)}}
+   data-card-id={id}
+   data-shade={cardShade(value)}
+   style={groupStart?{marginLeft:'var(--hs-group-margin)'}:undefined}
    aria-label={'Play '+directionalValue(value)}
    disabled={disabled}
    onClick={event=>onPlay(index,event.currentTarget)}>
