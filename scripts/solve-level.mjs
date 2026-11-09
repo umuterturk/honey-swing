@@ -218,8 +218,7 @@ export function enumerateLevel(levelId,{maxStates=2000000}={}){
   };
 }
 
-export function simulateOnboardingLevel(levelId,{maxStates=200000}={}){
-  const found=search(levelId,{maxStates,mode:'all',stopAtWin:false,paths:true});
+function rowFrom(levelId,found){
   return {
     levelId,
     states:found.states,
@@ -231,6 +230,76 @@ export function simulateOnboardingLevel(levelId,{maxStates=200000}={}){
     forcedLosses:found.forcedLosses,
     zeroSnapForced:found.zeroSnapForced
   };
+}
+
+// Six-card graphs run past the 200k proof cap (L19's shortest win alone is
+// ~198k states; the full graph is millions). This BFS stops when the first
+// win is dequeued, so the path is a real shortest win and truncation means
+// the cap hit before any win. Deeper losses stay out of the row.
+function shortestCensus(levelId,{maxStates}){
+  const queue=[{round:newOnboardingRound(levelId),parent:-1,action:null}];
+  const indexByKey=new Map();
+  const graph=[];
+  let truncated=false;
+  let winAt=-1;
+  for(let cursor=0;cursor<queue.length;cursor++){
+    if(indexByKey.size>=maxStates){truncated=true;break;}
+    const item=queue[cursor];
+    const key=canonicalKey(item.round);
+    if(indexByKey.has(key))continue;
+    const node={key,win:false,terminal:false,dead:false,cut:false,
+      snaps:item.round.snaps,childKeys:[]};
+    indexByKey.set(key,graph.length);
+    graph.push(node);
+    if(onboardingVictory(item.round)){node.win=true;winAt=cursor;break;}
+    if(onboardingFinished(item.round)){node.terminal=true;continue;}
+    const available=onboardingActions(item.round);
+    if(!available.length){node.dead=true;continue;}
+    for(const action of available){
+      const next=stepOnboarding(item.round,action);
+      if(next===item.round)throw new Error('Engine rejected an available onboarding action');
+      node.childKeys.push(canonicalKey(next));
+      queue.push({round:next,parent:cursor,action});
+    }
+  }
+  const memo=new Map();
+  const forced=key=>{
+    if(memo.has(key))return memo.get(key);
+    const at=indexByKey.get(key);
+    if(at==null){memo.set(key,false);return false;}
+    const node=graph[at];
+    const value=node.win||node.cut?false:
+      node.terminal||node.dead?true:
+      node.childKeys.length>0&&node.childKeys.every(child=>indexByKey.has(child)&&forced(child));
+    memo.set(key,value);
+    return value;
+  };
+  let wins=0,failedEnds=0,deadEnds=0,forcedLosses=0,zeroSnapForced=0;
+  for(const node of graph){
+    if(node.win)wins++;
+    if(node.terminal)failedEnds++;
+    if(node.dead)deadEnds++;
+    if(!forced(node.key))continue;
+    forcedLosses++;
+    if(node.snaps===0)zeroSnapForced++;
+  }
+  const actions=[];
+  if(winAt>=0){
+    for(let at=winAt;queue[at].parent>=0;at=queue[at].parent)actions.push(queue[at].action);
+    actions.reverse();
+  }
+  return {
+    levelId,states:indexByKey.size,wins,failedEnds,deadEnds,
+    truncated:truncated||winAt<0,shortestWin:winAt<0?null:actions,
+    forcedLosses,zeroSnapForced
+  };
+}
+
+export function simulateOnboardingLevel(levelId,{maxStates=200000}={}){
+  // Hands of 5+ cards are proved by the short search. Their full graphs are
+  // the --report census, not this row.
+  if((GARDEN[levelId-1]?.hand||0)>=5)return shortestCensus(levelId,{maxStates});
+  return rowFrom(levelId,search(levelId,{maxStates,mode:'all',stopAtWin:false,paths:true}));
 }
 
 function main(){
@@ -254,4 +323,6 @@ function main(){
   }
 }
 
-if(typeof process!=='undefined'&&process.argv[1]?.endsWith('solve-level.mjs'))main();
+const invokedAsScript=typeof process!=='undefined'&&Array.isArray(process.argv)&&
+  process.argv[1]?.endsWith('solve-level.mjs');
+if(invokedAsScript)main();
