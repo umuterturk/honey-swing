@@ -4,7 +4,7 @@ import {ONBOARDING_SESSION_KEY, SEEN_FEATURE_INTROS_KEY} from '../src/casual/onb
 import {newOnboardingRound, ONBOARDING_COUNT} from '../src/casual/onboardingLevels.js';
 import {dismissLevelScreen} from '../src/casual/levelScreens.js';
 import {
-  ackAfterCommit, arrivalSettled, clearedAck, closedStart, dismissedIntro,
+  ackAfterCommit, arrivalBegan, arrivalSettled, clearedAck, closedStart, dismissedIntro,
   endTransition, initialScreen, levelScreen, nextLevelId, phoneClassName,
   settledScreen, successMarked
 } from '../src/casual/screenState.js';
@@ -143,6 +143,8 @@ test('clearedAck ignores a newer token and arrival can settle', () => {
   const screen={ack, arriving:true, successSettled:false};
   assert.equal(clearedAck(screen, {kind:'other'}).ack, ack);
   assert.equal(clearedAck(screen, ack).ack, null);
+  assert.equal(arrivalBegan(screen, true).arriving, true);
+  assert.equal(arrivalBegan({...screen, arriving:true}, false).arriving, false);
   assert.equal(arrivalSettled(screen).arriving, false);
   assert.equal(successMarked(screen).successSettled, true);
 });

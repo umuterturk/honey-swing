@@ -102,6 +102,17 @@ test('start, win, and lose screens show a call to action, and skip dismisses the
   await defeat.unmount();
 });
 
+test('dismissing the bank intro shows the level arrival until START', async() => {
+  const arrival = await mountFresh();
+  const phone = () => arrival.host.querySelector('.sgv-phone');
+  assert.equal(phone().classList.contains('sgv-level-arrival'), false);
+  await click(buttonNamed(arrival.host, 'PLAY'));
+  assert.equal(phone().classList.contains('sgv-level-arrival'), true);
+  await click(buttonNamed(arrival.host, 'START'));
+  assert.equal(phone().classList.contains('sgv-level-arrival'), false);
+  await arrival.unmount();
+});
+
 test('a winning Save pours the pot before the win screen', async() => {
   const view = await mountFresh();
   await click(buttonNamed(view.host, 'PLAY'));

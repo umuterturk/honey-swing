@@ -14,7 +14,7 @@ import {introCopy, successPlan, takeFirstOutcome} from './presentationSequence.j
 import {settledPresentation} from './presentation.js';
 import {playOutcome, startPlayMotion} from './playMotion.js';
 import {
-  ackAfterCommit, arrivalSettled, clearedDock, closedDevMenu, closedFactor, closedStart,
+  ackAfterCommit, arrivalBegan, arrivalSettled, clearedDock, closedDevMenu, closedFactor, closedStart,
   dismissedIntro, endTransition, initialScreen, levelScreen, openedFactor, phoneClassName,
   settledScreen, successMarked, toggledDevMenu, toggledHelp
 } from './screenState.js';
@@ -73,7 +73,7 @@ export default function SimplifiedGame(){
     rootRef, fxRef, levelId:screen.round.levelId, fresh, introGate:screen.introGate,
     startOpen:screen.startOpen, reduced, introStartRef, levelReadyRef,
     onArrivingSettled:()=>setFromEffect(arrivalSettled),
-    onArrivalBegan:motion=>setFromEffect(current=>({...current, arriving:motion}))
+    onArrivalBegan:motion=>setFromEffect(current=>arrivalBegan(current, motion))
   });
   const win=useWinCelebration({
     rootRef, fxRef, active:readout.finished&&readout.victory, levelId:screen.round.levelId,
@@ -104,6 +104,7 @@ export default function SimplifiedGame(){
     const next=levelScreen(id, {storage:browserStorage(), reduced:prefersReducedMotion()});
     saveRound(browserStorage(), next.round);
     seenFactorsRef.current=new Set();
+    introGateRef.current=next.introGate;
     commitScreen(next);
   }
 

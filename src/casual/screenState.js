@@ -80,6 +80,7 @@ export const openedFactor=(screen, kind)=>({...screen, factorInfo:kind});
 export const closedFactor=screen=>({...screen, factorInfo:null});
 export const shownPulse=screen=>({...screen, pulse:true});
 export const dockExpired=screen=>({...screen, docking:false});
+export const arrivalBegan=(screen, motion)=>({...screen, arriving:!!motion});
 export const arrivalSettled=screen=>({...screen, arriving:false});
 export const successMarked=screen=>({...screen, successSettled:true});
 
