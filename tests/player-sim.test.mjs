@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ONBOARDING_COUNT} from '../../src/casual/onboardingLevels.js';
-import {PROFILES,SEED_BASE} from './tuning.mjs';
-import {seedFor,modeBRunIdx,rngFor} from './rng.mjs';
-import {playAttempt} from './playout.mjs';
-import {runPlayerSim} from './run.mjs';
-import {renderReport} from './report.mjs';
+import {ONBOARDING_COUNT} from '../src/casual/onboardingLevels.js';
+import {PROFILES,SEED_BASE} from '../scripts/players/tuning.mjs';
+import {seedFor,modeBRunIdx,rngFor} from '../scripts/players/rng.mjs';
+import {playAttempt} from '../scripts/players/playout.mjs';
+import {runPlayerSim} from '../scripts/players/run.mjs';
+import {renderReport} from '../scripts/players/report.mjs';
 
 test('seed formula matches the approved scheme',()=>{
   assert.equal(seedFor(0,1,0),(SEED_BASE+1_000)>>>0)

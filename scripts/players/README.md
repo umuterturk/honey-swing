@@ -16,11 +16,7 @@ node scripts/simulate-players.mjs --attempts 2 --sessions 1
 
 `--attempts` is Mode A (fresh deal per level). `--sessions` is Mode B (a campaign that starts at level 1). Defaults are 1000 and 1000. Knobs live in `scripts/players/tuning.mjs`.
 
-Optional checks that `npm test` does not pick up, because that script only loads `tests/*.test.mjs`:
-
-```bash
-node --test scripts/players/harness.test.mjs
-```
+`npm test` runs `tests/player-sim.test.mjs` with the rest of the suite.
 
 ## Modes
 
