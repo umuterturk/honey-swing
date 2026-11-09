@@ -2,13 +2,13 @@ import React,{useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
 import {HorizontalMeter,GlassChest,PendingPot,SimpleCard} from './MinimalBoard.jsx';
-import {animateCardAction,animateFactorReset,animateSnapLoss,animatePotBreak,animateBankPour,animateBankTargetCelebrate} from './minimalMotion.js';
-import {displayOf,settledPresentation,saveResetsVisibleFactors,potAddFlyerPhases} from './presentation.js';
+import {displayOf,settledPresentation} from './presentation.js';
 import {claimLevelAdvance,introCopy,levelStartPlan,startTap,successPlan,takeFirstOutcome} from './presentationSequence.js';
 import {applyHoneyLayout} from './honeyWin.js';
 import {playWinCelebration} from './winMotion.js';
 import {playLevelStart} from './levelStartMotion.js';
-import {createActionPresentation,motionKind,runPresentedAction} from './actionPresentation.js';
+import {createActionPresentation,runPresentedAction} from './actionPresentation.js';
+import {playOutcome,startPlayMotion} from './playMotion.js';
 import {createFxBus} from './fx/fxBus.js';
 import {FxLayer} from './fx/FxLayer.jsx';
 import {clearWinMemo} from './idleHint.js';
@@ -442,10 +442,7 @@ export default function SimplifiedGame(){
           const {name,...details}=entry;
           event(name,details);
         }
-        const outcome=change.snap?'snap':change.zeroBreak?'zero':
-          change.rewards.some(reward=>reward.kind==='swing')?'cross':
-          change.rewards.some(reward=>reward.kind==='flip')?'flipFactor':
-          action.type==='flip'?'flip':null;
+        const outcome=playOutcome(change,action);
         const first=takeFirstOutcome(seenFactorsRef.current,outcome);
         if(first)setAck({kind:first.kind,text:introCopy(first.kind,change.rewards[0]?.value)});
         else if(outcome)setAck(null);
@@ -458,69 +455,13 @@ export default function SimplifiedGame(){
         setFeedback(settled.feedback);setAnimating(settled.animating);
       },
       startMotion({change},complete){
-        setAnimating(true);
-        setFeedback(change.snap?'snap':change.zeroBreak?'zero_break':action.type);
-        setBeat(change.zeroBreak?'Pot safe.':change.snap?'Pot lost. Savings safe.':'');
-        setPulse(false);setHelp(false);
-        resetMotionRef.current?.();breakMotionRef.current?.();
-        resetMotionRef.current=null;breakMotionRef.current=null;
-        const cancelAll=()=>{
-          cancelRef.current?.();resetMotionRef.current?.();
-          lossMotionRef.current?.();breakMotionRef.current?.();
-        };
-        if(!root||!source){complete();return cancelAll;}
-        if(motionKind(action,change)==='bank'){
-          const showReset=saveResetsVisibleFactors(change,level.visibleFactors);
-          if(showReset)setBeat('Multipliers reset.');
-          const afterPour=()=>{
-            if(change.securedAfter<level.target){complete();return;}
-            cancelRef.current=animateBankTargetCelebrate({root,onComplete:complete});
-          };
-          cancelRef.current=animateBankPour({
-            root,source,potValue:change.rawPotBefore,
-            fromScore:change.securedBefore,toScore:change.securedAfter,
-            fillTarget:level.target,
-            onPourProgress:rawPot=>setView(v=>({...v,rawPot})),
-            onTake:()=>{
-              setView(v=>({...v,rawPot:0,resonance:0,
-                factors:showReset?change.factorsAfter:v.factors}));
-              if(showReset){
-                resetMotionRef.current?.();
-                resetMotionRef.current=animateFactorReset(root);
-              }
-            },
-            onCount:setShownGold,onComplete:afterPour
-          });
-          return cancelAll;
-        }
-        change.rewards.forEach(({kind})=>seenFactorsRef.current.add(kind));
-        cancelRef.current=animateCardAction({
-          root,source,action,view:{...change,firstTap:round.levelId===1&&round.turn===0,
-            meterLimit:level.rules.snapLimit,showChances:!!level.showChances,
-            potTarget:level.rules.potCap||level.target,
-            levelId:level.id,visibleFactors:level.visibleFactors,
-            pourFly:potAddFlyerPhases({levelId:level.id,visibleFactors:level.visibleFactors,...change})},
-          onMeter:position=>{
-            setView(v=>({...v,position}));
-            if(change.snap)setFeedback('snap');
-          },
-          onPot:rawPot=>setView(v=>({...v,rawPot,resonance:change.resonanceAfter})),
-          onSnap:()=>{
-            breakMotionRef.current?.();breakMotionRef.current=animatePotBreak(root,'snap');
-            lossMotionRef.current?.();lossMotionRef.current=animateSnapLoss(root,change.rawPotBefore);
-          },
-          onChanceLost:()=>setView(v=>({...v,snaps:change.snapsAfter})),
-          onFactors:factors=>{
-            setView(v=>({...v,factors}));
-            if(change.zeroBreak||change.snap||
-              change.factorsAfter.some((f,i)=>f.value<change.factorsBefore[i].value)){
-              resetMotionRef.current?.();
-              resetMotionRef.current=animateFactorReset(root);
-            }
-          },
-          onComplete:complete
-        });
-        return cancelAll;
+        return startPlayMotion({
+          root,source,action,change,level,
+          firstTap:round.levelId===1&&round.turn===0,
+          seenFactors:seenFactorsRef.current,
+          cancelRef,resetMotionRef,lossMotionRef,breakMotionRef,
+          setView,setFeedback,setBeat,setShownGold,setAnimating,setPulse,setHelp
+        },complete);
       }
     });
   }
