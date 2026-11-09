@@ -91,7 +91,7 @@ export function OnboardingPhone({
           data-compact={slots>=5?'true':undefined}
           style={{
             '--hs-hand-slots':String(slots),
-            '--hs-hand-group-extra':bothColours?'var(--hs-hand-group-gap, 10px)':'0px'
+            '--hs-hand-group-extra':'var(--hs-hand-group-gap, 10px)'
           }}>
           {handView.map(card=>{
             const engineIndex=deal.hand.indexOf(card.id);

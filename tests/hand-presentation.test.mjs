@@ -1,7 +1,8 @@
 import test, {after, describe} from 'node:test';
 import assert from 'node:assert/strict';
 import {newOverswing, signed, stepOverswing} from '../src/external/engines.js';
-import {ONBOARDING_COUNT, newOnboardingRound, onboardingLevel} from '../src/casual/onboardingLevels.js';
+import {ONBOARDING_COUNT, newOnboardingRound, onboardingLevel, wouldSnap} from '../src/casual/onboardingLevels.js';
+import {idleHintAction} from '../src/casual/idleHint.js';
 import {ONBOARDING_SESSION_KEY} from '../src/casual/onboardingProgress.js';
 import {boardReadout} from '../src/casual/boardReadout.js';
 import {displayOf} from '../src/casual/presentation.js';
@@ -21,6 +22,16 @@ function handButtons(host){
   const hand = host.querySelector('[aria-label="Your cards"]');
   assert.ok(hand, 'the hand is on screen');
   return [...hand.querySelectorAll('button')];
+}
+
+function handIds(host){
+  return handButtons(host).map(button=>Number(button.getAttribute('data-card-id')));
+}
+
+function cardWidth(button){
+  const width = button.ownerDocument.defaultView.getComputedStyle(button).width;
+  assert.ok(width && width!=='auto' && width!=='0px', 'card width is computed, got '+width);
+  return width;
 }
 
 function visualCard(button){
@@ -60,7 +71,23 @@ function sixRound(){
   };
 }
 
-async function mountSixCardHand(round, onPlay){
+async function mountStoredRound(round){
+  await boot();
+  page().localStorage.clear();
+  page().localStorage.setItem(ONBOARDING_SESSION_KEY, JSON.stringify(round));
+  return mountGame();
+}
+
+function lastCardL11(){
+  const round = newOnboardingRound(11);
+  round.turn = 1;
+  round.game.deal.hand = [20];
+  round.game.deal.pos = 3;
+  round.game.deal.plays = 2;
+  return round;
+}
+
+async function mountSixCardHand(round, onPlay, {pulse=false, showChances=false}={}){
   await boot();
   const {act, createElement, useRef} = await import('react');
   const {createRoot} = await import('react-dom/client');
@@ -68,8 +95,13 @@ async function mountSixCardHand(round, onPlay){
   function Fixture(){
     const rootRef = useRef(null);
     const view = displayOf(round);
-    const readout = boardReadout({round, view, animating:false});
-    const level = {...readout.level, visibleHandSlots:6, initialHandSize:6};
+    const readout = boardReadout({round, view, animating:false, pulse});
+    const level = {
+      ...readout.level,
+      visibleHandSlots:6,
+      initialHandSize:6,
+      showChances:showChances||readout.level.showChances
+    };
     const screen = {
       round, view, shownGold:0, animating:false, introGate:false, docking:false,
       help:false, devMenuOpen:false, factorInfo:null, ack:null, beat:'',
@@ -215,6 +247,27 @@ describe('hand presentation', {concurrency:false}, ()=>{
     }finally{
       await view.unmount();
     }
+
+    const inspect = sixRound();
+    inspect.game.deal.S = -6;
+    const hinted = await mountSixCardHand(inspect, ()=>{}, {pulse:true, showChances:true});
+    try{
+      const hint = idleHintAction(inspect);
+      assert.equal(hint?.type, 'steer');
+      const pulsed = handButtons(hinted.host).filter(button=>button.classList.contains('sgv-attention'));
+      assert.equal(pulsed.length, 1);
+      assert.equal(Number(pulsed[0].getAttribute('data-card-id')), inspect.game.deal.hand[hint.index]);
+      const risky = handButtons(hinted.host)
+        .filter(button=>button.classList.contains('sgv-card-risky'))
+        .map(button=>Number(button.getAttribute('data-card-id')))
+        .sort((a,b)=>a-b);
+      const expectedRisky = inspect.game.deal.hand
+        .filter((id, index)=>wouldSnap(inspect, {type:'steer', index}))
+        .sort((a,b)=>a-b);
+      assert.deepEqual(risky, expectedRisky);
+    }finally{
+      await hinted.unmount();
+    }
   });
 
   test('remaining cards are sliding at 100ms while the played card is in the air, and reduced motion does not slide', async()=>{
@@ -234,6 +287,32 @@ describe('hand presentation', {concurrency:false}, ()=>{
         assert.ok(xs.some(x=>x!==0), 'a remaining card has moved, x='+xs.join(','));
       }finally{
         await view.unmount();
+      }
+
+      const round = lastCardL11();
+      const refill = await mountStoredRound(round);
+      try{
+        const before = handButtons(refill.host);
+        assert.equal(before.length, 1);
+        const beforeWidth = cardWidth(before[0]);
+        const oldIds = handIds(refill.host);
+        await click(before[0]);
+        clock.advance(100);
+        assert.deepEqual(
+          handIds(refill.host),
+          oldIds.filter(id=>id!==oldIds[0]),
+          'while the card is in the air the hand is the old hand minus the played card'
+        );
+        const skip = buttonNamed(refill.host, 'Skip animation');
+        assert.ok(skip, 'the landing can be skipped');
+        await click(skip);
+        const afterIds = handIds(refill.host);
+        assert.ok(afterIds.some(id=>signed(id)<0)&&afterIds.some(id=>signed(id)>0),
+          'the refill brings both colours');
+        assert.equal(cardWidth(handButtons(refill.host)[0]), beforeWidth,
+          'card width stays constant across a refill');
+      }finally{
+        await refill.unmount();
       }
 
       setReduced(true);

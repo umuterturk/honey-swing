@@ -139,7 +139,7 @@ export function SimpleCard({id,index,value,disabled,onPlay,showDirection=true,ri
    className={'sgv-card sgv-card-'+direction+(!showDirection?' sgv-card-number-only':'')+(risky?' sgv-card-risky':'')+(highlighted?' sgv-attention':'')}
    data-card-id={id}
    data-shade={cardShade(value)}
-   style={groupStart?{marginLeft:'var(--hs-hand-group-gap, 10px)'}:undefined}
+   style={groupStart?{marginLeft:'calc(var(--hs-hand-group-gap, 10px) - var(--hs-card-gap))'}:undefined}
    aria-label={'Play '+directionalValue(value)}
    disabled={disabled}
    onClick={event=>onPlay(index,event.currentTarget)}>

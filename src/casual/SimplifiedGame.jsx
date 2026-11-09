@@ -132,7 +132,9 @@ export default function SimplifiedGame(){
         const first=takeFirstOutcome(seenFactorsRef.current, outcome);
         updateScreen(state=>ackAfterCommit({
           ...state,
-          committedHand:action.type==='steer'?next.game.deal.hand.slice():null
+          committedHand:action.type==='steer'
+            ?current.round.game.deal.hand.filter((_,i)=>i!==action.index)
+            :null
         }, {
           outcome, first, text:first?introCopy(first.kind, change.rewards[0]?.value):null
         }));

@@ -87,6 +87,10 @@
 .sgv-hand[data-compact="true"] .sgv-card-arrow{width:26px;height:20px}
 .sgv-hand[data-compact="true"] .sgv-card:has(.sgv-card-arrow) strong,
 .sgv-hand[data-compact="true"] .sgv-card strong{font-size:28px}
+.sgv-card[data-shade="5"] strong,
+.sgv-card[data-shade="6"] strong{text-shadow:0 2px #00000040}
+.sgv-card[data-shade="5"] .sgv-card-arrow,
+.sgv-card[data-shade="6"] .sgv-card-arrow{filter:drop-shadow(0 2px 0 #00000040)}
 
 
 
