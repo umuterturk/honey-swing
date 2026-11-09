@@ -28,16 +28,10 @@ function showReducedCard(root,view){
     root.appendChild(node);
     nodes.push(node);
   }
-  if(summary.flower){
-    const pill=root.querySelector('[data-factor="swing"]');
+  for(const flyer of summary.flyers||[]){
+    const pill=root.querySelector('[data-factor="'+flyer.kind+'"]');
     const origin=pill?point(pill,root):{x:root.clientWidth/2,y:root.clientHeight*.4};
-    const node=placeStaticFactor(root,'swing',{x:origin.x,y:origin.y+28});
-    if(node)nodes.push(node);
-  }
-  if(summary.bee){
-    const pill=root.querySelector('[data-factor="flip"]');
-    const origin=pill?point(pill,root):{x:root.clientWidth/2,y:root.clientHeight*.4};
-    const node=placeStaticFactor(root,'flip',{x:origin.x,y:origin.y+28});
+    const node=placeStaticFactor(root,flyer.kind,{x:origin.x,y:origin.y+28});
     if(node)nodes.push(node);
   }
   const clear=()=>removeNodes(nodes);

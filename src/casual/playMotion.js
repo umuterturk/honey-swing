@@ -3,13 +3,16 @@ import {
   animatePotBreak,animateSnapLoss
 } from './minimalMotion.js';
 import {motionKind} from './actionPresentation.js';
+import {FACTORS} from './factors.js';
 import {potAddFlyerPhases,saveResetsVisibleFactors} from './presentation.js';
 
 export function playOutcome(change, action){
   if(change.snap)return 'snap';
   if(change.zeroBreak)return 'zero';
-  if(change.rewards.some(reward=>reward.kind==='swing'))return 'cross';
-  if(change.rewards.some(reward=>reward.kind==='flip'))return 'flipFactor';
+  const rewarded=new Set((change.rewards||[]).map(reward=>reward.kind));
+  const hit=FACTORS.filter(factor=>factor.outcome&&rewarded.has(factor.kind))
+    .sort((a,b)=>a.outcomeOrder-b.outcomeOrder)[0];
+  if(hit)return hit.outcome;
   if(action.type==='flip')return 'flip';
   return null;
 }

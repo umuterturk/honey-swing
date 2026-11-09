@@ -1,4 +1,5 @@
 import {newOverswing,stepOverswing,overswingActions,applySwing,signed} from '../external/engines.js';
+import {FACTORS} from './factors.js';
 import {GARDEN} from './levels/garden.js';
 
 // One shared casual rules object. potCap, flipOnly, and the factor flags
@@ -10,12 +11,12 @@ const CASUAL_RULES=Object.freeze({
 });
 
 function rulesFor(record){
+  const flags={};
+  for(const factor of FACTORS)flags[factor.rulesFlag]=record.factors.includes(factor.kind);
   return Object.freeze({
     ...CASUAL_RULES,
     potCap:record.potCap,
-    enableSwingFactor:record.factors.includes('swing'),
-    enableFlipFactor:record.factors.includes('flip'),
-    enableJackpotFactor:record.factors.includes('jackpot'),
+    ...flags,
     flipOnly:record.flipOnly
   });
 }

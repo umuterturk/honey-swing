@@ -1,7 +1,17 @@
+import {FACTORS} from './factors.js';
+
 // Visual schedule only. finishPresentation does not wait on these times.
 // Flip reward particles start at the audit's 0.300s trace, after the 0.220s
 // face/meter callback. Steer keeps the existing 0.080s meter and 0.160s reward.
 const thirds=n=>Math.round(n*1000)/1000;
+const rewarded=rewards=>new Set((rewards||[]).map(reward=>reward?.kind));
+function holdFor(kinds){
+  let hold=0;
+  for(const factor of FACTORS){
+    if(kinds.has(factor.kind))hold=Math.max(hold,factor.hold||0);
+  }
+  return hold;
+}
 export const STATIC_OUTCOME_MS=1100;
 export const NEEDLE_GLIDE_EASE='power2.out';
 // Shared with motion/factorFlyer.js — keep factors/end marks in sync.
@@ -25,7 +35,10 @@ export function zeroCrossMark({from,to,meterStart,meterEnd}){
 }
 
 export function cardMotionMarks({type='steer',snap=false,rewards=[],from,to}={}){
-  const swingHold=rewards.some(reward=>reward?.kind==='swing')?0.05:0;
+  const kinds=rewarded(rewards);
+  const swingHold=holdFor(kinds);
+  const crossFactor=FACTORS.find(factor=>factor.flyerAt==='cross'&&factor.flyer);
+  const faceFactor=FACTORS.find(factor=>factor.flyerAt==='face'&&factor.flyer);
   const flip=type==='flip';
   // Part 1: fly to center and grow. Part 2: dive to the current needle and fade.
   // Needle glides only after that landing. Flip still reveals its face in part 1.
@@ -52,8 +65,8 @@ export function cardMotionMarks({type='steer',snap=false,rewards=[],from,to}={})
       pourStart,pourEnd,add:pourStart,pot:pourEnd,
       factors:thirds(meterEnd+0.02),end:thirds(pourEnd+0.08)};
   }
-  const hasSwing=rewards.some(r=>r?.kind==='swing');
-  const hasFlip=rewards.some(r=>r?.kind==='flip');
+  const hasSwing=!!(crossFactor&&kinds.has(crossFactor.kind));
+  const hasFlip=!!(faceFactor&&kinds.has(faceFactor.kind));
   const swingFlyer=hasSwing
     ?(zeroCrossMark({from,to,meterStart,meterEnd})??meterStart)
     :null;
@@ -71,6 +84,10 @@ export function cardMotionMarks({type='steer',snap=false,rewards=[],from,to}={})
     rewards:rewardStart,
     swingFlyer,
     flipFlyer,
+    flyers:[
+      swingFlyer!=null&&crossFactor?{kind:crossFactor.kind,at:swingFlyer,from:crossFactor.flyerFrom}:null,
+      flipFlyer!=null&&faceFactor?{kind:faceFactor.kind,at:flipFlyer,from:faceFactor.flyerFrom}:null
+    ].filter(Boolean),
     pourStart,pourEnd,
     factors:thirds(Math.max(flyerDone,0.58+shift)),
     add:pourStart,
@@ -101,13 +118,19 @@ export function reducedCardSummary(view){
   const snap=!!view?.snap;
   const kinds=new Set(rewards.map(r=>r.kind));
   const pourFly=!snap&&view.addedToPot>0?view?.pourFly:null;
+  const crossFactor=FACTORS.find(factor=>factor.flyerAt==='cross'&&factor.flyer);
+  const faceFactor=FACTORS.find(factor=>factor.flyerAt==='face'&&factor.flyer);
+  const flyers=!snap?FACTORS.filter(factor=>factor.flyer&&kinds.has(factor.kind)).map(factor=>({
+    kind:factor.kind,copy:factor.flyer
+  })):[];
   return {
     position:snap?0:view.to,
     rawPot:view.rawPotAfter,
     factors:view.factorsAfter,
     pourFly,
-    flower:!snap&&kinds.has('swing')?'More Flower':null,
-    bee:!snap&&kinds.has('flip')?'More Bee':null,
+    flower:!snap&&crossFactor&&kinds.has(crossFactor.kind)?crossFactor.flyer:null,
+    bee:!snap&&faceFactor&&kinds.has(faceFactor.kind)?faceFactor.flyer:null,
+    flyers,
     cross:null,
     shake:false
   };

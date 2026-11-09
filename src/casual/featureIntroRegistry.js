@@ -1,3 +1,4 @@
+import {FACTORS} from './factors.js';
 import {ONBOARDING_COUNT,ONBOARDING_LEVELS} from './onboardingLevels.js';
 import {
   ONBOARDING_PROGRESS_KEY,SEEN_FEATURE_INTROS_KEY
@@ -33,9 +34,16 @@ export function introFeatureIdsForLevel(level,previous=null){
   const prevFactors=previous?.visibleFactors||[];
   const factors=level.visibleFactors||[];
   if(level.id===1)ids.push('bank');
-  if(factors.includes('swing')&&!prevFactors.includes('swing'))ids.push('swing');
-  if(level.showFlip&&!previous?.showFlip)ids.push('flip');
-  if(factors.includes('flip')&&!prevFactors.includes('flip'))ids.push('flip_mult');
+  let actionIntroPlaced=false;
+  for(const factor of FACTORS){
+    if(factor.introId&&factors.includes(factor.kind)&&!prevFactors.includes(factor.kind))
+      ids.push(factor.introId);
+    // The Flip action card is not a factor. It stays between Swing and Flip multiplier.
+    if(!actionIntroPlaced&&factor.introId){
+      actionIntroPlaced=true;
+      if(level.showFlip&&!previous?.showFlip)ids.push('flip');
+    }
+  }
   if(level.requiresZeroBreak&&!previous?.requiresZeroBreak)ids.push('zero');
   if(level.showChances&&!previous?.showChances)ids.push('snap');
   return ids;

@@ -3,6 +3,7 @@ import {meterPercent,meterMarks} from './meterScale.js';
 import {fluidFillPercent} from './presentation.js';
 import {CARD_ARROW_PATH,cardDirection,cardAccentMix} from './cardDirection.js';
 import {VictoryJarArt} from './VictoryJarArt.js';
+import {factorByKind} from './factors.js';
 import {publicUrl} from './publicUrl.js';
 
 export const signedValue=n=>n>0?'+'+n:String(n);
@@ -55,24 +56,21 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
        {multipliers
          .filter(({kind})=>!visibleFactors||visibleFactors.includes(kind))
          .slice()
-         .sort((a,b)=>(a.kind==='flip')-(b.kind==='flip'))
+         .sort((a,b)=>factorByKind(a.kind).pillOrder-factorByKind(b.kind).pillOrder)
          .map(({kind,value,label})=>{
-           const infoKind=kind==='swing'||kind==='flip'?kind:null;
-           const canInfo=!!(infoKind&&onFactorInfo);
+           const factor=factorByKind(kind);
+           const canInfo=!!(factor?.info&&onFactorInfo);
            const Tag=canInfo?'button':'span';
            return <Tag key={kind} type={canInfo?'button':undefined}
              className={'sgv-multiplier-pill sgv-multiplier-'+kind+
-               ((dock==='swing'&&kind==='swing')||(dock==='flip-pill'&&kind==='flip')||
-                (dock==='jackpot'&&kind==='jackpot')?' sgv-dock':'')}
+               (factor&&dock===factor.dock?' sgv-dock':'')}
              data-factor={kind} title={label}
              aria-label={canInfo?label+' info, times '+value:label+': times '+value}
              disabled={canInfo?!factorInfoEnabled:undefined}
-             onClick={canInfo&&factorInfoEnabled?()=>onFactorInfo(infoKind):undefined}>
+             onClick={canInfo&&factorInfoEnabled?()=>onFactorInfo(kind):undefined}>
              <span className="sgv-multiplier-value">×{value}</span>
-             {kind==='swing'?<img className="sgv-multiplier-icon sgv-multiplier-daisy" src={publicUrl('celebration/daisy-2.png')}
-               alt="" aria-hidden="true" draggable="false"/>:null}
-             {kind==='flip'?<img className="sgv-multiplier-icon sgv-multiplier-bee" src={publicUrl('bee-smiling-closed-eyes.png')}
-               alt="" aria-hidden="true" draggable="false"/>:null}
+             {factor?.icon?<img className={'sgv-multiplier-icon'+(factor.iconClass?' '+factor.iconClass:'')}
+               src={publicUrl(factor.icon)} alt="" aria-hidden="true" draggable="false"/>:null}
            </Tag>;
          })}
      </div>

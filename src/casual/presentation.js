@@ -1,4 +1,5 @@
 import {signed} from '../external/engines.js';
+import {equationKinds} from './factors.js';
 import {multiplierParts,multiplierRewards} from './multiplierView.js';
 
 // Presentation-only selectors: values always come from an already committed engine deal.
@@ -51,7 +52,7 @@ export function saveResetsVisibleFactors(change,visibleFactors){
 }
 
 const POT_EQUATION_MAX_LEVEL=15;
-const POT_EQUATION_FACTOR_ORDER=Object.freeze(['swing','flip','jackpot']);
+const POT_EQUATION_FACTOR_ORDER=Object.freeze(equationKinds());
 
 // Onboarding Pot flyer: rank × visible factors (>1 only) → +added (levels 1–15).
 export function potAddFlyerTerms({
