@@ -9,6 +9,7 @@
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --import ./tests/register-jsx.mjs --test tests/*.test.mjs",
     "simulate:casual": "node scripts/simulate-casual-onboarding.mjs",
+    "simulate:players": "node scripts/simulate-players.mjs",
     "verify:release": "node scripts/verify-release.mjs dist"
   },
   "dependencies": {
