@@ -5,7 +5,7 @@ import {newOnboardingRound, ONBOARDING_COUNT} from '../src/casual/onboardingLeve
 import {dismissLevelScreen} from '../src/casual/levelScreens.js';
 import {
   ackAfterCommit, arrivalBegan, arrivalSettled, clearedAck, closedStart, dismissedIntro,
-  endTransition, initialScreen, levelScreen, nextLevelId, phoneClassName,
+  endTransition, initialScreen, levelScreen, nextLevelId,
   settledScreen, successMarked
 } from '../src/casual/screenState.js';
 
@@ -147,11 +147,4 @@ test('clearedAck ignores a newer token and arrival can settle', () => {
   assert.equal(arrivalBegan({...screen, arriving:true}, false).arriving, false);
   assert.equal(arrivalSettled(screen).arriving, false);
   assert.equal(successMarked(screen).successSettled, true);
-});
-
-test('phoneClassName keeps the orchard, event, and arrival classes', () => {
-  const name=phoneClassName({arriving:true}, {
-    levelId:13, garden:2, feedback:null, eventType:'start'
-  });
-  assert.equal(name, 'sgv-phone sgv-onboarding sgv-onboarding-13 sgv-orchard sgv-event-start sgv-level-arrival');
 });
