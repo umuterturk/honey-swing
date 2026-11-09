@@ -82,7 +82,7 @@
 }
 
 /* A level with 5 or more slots keeps this fit for the whole level. */
-.sgv-hand[data-compact="true"]{padding:0;--hs-card-gap:4px}
+.sgv-hand[data-compact="true"]{padding:0;--hs-card-gap:4px;--hs-group-margin:calc(var(--hs-hand-group-gap,10px) - var(--hs-card-gap))}
 .sgv-hand[data-compact="true"] .sgv-card{border-width:3px}
 .sgv-hand[data-compact="true"] .sgv-card-arrow{width:26px;height:20px}
 .sgv-hand[data-compact="true"] .sgv-card:has(.sgv-card-arrow) strong,

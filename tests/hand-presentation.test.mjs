@@ -210,6 +210,17 @@ describe('hand presentation', {concurrency:false}, ()=>{
     for(const levelId of [1, 4, 11]){
       const view = await mountLevel(levelId);
       try{
+        if(levelId===4){
+          const hand = view.host.querySelector('[aria-label="Your cards"]');
+          const style = hand.ownerDocument.defaultView.getComputedStyle(hand);
+          const groupMargin = style.getPropertyValue('--hs-group-margin').trim();
+          const reserved = style.getPropertyValue('--hs-hand-group-extra').trim();
+          assert.equal(groupMargin, '10px',
+            'a 3-card hand uses the full centre gap, not the compact subtraction');
+          assert.equal(reserved, '10px', 'the reserved width matches the full centre gap');
+          const firstRed = handButtons(view.host).find(button=>accessibleName(button).startsWith('Play RIGHT'));
+          assert.equal(hand.ownerDocument.defaultView.getComputedStyle(firstRed).marginLeft, '10px');
+        }
         const first = handButtons(view.host)[0];
         const {id, value} = visualCard(first);
         const original = newOnboardingRound(levelId).game.deal.hand.slice();
