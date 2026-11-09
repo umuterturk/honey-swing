@@ -1,29 +1,10 @@
-// Honey intensity thresholds. Secured is deal.T. Nothing here writes a score.
-// honey2 = star2 and honey3 = star3. The field names stay so this numeric
-// source does not need a rename. Nothing in the win or fail UI reads them as stars.
+// Honey intensity. Secured is deal.T. Nothing here writes a score.
+// honeyTier reads the garden record. honey2 = star2 and honey3 = star3.
+// Nothing in the win or fail UI reads them as stars.
 // Appendix A, with Appendix B locked: L11/L18 honey3 = 32/30, L1/L2/L5 auto Hiveful.
-export const STAR_THRESHOLDS=Object.freeze({
-  1:Object.freeze({target:5,star2:5,star3:5,auto3:true}),
-  2:Object.freeze({target:6,star2:6,star3:6,auto3:true}),
-  3:Object.freeze({target:8,star2:11,star3:13,auto3:false}),
-  4:Object.freeze({target:11,star2:18,star3:24,auto3:false}),
-  5:Object.freeze({target:6,star2:6,star3:6,auto3:true}),
-  6:Object.freeze({target:13,star2:18,star3:22,auto3:false}),
-  7:Object.freeze({target:10,star2:22,star3:34,auto3:false}),
-  8:Object.freeze({target:17,star2:28,star3:38,auto3:false}),
-  9:Object.freeze({target:11,star2:17,star3:17,auto3:false}),
-  10:Object.freeze({target:10,star2:14,star3:18,auto3:false}),
-  11:Object.freeze({target:9,star2:21,star3:32,auto3:false}),
-  12:Object.freeze({target:24,star2:33,star3:41,auto3:false}),
-  13:Object.freeze({target:16,star2:27,star3:38,auto3:false}),
-  14:Object.freeze({target:20,star2:38,star3:56,auto3:false}),
-  15:Object.freeze({target:30,star2:36,star3:41,auto3:false}),
-  16:Object.freeze({target:11,star2:17,star3:17,auto3:false}),
-  17:Object.freeze({target:10,star2:14,star3:18,auto3:false}),
-  18:Object.freeze({target:9,star2:20,star3:30,auto3:false}),
-  19:Object.freeze({target:24,star2:33,star3:41,auto3:false}),
-  20:Object.freeze({target:6,star2:7,star3:7,auto3:false})
-});
+import {GARDEN} from './levels/garden.js';
+
+const RECORD=new Map(GARDEN.map(level=>[level.id,level]));
 
 const PRAISE=Object.freeze([
   null,
@@ -51,7 +32,7 @@ function tierCount(table,tier){
 // Highest qualifying honey intensity, H3 then H2 then H1. Equal thresholds grant H3.
 // L1, L2, and L5 are Hiveful on any win.
 export function honeyTier(levelId,secured){
-  const row=STAR_THRESHOLDS[levelId];
+  const row=RECORD.get(levelId);
   if(!row)throw new RangeError('Unknown level '+levelId);
   const score=integer(secured);
   if(score<row.target)return 0;

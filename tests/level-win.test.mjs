@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {STAR_THRESHOLDS, honeyTier} from '../src/casual/starThresholds.js';
-
+import {honeyTier} from '../src/casual/starThresholds.js';
+import {GARDEN} from '../src/casual/levels/garden.js';
 // Appendix A / B. These numbers are the expected contract, not a re-export.
 const EXPECTED = [
   {level:1, target:5, star2:5, star3:5, auto3:true},
@@ -28,9 +28,9 @@ const EXPECTED = [
 
 test('star thresholds match Appendix A for all 20 levels', () => {
   assert.equal(EXPECTED.length, 20);
-  assert.equal(Object.keys(STAR_THRESHOLDS).length, 20);
+  assert.equal(GARDEN.length, 20);
   for(const row of EXPECTED){
-    const stored = STAR_THRESHOLDS[row.level];
+    const stored = GARDEN.find(level => level.id === row.level);
     assert.equal(stored.target, row.target, 'L' + row.level + ' target');
     assert.equal(stored.star2, row.star2, 'L' + row.level + ' star2');
     assert.equal(stored.star3, row.star3, 'L' + row.level + ' star3');
@@ -54,10 +54,12 @@ test('star thresholds match Appendix A for all 20 levels', () => {
     assert.equal(honeyTier(row.level, row.star3), 3);
     assert.equal(honeyTier(row.level, row.star3 + 25), 3);
   }
-  assert.equal(STAR_THRESHOLDS[11].star2, 21);
-  assert.equal(STAR_THRESHOLDS[11].star3, 32);
-  assert.equal(STAR_THRESHOLDS[18].star2, 20);
-  assert.equal(STAR_THRESHOLDS[18].star3, 30);
+  const level11 = GARDEN.find(level => level.id === 11);
+  const level18 = GARDEN.find(level => level.id === 18);
+  assert.equal(level11.star2, 21);
+  assert.equal(level11.star3, 32);
+  assert.equal(level18.star2, 20);
+  assert.equal(level18.star3, 30);
   assert.equal(honeyTier(1, 5), 3);
   assert.equal(honeyTier(1, 8), 3);
   assert.equal(honeyTier(2, 6), 3);

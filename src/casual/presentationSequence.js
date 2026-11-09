@@ -1,4 +1,5 @@
 import {HONEY_MOTION} from './honeyWin.js';
+import {onboardingLevel,winCta} from './onboardingRound.js';
 import {burstParticles,countUpDuration,flightDropletSize,flightDroplets,honeyTier,praiseFor} from './starThresholds.js';
 
 // Level arrival. Times are seconds from a fresh level becoming the current
@@ -23,7 +24,6 @@ export const LEVEL_START={
   }),
   reducedBanner:0.400,
   dock:Object.freeze({start:0,end:0.800,fromY:-12,fromScale:0.82}),
-  dockLevels:Object.freeze({3:'swing',5:'flip',6:'flip-pill',11:'hearts'}),
   idleAt:3,
   idleHint:'after-dismiss',
   idlePulse:Object.freeze([
@@ -32,7 +32,7 @@ export const LEVEL_START={
 };
 
 export function levelStartPlan(levelId,{fresh=true,reduced=false}={}){
-  const dock=fresh?LEVEL_START.dockLevels[levelId]||null:null;
+  const dock=fresh?onboardingLevel(levelId).dock||null:null;
   const timing=dock?LEVEL_START.dock:null;
   const spec={
     cap:LEVEL_START.cap,dim:LEVEL_START.dim,banner:LEVEL_START.banner,
@@ -71,7 +71,7 @@ export function successPlan({victory=false,levelId=1,bank=false,secured=null,red
     motion:!reduced,
     scoreAt:0,
     ctaAt:0,
-    cta:levelId===12?'LOWER ORCHARD':'NEXT',
+    cta:winCta(onboardingLevel(levelId)),
     pour:bank?{start:0,approachEnd:0.180,liquidEnd:0.460,end:0.650,tip:42}:null,
     star:null,
     tier,

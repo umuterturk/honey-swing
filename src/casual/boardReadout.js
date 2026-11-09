@@ -2,7 +2,7 @@ import {overswingPayout} from '../external/engines.js';
 import {bankAssistiveMessage,shouldAutoBank} from './bankStatus.js';
 import {idleHintAction} from './idleHint.js';
 import {
-  GARDEN_2_START,ONBOARDING_COUNT,onboardingActions,onboardingFinished,onboardingLevel,onboardingVictory
+  onboardingActions,onboardingFinished,onboardingLevel,onboardingVictory,winCta
 } from './onboardingLevels.js';
 import {rawPotValue,visiblePotPayout} from './presentation.js';
 
@@ -34,7 +34,6 @@ export function boardReadout({
     bankPulse:hint?.type==='bank',
     flipPulse:hint?.type==='flip',
     pulseIndex:hint?.type==='steer'?hint.index:null,
-    winLabel:level.id===GARDEN_2_START-1?'LOWER ORCHARD':
-      level.id===ONBOARDING_COUNT?'PLAY AGAIN':'NEXT'
+    winLabel:winCta(level)
   };
 }
