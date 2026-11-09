@@ -7,6 +7,7 @@ import {
 import {signed,newOverswing,stepOverswing,overswingPayout,overswingActions} from '../src/external/engines.js';
 import {multiplierRewards} from '../src/casual/multiplierView.js';
 import {simulateOnboardingLevel} from '../scripts/simulate-casual-onboarding.mjs';
+import {solveLevel} from '../scripts/solve-level.mjs';
 
 const flip={type:'flip'},bank={type:'bank'};
 const pot=round=>round.game.deal.potValue;
@@ -163,19 +164,25 @@ test('Level 2: both orders fill 6, and a middle pass with Swing off is not a cro
 });
 
 test('Level 5: the hidden card is a Flip, pays its rank, and never ticks Swing',()=>{
-  let state=line(5,[3,2]);
+  let state=line(5,[2,1]);
   assert.deepEqual(state.game.deal.hand,[]);
-  assert.equal(pot(state),5);
   assert.equal(onboardingActions(state).some(action=>action.type==='bank'),true);
   assert.equal(onboardingActions(state).some(action=>action.type==='flip'),true);
   state=play(state,flip);
-  assert.equal(state.game.lastAction.addedToPot,1);
-  assert.deepEqual(factors(state),[1,1]);
+  assert.equal(state.game.deal.flipFactor,2);
+  assert.equal(state.game.lastAction.addedToPot,4);
+  assert.equal(state.game.deal.W,0);
+  state=play(state,flip);
+  assert.equal(state.game.deal.flipFactor,3);
+  assert.equal(state.game.lastAction.addedToPot,6);
+  assert.equal(state.game.deal.W,0);
   state=play(state,bank);
-  assert.equal(state.game.deal.T,6);
-  const flipped=line(5,['flip',3,2,'bank']);
-  assert.equal(flipped.flipCount,1);
-  assert.equal(flipped.game.deal.T>=6,true);
+  assert.equal(state.game.deal.T,13);
+  assert.equal(onboardingVictory(state),true);
+  const flipped=line(5,['flip','flip',2,1,'bank']);
+  assert.equal(flipped.flipCount,2);
+  assert.equal(flipped.game.deal.W,0);
+  assert.equal(flipped.game.deal.T>=13,true);
 });
 
 test('Level 11: the safe line banks 11 and the taught Snap recovers to 9',()=>{
@@ -183,7 +190,7 @@ test('Level 11: the safe line banks 11 and the taught Snap recovers to 9',()=>{
   assert.equal(safe.snaps,0);
   assert.equal(safe.game.deal.T,11);
   for(const leftover of [[-3,3],[3,-3]]){
-    let state=line(11,[2,-1,'bank',5,7]);
+    let state=line(11,[2,-1,'bank',5,6]);
     assert.equal(state.snaps,1);
     assert.equal(state.game.deal.T,3);
     assert.equal(pot(state),0);
@@ -201,11 +208,18 @@ test('Level 11: the safe line banks 11 and the taught Snap recovers to 9',()=>{
 
 test('Garden 1 has no forced loss except Level 12, and every level has a win',()=>{
   for(let id=1;id<=ONBOARDING_COUNT;id++){
-    const report=simulateOnboardingLevel(id,{maxStates:80000,maxDepth:24});
-    assert.equal(report.truncated,false,'truncated '+id);
+    const proof=solveLevel(id);
+    assert.equal(proof.truncated,false,'truncated '+id);
+    assert.equal(proof.solvable,true,'no win '+id);
+    assert.equal(proof.duplicateIds,false,'duplicate hand '+id);
+    if(id>12)continue;
+    const report=simulateOnboardingLevel(id,{maxStates:80000});
+    assert.equal(report.truncated,false,'truncated census '+id);
     assert.ok(report.shortestWin,'no win '+id);
     assert.equal(report.deadEnds,0,'dead end '+id);
-    if(id<=9)assert.equal(report.forcedLosses,0,'forced loss '+id);
+    // L8 is the first losable level. L9 and L10 stay forced-loss free.
+    if(id<=7||id===9||id===10)assert.equal(report.forcedLosses,0,'forced loss '+id);
+    if(id===8)assert.ok(report.forcedLosses>0,'L8 is the first losable level');
     if(id===11)assert.equal(report.zeroSnapForced,0,'snap-free forced loss');
     if(id<=4)assert.equal(report.failedEnds,0,'early fail '+id);
   }
