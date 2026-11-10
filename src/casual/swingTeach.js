@@ -57,16 +57,6 @@ export function teachDismissesCrossAck(levelId, outcome){
   return levelId===SWING_TEACH_LEVEL&&outcome==='cross';
 }
 
-function power2Out(t){
-  return 1-(1-t)*(1-t);
-}
-
-export function needleAt(from, to, start, end, time){
-  if(!(end>start))return to;
-  const p=Math.max(0, Math.min(1, (time-start)/(end-start)));
-  return from+(to-from)*power2Out(p);
-}
-
 // Matrix clock. Overlays stay wall-clock. A tap halves the remaining time to
 // unlock, dropping the post-blink hold before it slides the 0-cross earlier.
 // GSAP power4.out / power2.out are the needle eases (quint / cubic).
