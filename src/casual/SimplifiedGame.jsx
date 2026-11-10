@@ -14,7 +14,6 @@ import {OnboardingPhone} from './OnboardingPhone.jsx';
 import {browserStorage, dispatchCasualEvent, prefersReducedMotion} from './platform.js';
 import {introCopy, successPlan, takeFirstOutcome} from './presentationSequence.js';
 import {settledPresentation} from './presentation.js';
-import {captureHandPositions} from './motion/handReflow.js';
 import {playOutcome, startPlayMotion} from './playMotion.js';
 import {
   ackAfterCommit, arrivalBegan, arrivalSettled, clearedDock, closedDevMenu, closedFactor, closedStart,
@@ -117,7 +116,6 @@ export default function SimplifiedGame(){
     if(!boardTapDuringIntro(introGateRef.current).play)return;
     const root=rootRef.current;
     const level=onboardingLevel(current.round.levelId);
-    const handBefore=action?.type==='steer'?captureHandPositions(root):null;
     runPresentedAction(current.round, action, presentationRef.current, {
       onCommit({next, change}){
         const record=commitPlay(browserStorage(), {
@@ -151,7 +149,7 @@ export default function SimplifiedGame(){
       },
       startMotion({change}, complete){
         return startPlayMotion({
-          root, source, action, change, level, handBefore,
+          root, source, action, change, level,
           firstTap:current.round.levelId===1&&current.round.turn===0,
           seenFactors:seenFactorsRef.current,
           cancelRef, resetMotionRef, lossMotionRef, breakMotionRef,

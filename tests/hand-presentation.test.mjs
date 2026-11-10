@@ -215,11 +215,11 @@ describe('hand presentation', {concurrency:false}, ()=>{
           const style = hand.ownerDocument.defaultView.getComputedStyle(hand);
           const groupMargin = style.getPropertyValue('--hs-group-margin').trim();
           const reserved = style.getPropertyValue('--hs-hand-group-extra').trim();
-          assert.equal(groupMargin, '10px',
-            'a 3-card hand uses the full centre gap, not the compact subtraction');
-          assert.equal(reserved, '10px', 'the reserved width matches the full centre gap');
+          assert.equal(groupMargin, '0px',
+            'honey sockets are evenly spaced, so the colour gap is closed');
+          assert.equal(reserved, '0px', 'the reserved width matches the closed colour gap');
           const firstRed = handButtons(view.host).find(button=>accessibleName(button).startsWith('Play RIGHT'));
-          assert.equal(hand.ownerDocument.defaultView.getComputedStyle(firstRed).marginLeft, '10px');
+          assert.equal(hand.ownerDocument.defaultView.getComputedStyle(firstRed).marginLeft, '0px');
         }
         const first = handButtons(view.host)[0];
         const {id, value} = visualCard(first);
@@ -281,7 +281,7 @@ describe('hand presentation', {concurrency:false}, ()=>{
     }
   });
 
-  test('remaining cards are sliding at 100ms while the played card is in the air, and reduced motion does not slide', async()=>{
+  test('a played card leaves an empty socket and the other cards stay put', async()=>{
     await boot();
     const clock = await holdClock();
     const restoreLayout = installHandLayout(page());
@@ -293,9 +293,12 @@ describe('hand presentation', {concurrency:false}, ()=>{
         await click(first);
         clock.advance(100);
         assert.ok(view.host.querySelector('.sgv-flying-card'), 'the played card is still in the air');
+        const hand = view.host.querySelector('[aria-label="Your cards"]');
+        assert.equal(hand.children[0].classList.contains('sgv-cell-closed'), true,
+          'the played socket stays open in place');
         const xs = handButtons(view.host).map(card=>motionX(clock.gsap, card));
         assert.ok(xs.length>=1);
-        assert.ok(xs.some(x=>x!==0), 'a remaining card has moved, x='+xs.join(','));
+        assert.ok(xs.every(x=>x===0), 'remaining cards stay in their sockets, x='+xs.join(','));
       }finally{
         await view.unmount();
       }

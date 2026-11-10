@@ -1,7 +1,7 @@
 import React from 'react';
 import {meterPercent,meterMarks} from './meterScale.js';
 import {fluidFillPercent} from './presentation.js';
-import {CARD_ARROW_PATH,cardDirection,cardShade} from './cardDirection.js';
+import {cardDirection,cardShade} from './cardDirection.js';
 import {VictoryJarArt} from './VictoryJarArt.js';
 import {factorByKind} from './factors.js';
 import {publicUrl} from './publicUrl.js';
@@ -79,6 +79,19 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
  </section>;
 }
 
+function BentText({text, arc=2.4}){
+ const chars=Array.from(String(text));
+ const mid=(chars.length-1)/2;
+ return <span className="sgv-bent">
+   {chars.map((ch, index)=>{
+     const t=mid===0?0:(index-mid)/mid;
+     return <i key={index} style={{
+       transform:'translateY('+(t*t*arc)+'px) rotate('+(t*arc*2.1)+'deg)'
+     }}>{ch===' '?'\u00a0':ch}</i>;
+   })}
+ </span>;
+}
+
 // The Pot shows the engine's prospective Bank payout, not raw card value.
 // Its shine is the tappable affordance, replacing the separate Bank chip.
 // Cap (when set) still drives fill / soft overflow; the label shows amount only.
@@ -92,22 +105,28 @@ export function PendingPot({value,cap=null,target=24,bankable=false,onBank,class
    style={{'--pot-fill':fill+'%'}}
    disabled={interactive?!bankable:undefined}
    onClick={interactive?event=>onBank?.(event.currentTarget):undefined}
-   aria-label={!interactive?'Pot has '+value+' pending drops':bankable
+   aria-label={!interactive
+     ?'Pot has '+value+(hasCap?' of '+cap:'')+' pending drops'
+     :bankable
      ?'Tap Pot to save '+value+' drops'
-     :'Pot has '+value+' potential drops. Saving not yet available'}>
+     :'Pot has '+value+(hasCap?' of '+cap:'')+' potential drops. Saving not yet available'}>
    <span className="sgv-jar-pad" aria-hidden="true"/>
    <VictoryJarArt fillPercent={fill} className="sgv-pot-victory-art" mouthClassName="sgv-pot-art-mouth"/>
    <span className="sgv-pot-pour-lip" aria-hidden="true"/>
+   {hasCap&&<span className="sgv-pot-limit" aria-hidden="true"><BentText text={'MAX '+cap} arc={-2.2}/></span>}
    <span className="sgv-pot-amount" aria-hidden="true">
-     <DropletIcon className="sgv-pot-drop"/>
-     {value}
+     <img className="sgv-fill-drop" src={publicUrl('drop1.png')} alt="" draggable="false"/>
+     <BentText text={String(value)} arc={1.6}/>
    </span>
  </Tag>;
 }
 
 export function GoalProgress({banked,target}){
  return <div className="sgv-goal-progress" role="status" aria-label={'Secured '+banked+' of '+target+' drops'}>
-   <span>SAVINGS</span><strong>{banked} / {target}</strong>
+   <strong className="sgv-savings-amount">
+     <img className="sgv-fill-drop" src={publicUrl('drop1.png')} alt="" draggable="false"/>
+     <BentText text={String(banked)} arc={1.4}/>
+   </strong>
  </div>;
 }
 
@@ -115,13 +134,18 @@ export function GoalProgress({banked,target}){
 export function GlassChest({banked,target}){
  const fill=fluidFillPercent(banked,target,{max:78});
  return <div className="sgv-chest-area sgv-bank-bottle"
+   style={{'--bank-fill':fill+'%'}}
    aria-label={banked+' of '+target+' drops secured'} data-gold={banked}>
    <span className="sgv-jar-pad" aria-hidden="true"/>
    <div className="sgv-chest-glow" aria-hidden="true"/>
    <div className="sgv-chest-body" aria-hidden="true">
      <VictoryJarArt fillPercent={fill} className="sgv-bank-victory-art" mouthClassName="sgv-chest-mouth"/>
    </div>
-   <GoalProgress banked={banked} target={target}/>
+   <div className="sgv-bank-label">
+     <GoalProgress banked={banked} target={target}/>
+     <span className="sgv-savings-word" aria-hidden="true"><BentText text="SAVINGS" arc={-2.2}/></span>
+     <span className="sgv-bank-required" aria-hidden="true"><BentText text={'GOAL '+target} arc={-2.2}/></span>
+   </div>
  </div>;
 }
 
@@ -143,10 +167,7 @@ export function SimpleCard({id,index,value,disabled,onPlay,showDirection=true,ri
    aria-label={'Play '+directionalValue(value)}
    disabled={disabled}
    onClick={event=>onPlay(index,event.currentTarget)}>
-   <span className="sgv-card-gloss" aria-hidden="true"/>
-   {showDirection&&<svg className="sgv-card-arrow" viewBox="0 0 80 58" aria-hidden="true" focusable="false">
-     <path d={CARD_ARROW_PATH}/>
-   </svg>}
+   <img className="sgv-card-art" src={publicUrl(direction==='left'?'cell-left.png':'cell-right.png')} alt="" draggable="false"/>
    <strong>{Math.abs(value)}</strong>
  </button>;
 }

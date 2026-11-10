@@ -1,5 +1,6 @@
 import {gsap} from 'gsap';
-import {CARD_ARROW_PATH,cardDirection,cardShade} from '../cardDirection.js';
+import {cardDirection,cardShade} from '../cardDirection.js';
+import {publicUrl} from '../publicUrl.js';
 import {meterPercent} from '../meterScale.js';
 import {NEEDLE_GLIDE_EASE,cardMotionMarks,flyerOrigin,reducedCardSummary} from '../motionSchedule.js';
 import {FACTORS} from '../factors.js';
@@ -224,8 +225,8 @@ export function animateCardAction({
     clone.className='sgv-card sgv-flying-card sgv-card-'+cardDirection(view.signedCard);
     clone.setAttribute('data-shade',String(cardShade(view.signedCard)));
     clone.style.removeProperty('--sgv-card-mix');
-    clone.innerHTML='<svg class="sgv-card-arrow" viewBox="0 0 80 58" aria-hidden="true">'+
-      '<path d="'+CARD_ARROW_PATH+'"/></svg>'+
+    const art=publicUrl(cardDirection(view.signedCard)==='left'?'cell-left.png':'cell-right.png');
+    clone.innerHTML='<img class="sgv-card-art" src="'+art+'" alt="" draggable="false">'+
       '<strong>'+Math.abs(view.signedCard)+'</strong>';
   },[],marks.faceEnd);
   tl.call(()=>{

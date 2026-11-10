@@ -89,6 +89,8 @@
   transform:translateY(7%) scale(0.82);
 }
 .sgv-jar-back{z-index:1}
+.sgv-bottle-pair .sgv-jar-back{opacity:.72}
+.sgv-bottle-pair .sgv-jar-front{opacity:.55}
 .sgv-jar-honey-layer{z-index:2}
 .sgv-jar-lights{z-index:3}
 .sgv-jar-front{z-index:4;opacity:.78}

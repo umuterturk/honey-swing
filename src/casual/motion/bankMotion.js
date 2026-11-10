@@ -114,7 +114,7 @@ export function animateBankPour({
     nodes.push(svg);
     const d=pourStreamPath(start,end);
     streamPaths=[];
-    for(const [kind,width] of [['sgv-pour-stream-glow','9'],['sgv-pour-stream-core','4.5']]){
+    for(const [kind,width] of [['sgv-pour-stream-glow','18'],['sgv-pour-stream-core','9']]){
       const path=doc.createElementNS('http://www.w3.org/2000/svg','path');
       path.setAttribute('d',d);
       path.setAttribute('class',kind);
@@ -188,11 +188,13 @@ export function animateBankPour({
 export function animateBankTargetCelebrate({root,onComplete}){
   const bank=root?.querySelector?.('.sgv-bank-bottle');
   const art=bank?.querySelector?.('.sgv-victory-jar-art')||bank;
+  const label=bank?.querySelector?.('.sgv-bank-label');
   const front=bank?.querySelector?.('.sgv-jar-front');
   const gleam=bank?.querySelector?.('.sgv-honey-gleam-sweep');
   let alive=true;
   const clear=()=>{
     if(art)gsap.set(art,{clearProps:'scale,filter'});
+    if(label)gsap.set(label,{clearProps:'scale'});
     if(front)gsap.set(front,{clearProps:'filter,opacity'});
     if(gleam)gsap.set(gleam,{clearProps:'opacity,transform,x'});
     bank?.classList.remove('sgv-bank-target-hit');
@@ -216,7 +218,8 @@ export function animateBankTargetCelebrate({root,onComplete}){
     return ()=>{alive=false;tl.kill();clear();};
   }
   const tl=gsap.timeline({onComplete:finish});
-  tl.fromTo(art,{scale:1},{
+  const pulse=[art,label].filter(Boolean);
+  tl.fromTo(pulse,{scale:1},{
     scale:1.07,duration:.18,ease:'power1.out',yoyo:true,repeat:5,
     transformOrigin:'50% 70%'
   },0);

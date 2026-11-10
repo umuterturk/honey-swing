@@ -1,0 +1,142 @@
+/* Honey hand fit. Edit these to seat the cells in the bar.
+   --hs-panel-scale      1 = full controls width
+   --hs-cell-scale       multiplies every cell together (open and closed)
+   --hs-cell-basis       cell width as a percent of the panel
+   --hs-cell-gap         space between cells
+   --hs-cell-shift-y     move the row on the bar (percent of bar height)
+   --hs-cell-number-drop inset of the numeral from the bottom of the cell */
+.sgv-hand-frame{
+  --hs-panel-scale:1;
+  --hs-cell-scale:0.95;
+  --hs-cell-basis:16%;
+  --hs-cell-size:calc(var(--hs-cell-basis) * var(--hs-cell-scale));
+  --hs-cell-gap:2.6%;
+  --hs-cell-shift-y:4%;
+  --hs-cell-number-drop:32%;
+  position:relative;
+  z-index:2;
+  flex:none;
+  width:calc(100% * var(--hs-panel-scale));
+  margin:0 auto clamp(6px,1.4dvh,12px);
+}
+.sgv-hand-frame[data-compact="true"]{
+  --hs-cell-basis:13%;
+  --hs-cell-gap:0.6%;
+  --hs-cell-number-drop:28%;
+}
+/* Two painted rows of four sockets. Hands wider than four use this tray
+   for the whole level. Cell pitch matches the hole centers (17.47%). */
+.sgv-hand-frame[data-rows="2"]{
+  container-type:inline-size;
+  --hs-cell-size:14.72cqw;
+  --hs-cell-gap:2.75cqw;
+  --hs-row-gap:2.4cqw;
+  --hs-cell-shift-y:10.5%;
+  --hs-cell-number-drop:30%;
+}
+.sgv-hand-frame[data-rows="2"] .sgv-hand{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  align-content:flex-start;
+  justify-content:flex-start;
+  width:calc(4 * var(--hs-cell-size) + 3 * var(--hs-cell-gap));
+  height:auto;
+  left:50%;
+  right:auto;
+  transform:translateX(-50%);
+  top:var(--hs-cell-shift-y);
+  row-gap:var(--hs-row-gap);
+  column-gap:var(--hs-cell-gap);
+}
+.sgv-hand-panel{
+  display:block;
+  width:100%;
+  height:auto;
+  pointer-events:none;
+  user-select:none;
+}
+.sgv-hand-frame .sgv-hand{
+  position:absolute;
+  left:0;
+  right:0;
+  top:var(--hs-cell-shift-y);
+  height:100%;
+  margin:0;
+  padding:0;
+  gap:var(--hs-cell-gap);
+  align-items:center;
+  justify-content:center;
+  --hs-group-margin:0px;
+}
+.sgv-hand-frame .sgv-card,
+.sgv-hand-frame .sgv-cell-closed{
+  width:var(--hs-cell-size);
+  max-width:none;
+  aspect-ratio:576 / 648;
+  height:auto;
+  flex:0 0 auto;
+  min-width:0;
+}
+.sgv-card:has(.sgv-card-art),
+.sgv-cell-closed{
+  position:relative;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  overflow:visible;
+  padding:0;
+  container-type:inline-size;
+}
+.sgv-card-art,
+.sgv-cell-closed img{
+  position:absolute;
+  inset:0;
+  z-index:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  pointer-events:none;
+  user-select:none;
+}
+.sgv-card:has(.sgv-card-art){
+  display:flex;
+  color:#fffefb;
+}
+.sgv-hand-frame .sgv-card:has(.sgv-card-art) strong,
+.sgv-flying-card:has(.sgv-card-art) strong{
+  position:absolute;
+  z-index:1;
+  left:0;
+  right:0;
+  bottom:var(--hs-cell-number-drop, 32%);
+  margin:0;
+  font-size:44cqw;
+  line-height:.9;
+  font-weight:1000;
+  letter-spacing:-0.04em;
+  text-align:center;
+  color:#fffefb;
+  text-shadow:0 2px 0 #6a3d16, 0 0 8px #ffffffcc;
+}
+.sgv-hand-frame .sgv-card:active:not(:disabled){
+  transform:translateY(3px) scale(.97);
+  box-shadow:none;
+}
+.sgv-hand-frame .sgv-card:disabled{
+  filter:none;
+  opacity:.72;
+}
+.sgv-flying-card:has(.sgv-card-art){
+  border:0;
+  background:transparent;
+  box-shadow:none;
+  overflow:visible;
+  filter:drop-shadow(0 12px 10px #56705a73);
+}
+.sgv-onboarding .sgv-card-risky:has(.sgv-card-art){
+  outline:none;
+  box-shadow:none;
+  filter:drop-shadow(0 0 1px #3a1a00) drop-shadow(0 0 2px #3a1a00);
+}

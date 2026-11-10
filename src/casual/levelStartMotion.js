@@ -7,7 +7,7 @@ function nodesOf(board){
 }
 
 // Settled elements drop their inline transform so a stylesheet baseline can
-// return. The goal's translate(-50%, -50%) is that baseline; writing "none"
+// return. The goal's stylesheet translate is that baseline; writing "none"
 // or translate(0, 0) leaves it off-center. The jar, meter, hand, actions,
 // and Pot have no resting transform, so clearing is their baseline too.
 const TRANSFORM_PROPS='transform,x,y,scale,xPercent,yPercent,rotation';

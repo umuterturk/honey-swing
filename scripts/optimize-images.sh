@@ -31,6 +31,7 @@ cap_for() {
     honeycomb.png|score-board.png) echo 1200 ;;
     victory-slogan-underline.png) echo 720 ;;
     victory-slogan-side-drops-left.png) echo 200 ;;
+    drop1.png) echo 128 ;;
     *) echo 1200 ;;
   esac
 }
@@ -48,6 +49,7 @@ SHIPPED=(
   victory-slogan-side-drops-left.png
   victory-slogan-underline.png
   wasp-looking-right.png
+  drop1.png
   celebration/bush-big.png
   celebration/bush-long-1.png
   celebration/daisy-1.png

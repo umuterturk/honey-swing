@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef} from 'react';
 import {signed} from '../external/engines.js';
 import {GardenScene} from './CasualArt.jsx';
 import {FxLayer} from './fx/FxLayer.jsx';
@@ -6,6 +6,11 @@ import {HorizontalMeter, GlassChest, PendingPot, SimpleCard} from './MinimalBoar
 import {GARDEN_2_START} from './onboardingLevels.js';
 import {wouldSnap} from './onboardingRound.js';
 import {screens} from './screens/index.js';
+import {publicUrl} from './publicUrl.js';
+import {nextHandSlots} from './handSlots.js';
+
+// Painted honey bar has four sockets. Wider hands keep one socket per dealt slot.
+const HAND_PANEL_SLOTS=4;
 
 export function OnboardingPhone({
   screen, readout, ending, bankLive, reduced, fx, rootRef, introStartRef, levelReadyRef, phoneClass,
@@ -20,9 +25,10 @@ export function OnboardingPhone({
   const deal=screen.round.game.deal;
   const slots=level.visibleHandSlots;
   const sourceHand=screen.committedHand||deal.hand;
-  const handView=sourceHand.slice(0, slots).map((id, engineIndex)=>({
-    id, engineIndex, value:signed(id)
-  })).sort((a, b)=>a.value-b.value||a.engineIndex-b.engineIndex);
+  const handView=sourceHand.slice(0, slots).map((id, order)=>({id, value:signed(id), order}));
+  const layoutRef=useRef(null);
+  const layout=nextHandSlots(layoutRef.current, handView, Math.max(HAND_PANEL_SLOTS, slots), level.id);
+  layoutRef.current=layout;
   const bothColours=handView.some(card=>card.value<0)&&handView.some(card=>card.value>0);
   const firstRedId=bothColours?handView.find(card=>card.value>0).id:null;
   const {view, shownGold, animating, introGate, docking, help, devMenuOpen, factorInfo, ack, beat}=screen;
@@ -80,31 +86,34 @@ export function OnboardingPhone({
           onFactorInfo={onFactorInfo}/>
         <span className="sgv-flight-center" aria-hidden="true"/>
         <div className="sgv-bottle-pair" aria-label="Pending Pot and secured glass">
+          <img className="sgv-desk" src={publicUrl('desk2.png')} alt="" draggable="false"/>
           <PendingPot value={potDisplay} cap={level.rules.potCap} target={level.target}
             bankable={canBank} interactive={false}/>
           <GlassChest banked={shownGold} target={level.target}/>
         </div>
       </div>
       <section className="sgv-controls sgv-tutorial-controls" aria-label="Card actions">
-        <div className="sgv-card-shelf" aria-hidden="true"/>
-        <div className="sgv-hand" aria-label="Your cards"
-          data-compact={slots>=5?'true':undefined}
-          style={{
-            '--hs-hand-slots':String(slots),
-            '--hs-hand-group-extra':'var(--hs-group-margin)'
-          }}>
-          {handView.map(card=>{
-            const engineIndex=deal.hand.indexOf(card.id);
-            return <SimpleCard key={card.id} id={card.id} index={engineIndex}
-              value={card.value} showDirection={true}
-              groupStart={card.id===firstRedId}
-              risky={level.showChances&&wouldSnap(screen.round, {type:'steer', index:engineIndex})}
-              highlighted={pulseIndex===engineIndex}
-              disabled={finished||animating||!available.some(action=>action.type==='steer'&&action.index===engineIndex)}
-              onPlay={(_index, element)=>onPlay(
-                {type:'steer', index:screen.round.game.deal.hand.indexOf(card.id)}, element
-              )}/>;
-          })}
+        <div className="sgv-hand-frame" data-rows={slots>HAND_PANEL_SLOTS?'2':undefined}>
+          <img className="sgv-hand-panel" src={publicUrl(slots>HAND_PANEL_SLOTS?'handpanel-2-row.png':'handpanel.png')} alt="" draggable="false"/>
+          <div className="sgv-hand" aria-label="Your cards"
+            style={{
+              '--hs-hand-slots':String(Math.max(HAND_PANEL_SLOTS, slots)),
+              '--hs-hand-group-extra':'var(--hs-group-margin)'
+            }}>
+            {layout.slots.map(slot=>{
+              if(slot.kind==='closed')return <span key={slot.key} className="sgv-cell-closed" aria-hidden="true"/>;
+              const engineIndex=deal.hand.indexOf(slot.id);
+              return <SimpleCard key={slot.id} id={slot.id} index={engineIndex}
+                value={slot.value} showDirection={true}
+                groupStart={slot.id===firstRedId}
+                risky={level.showChances&&engineIndex>=0&&wouldSnap(screen.round, {type:'steer', index:engineIndex})}
+                highlighted={pulseIndex===engineIndex}
+                disabled={finished||animating||engineIndex<0||!available.some(action=>action.type==='steer'&&action.index===engineIndex)}
+                onPlay={(_index, element)=>onPlay(
+                  {type:'steer', index:screen.round.game.deal.hand.indexOf(slot.id)}, element
+                )}/>;
+            })}
+          </div>
         </div>
         <div className="sgv-actions sgv-tutorial-actions">
           <button type="button"

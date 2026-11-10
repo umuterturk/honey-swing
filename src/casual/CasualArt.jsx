@@ -1,53 +1,9 @@
 import React,{useEffect,useRef} from 'react';
 import {gsap} from 'gsap';
+import {publicUrl} from './publicUrl.js';
 
 export function GardenScene(){
- return <svg className="sg-garden" viewBox="0 0 440 930" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-  <defs>
-   <linearGradient id="g-sky" x2="0" y2="1"><stop stopColor="#5eb7ed"/><stop offset=".48" stopColor="#b8edfc"/><stop offset="1" stopColor="#e9f6b8"/></linearGradient>
-   <linearGradient id="g-hill" x2="0" y2="1"><stop stopColor="#b4de91"/><stop offset="1" stopColor="#60b875"/></linearGradient>
-   <linearGradient id="g-water" x2="1" y2="0"><stop stopColor="#b1edfa"/><stop offset=".45" stopColor="#f9ffff"/><stop offset=".72" stopColor="#4cbadd"/><stop offset="1" stopColor="#adf2fa"/></linearGradient>
-   <linearGradient id="g-post" x2="1" y2="0"><stop stopColor="#9e5b37"/><stop offset=".4" stopColor="#ecae70"/><stop offset=".8" stopColor="#c47d4e"/><stop offset="1" stopColor="#8d4b30"/></linearGradient>
-   <radialGradient id="g-leaves"><stop stopColor="#b6ee72"/><stop offset="1" stopColor="#41975b"/></radialGradient>
-   <filter id="g-soft"><feGaussianBlur stdDeviation="7"/></filter>
-  </defs>
-  <rect width="440" height="930" fill="url(#g-sky)"/>
-  <circle cx="302" cy="132" r="87" fill="#fff8bb" opacity=".35" filter="url(#g-soft)"/>
-  <g fill="#fff" opacity=".88" className="sg-cloud-one"><ellipse cx="80" cy="174" rx="70" ry="20"/><circle cx="61" cy="155" r="29"/><circle cx="101" cy="151" r="39"/><circle cx="135" cy="166" r="22"/></g>
-  <g fill="#fff" opacity=".87" className="sg-cloud-two"><ellipse cx="366" cy="206" rx="74" ry="22"/><circle cx="326" cy="193" r="29"/><circle cx="375" cy="186" r="40"/></g>
-  <path d="M-28 370Q57 297 122 343Q190 275 269 341Q357 274 472 349V930H-28Z" fill="#7dc4c0" opacity=".35"/>
-  <path d="M-20 457Q60 360 149 428Q239 345 307 401Q390 336 463 408V930H-20Z" fill="#88c9a1" opacity=".74"/>
-  <g className="sg-waterfall">
-   <path d="M371 302Q417 276 464 314L466 586Q416 609 358 565Z" fill="#5fa4ae" opacity=".43"/>
-   <path d="M390 292Q418 294 450 273L456 565Q414 593 375 556Z" fill="url(#g-water)"/>
-   <path d="M402 301Q407 425 396 565M421 294Q429 423 419 556M445 298Q438 452 447 556" fill="none" stroke="#faffff" strokeWidth="11" opacity=".7" strokeLinecap="round"/>
-   <path d="M374 548Q416 520 465 549M369 559Q411 576 463 561" fill="none" stroke="#e9ffff" strokeWidth="12" opacity=".66"/>
-  </g>
-  <path d="M350 303Q391 253 427 260L469 245V310Q408 315 389 332L354 349Z" fill="#7dba9c"/><path d="M354 304Q395 272 428 274L469 254" fill="none" stroke="#9cdf99" strokeWidth="15" strokeLinecap="round"/>
-  <path d="M-29 545Q76 461 161 522Q263 461 342 517Q403 495 475 523V930H-29Z" fill="url(#g-hill)"/>
-  <path d="M-20 622Q126 550 226 604Q324 551 457 595V930H-20Z" fill="#9bdc8b"/>
-  <path d="M-30 709Q132 645 261 683Q357 629 471 668V930H-30Z" fill="#78c477"/>
-  <path d="M-28 777Q144 702 298 758Q364 710 472 738V930H-28Z" fill="#65b46c"/>
-  <g opacity=".77" filter="url(#g-soft)"><circle cx="-25" cy="343" r="67" fill="#58a766"/><circle cx="3" cy="443" r="53" fill="#4a9f66"/><circle cx="448" cy="435" r="65" fill="#3fa467"/></g>
-  <g className="sg-foreground-leaves">
-   <path d="M-9 118Q50 120 69 164Q22 158-9 140Z" fill="url(#g-leaves)"/><path d="M-10 176Q44 159 57 204Q8 201-10 193Z" fill="#83c85a"/>
-   <path d="M-20 239Q34 223 62 263Q24 264-20 258Z" fill="#5db35e"/><path d="M-20 300Q28 290 40 329Q-1 332-20 319Z" fill="#a6d36c"/>
-   <path d="M451 304Q406 326 402 363Q435 351 451 339Z" fill="#75c964"/><path d="M449 370Q405 360 396 401Q428 402 453 394Z" fill="#80c766"/>
-  </g>
-  <g className="sg-fence" strokeLinejoin="round">
-   <path d="M-27 603H89M347 603H469" stroke="#b77f4e" strokeWidth="22"/>
-   <rect x="9" y="533" width="44" height="145" rx="14" fill="url(#g-post)" stroke="#f8ca8d" strokeWidth="5"/>
-   <rect x="382" y="533" width="44" height="145" rx="14" fill="url(#g-post)" stroke="#f8ca8d" strokeWidth="5"/>
-   <path d="M17 554V655M391 554V655" stroke="#fbd1a1" strokeWidth="5" opacity=".38"/>
-  </g>
-  <g className="sg-grass" stroke="#4eaa56" strokeWidth="3" fill="none" strokeLinecap="round"><path d="M2 697l10-24 9 25m-12 0 21-16M414 700l9-29 7 28m-18 0 17-14M34 685l9-14M396 682l-9-16"/></g>
-  {[[35,685,1],[66,671,.75],[410,692,1.1],[388,661,.8],[14,738,.75]].map(([x,y,s],i)=>
-   <g key={i} transform={'translate('+x+' '+y+') scale('+s+')'}>
-    <g fill="#fff9ed" stroke="#fae9d2" strokeWidth=".5">{[0,60,120,180,240,300].map(a=><ellipse key={a} cy="-10" ry="12" rx="6" transform={'rotate('+a+')'}/>)}</g>
-    <circle r="6" fill="#ffcd49"/>
-   </g>)}
-  <g fill="#ffdd6d" opacity=".9"><circle cx="28" cy="650" r="3"/><circle cx="413" cy="654" r="3"/><circle cx="366" cy="735" r="3"/></g>
- </svg>;
+ return <img className="sg-garden" src={publicUrl('bg2.png')} alt="" draggable="false"/>;
 }
 
 export function Corgi(){

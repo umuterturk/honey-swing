@@ -49,36 +49,56 @@
 /* Keep honeycomb clear of the HUD on phones; never pull the meter upward. */
 .sgv-meter-section{margin-top:clamp(6px,1.4dvh,14px)}
 
-/* Center the secured progress inside the glass, away from the platform lip.
-   No plaque or new background; use a light type outline for fluid contrast. */
+/* Savings amount uses the Pot's size and rides the honey the same way.
+   The floor sits above SAVINGS / GOAL; a full jar ends near the Pot's full mark. */
+.sgv-bottle-pair{--hs-fill-size:clamp(14px,4vw,20px)}
+.sgv-bottle-pair .sgv-pot-amount,
+.sgv-bottle-pair .sgv-goal-progress strong{font-size:var(--hs-fill-size)}
 .sgv-bottle-pair .sgv-goal-progress{
- left:50%;top:55%;bottom:auto;right:auto;
- transform:translate(-50%,-50%);
+ left:50%;top:auto;right:auto;
+ bottom:calc(30% + var(--bank-fill,0%) * 0.36);
+ transform:translate(-50%,-58%);
  display:flex;flex-direction:column;align-items:center;justify-content:center;
  gap:3px;max-width:96%;width:max-content;min-width:0;
  background:transparent;border:0;border-radius:0;box-shadow:none;
  padding:0;pointer-events:none;z-index:12;
  color:#754c35;text-align:center;
+ transition:bottom .18s ease-out;
 }
 .sgv-bottle-pair .sgv-goal-progress span{
  font-size:clamp(11px,2.8vw,14px);line-height:1.08;letter-spacing:1px;
  color:#704934;text-shadow:0 1px 2px #fffdf0,0 0 6px #fff4d6;
 }
 .sgv-bottle-pair .sgv-goal-progress strong{
- font-size:clamp(23px,6vw,33px);line-height:1.08;
+ display:inline-flex;align-items:center;justify-content:center;gap:3px;
+ line-height:1;
  color:#754b35;text-shadow:0 2px 2px #fffce8,0 0 7px #fff7d1;
  font-variant-numeric:tabular-nums;
+}
+.sgv-bottle-pair .sgv-fill-drop{
+ height:1.02em;width:auto;display:block;flex:none;
+ pointer-events:none;user-select:none;-webkit-user-select:none;
+ filter:drop-shadow(0 1px 1px #fff6d4aa);
+}
+.sgv-bottle-pair .sgv-bank-required{font-size:clamp(11px,2.8vw,14px)}
+.sgv-bottle-pair .sgv-savings-word{
+ position:absolute;z-index:7;left:50%;bottom:calc(9% + 15px);
+ transform:translateX(-50%);
+ font-size:clamp(9px,2.5vw,12px);font-weight:1000;letter-spacing:1px;
+ line-height:1;white-space:nowrap;color:#704934;
+ text-shadow:0 1px 2px #fffdf0,0 0 6px #fff4d6;
+ pointer-events:none;
 }
 @media(max-width:365px){
  .sgv-card-arrow{width:39px;height:31px}
  .sgv-card:has(.sgv-card-arrow) strong{font-size:clamp(37px,10.5vw,45px)}
- .sgv-bottle-pair .sgv-goal-progress strong{font-size:clamp(21px,5.5vw,25px)}
 }
 @media(max-height:580px){
  .sgv-meter-section{margin-top:8px}
  .sgv-card-arrow{width:35px;height:27px}
  .sgv-card:has(.sgv-card-arrow) strong{font-size:clamp(31px,8.4vw,39px)}
- .sgv-bottle-pair .sgv-goal-progress strong{font-size:clamp(20px,5.5vw,24px)}
+ .sgv-bottle-pair{--hs-fill-size:16px}
+ .sgv-bottle-pair .sgv-savings-word{bottom:calc(9% + 12px)}
 }
 
 /* A level with 5 or more slots keeps this fit for the whole level. */

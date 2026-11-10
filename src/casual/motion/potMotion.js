@@ -140,7 +140,7 @@ export function animateTapPour({
     nodes.push(svg);
     const d=pourStreamPath(start,end);
     streamPaths=[];
-    for(const [kind,width] of [['sgv-pour-stream-glow','9'],['sgv-pour-stream-core','4.5']]){
+    for(const [kind,width] of [['sgv-pour-stream-glow','18'],['sgv-pour-stream-core','9']]){
       const path=doc.createElementNS('http://www.w3.org/2000/svg','path');
       path.setAttribute('d',d);
       path.setAttribute('class',kind);
