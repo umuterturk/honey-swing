@@ -3,6 +3,7 @@ import {cardDirection,cardShade} from '../cardDirection.js';
 import {publicUrl} from '../publicUrl.js';
 import {meterPercent} from '../meterScale.js';
 import {NEEDLE_GLIDE_EASE,cardMotionMarks,flyerOrigin,reducedCardSummary} from '../motionSchedule.js';
+import {mountSwingSpotlight,playReleaseTime} from '../swingTeach.js';
 import {FACTORS} from '../factors.js';
 import {flyFactorLabels} from './factorFlyer.js';
 import {animateTapPour} from './potMotion.js';
@@ -142,17 +143,33 @@ export function animateCardAction({
   const originalOpacity=source.style.opacity;
   const centerX=center.x-start.x,centerY=center.y-start.y;
   let alive=true;
+  let settled=false;
   const clean=()=>{
     source.style.opacity=originalOpacity;
     gsap.set(source,{clearProps:'scale'});
     removeNodes(nodes);
   };
-  const tl=gsap.timeline({onComplete:()=>{
-    if(!alive)return;
+  const tl=gsap.timeline();
+  const teardown=commit=>{
+    if(settled)return;
+    settled=true;
+    alive=false;
+    tl.eventCallback('onComplete', null);
+    tl.kill();
+    for(const animation of animations){
+      if(typeof animation==='function')animation();
+      else animation?.kill?.();
+    }
+    clean();
+    if(commit)onComplete();
+  };
+  tl.eventCallback('onComplete', ()=>{
+    if(settled)return;
+    settled=true;
     alive=false;
     clean();
     onComplete();
-  }});
+  });
   clearStatic();
   const marks=cardMotionMarks({
     type:action.type,snap:!!view.snap,rewards:view.rewards||[],
@@ -172,11 +189,19 @@ export function animateCardAction({
     (trackBox?flyerOrigin({track:trackBox,root:rootBox,finalPercent:50}):
       {x:root.clientWidth/2,y:root.clientHeight*.28});
   const aimX=needleHere.x-start.x,aimY=needleHere.y-start.y;
+  const teach=!!(view.spotlight&&!view.spotlight.reduced);
   if(marker){
     marker.classList.add('sgv-marker-gsap');
     const release=()=>{
       marker.classList.remove('sgv-marker-gsap');
-      if(needleValue)needleValue.textContent=String(Math.abs(view.snap?0:view.to));
+      if(needleValue){
+        needleValue.textContent=String(Math.abs(view.snap?0:view.to));
+        needleValue.removeAttribute('data-live');
+      }
+      if(teach){
+        marker.style.left=finalPercent+'%';
+        gsap.set(marker, {clearProps:'transform'});
+      }
     };
     if(view.snap){
       const fromLeft=marker.style.left||'50%';
@@ -191,13 +216,13 @@ export function animateCardAction({
         ease:'power2.inOut',overwrite:'auto'
       });
       animations.push(()=>{hit.kill();home.kill();release();});
-    }else{
+    }else if(!teach){
       const glide=gsap.fromTo(marker,{left:marker.style.left||'50%'},{
         left:finalPercent+'%',duration:Math.max(0.001,marks.meterEnd-(marks.meterStart||0)),
         delay:marks.meterStart||0,ease:NEEDLE_GLIDE_EASE,overwrite:'auto'
       });
       animations.push(()=>{glide.kill();release();});
-    }
+    }else animations.push(release);
   }
   source.style.opacity='.36';
   animations.push(gsap.fromTo(source,{scale:1},{
@@ -234,8 +259,10 @@ export function animateCardAction({
     if(view.snap){
       // Keep React meter at the pre-snap seat; GSAP owns left through the wasp hit.
       if(needleValue)needleValue.textContent=String(Math.abs(view.to));
-    }else onMeter(view.to);
+    }else if(!teach)onMeter(view.to);
   },[],view.snap?marks.copyStart:marks.meterEnd);
+  let startTapPour=()=>{};
+  let launchFlyer=()=>{};
   if(view.snap){
     tl.call(()=>{
       if(!alive)return;
@@ -255,7 +282,7 @@ export function animateCardAction({
     // React left catches up only after GSAP has parked the needle at 0.
     tl.call(()=>{if(alive)onMeter(0);},[],marks.end);
   }else{
-    const startTapPour=()=>{
+    startTapPour=()=>{
       if(!alive)return;
       const fromPot=Number.isFinite(view.rawPotBefore)
         ?view.rawPotBefore:Math.max(0,(view.rawPotAfter||0)-(view.addedToPot||0));
@@ -273,27 +300,33 @@ export function animateCardAction({
         onPourProgress:value=>{if(alive)onPot(value);}
       }));
     };
-    for(const flyer of marks.flyers||[]){
+    launchFlyer=flyer=>{
+      if(!alive)return;
       const factor=FACTORS.find(row=>row.kind===flyer.kind);
-      tl.call(()=>{
-        if(!alive||!factor)return;
-        let origin=null;
-        if(factor.flyerFrom==='marker'){
-          if(!marker)return;
-          origin=point(marker,root);
-        }else if(factor.flyerFrom==='flip-button'){
-          const flipBtn=root.querySelector('.sgv-flip');
-          origin=flipBtn?point(flipBtn,root):
-            {x:root.clientWidth*.5,y:root.clientHeight*.82};
-        }
-        if(!origin)return;
-        animations.push(flyFactorLabels({
-          root,
-          plan:[{kind:flyer.kind,start:0,origin}]
-        }));
-      },[],flyer.at);
+      if(!factor)return;
+      let origin=null;
+      if(factor.flyerFrom==='marker'){
+        if(!marker)return;
+        origin=point(marker,root);
+      }else if(factor.flyerFrom==='flip-button'){
+        const flipBtn=root.querySelector('.sgv-flip');
+        origin=flipBtn?point(flipBtn,root):
+          {x:root.clientWidth*.5,y:root.clientHeight*.82};
+      }
+      if(!origin)return;
+      animations.push(flyFactorLabels({
+        root,
+        plan:[{kind:flyer.kind,start:0,origin}],
+        bounce:!view.spotlight
+      }));
+    };
+    for(const flyer of marks.flyers||[]){
+      if(teach&&flyer.kind==='swing')continue;
+      tl.call(()=>launchFlyer(flyer), [], flyer.at);
     }
-    if(marks.rewards!=null){
+    if(teach){
+      tl.to({}, {duration:view.spotlight.lock}, 0);
+    }else if(marks.rewards!=null){
       tl.call(()=>{if(alive)onFactors(view.factorsAfter);},[],marks.factors);
       tl.call(startTapPour,[],marks.pourStart||marks.meterEnd);
       tl.call(()=>{if(alive)onPot(view.rawPotAfter);},[],marks.pourEnd||marks.pot);
@@ -305,13 +338,23 @@ export function animateCardAction({
       tl.call(()=>{},[],marks.end);
     }
   }
-  return ()=>{
-    alive=false;tl.kill();
-    for(const animation of animations){
-      if(typeof animation==='function')animation();
-      else animation?.kill?.();
-    }
-    clean();
-  };
+  if(view.spotlight){
+    const cancelSpot=mountSwingSpotlight({
+      root, plan:view.spotlight, from:view.from, to:view.to, limit,
+      onCross(){
+        if(!alive)return;
+        for(const flyer of marks.flyers||[]){
+          if(flyer.kind==='swing')launchFlyer(flyer);
+        }
+      },
+      onPill(){if(alive)onFactors(view.factorsAfter);},
+      onPark(){if(alive)startTapPour();},
+      onUnlock(){teardown(true);}
+    });
+    animations.push(cancelSpot);
+    const release=playReleaseTime(marks.end, view.spotlight);
+    tl.call(()=>cancelSpot(), [], release);
+  }
+  return ()=>teardown(false);
 }
 

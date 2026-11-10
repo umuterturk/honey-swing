@@ -1,3 +1,32 @@
+/* L3 swing teach. The scrim covers the phone; the meter (and the More Flower
+   pill inside it) plus live flyers sit above it. The arrow is not a control. */
+.sgv-swing-teach-dim{
+  position:absolute;inset:0;z-index:21;pointer-events:none;opacity:0;
+}
+.sgv-phone[data-swing-teach] .sgv-meter-section{z-index:23}
+.sgv-phone[data-swing-teach] .sgv-skip-surface{pointer-events:none}
+.sgv-phone[data-swing-teach] .sgv-factor-flyer,
+.sgv-phone[data-swing-teach] .sgv-pot-fly,
+.sgv-phone[data-swing-teach] .sgv-pour-splash{z-index:26}
+.sgv-swing-teach-arrow{
+  position:absolute;z-index:10;width:36px;overflow:visible;pointer-events:none;
+}
+.sgv-swing-teach-caption{
+  position:absolute;z-index:6;left:8%;right:8%;top:112px;margin:0;
+  color:#3A1A00;font-size:15px;font-weight:700;line-height:1.15;text-align:center;
+  pointer-events:none;text-shadow:0 0 2px #FFF0CF,0 0 6px #FFF0CF,0 1px 0 #FFF0CF;
+}
+@media(max-width:320px){
+  .sgv-swing-teach-caption{font-size:13px}
+}
+.sgv-phone[data-swing-teach] .sgv-marker-gsap .sgv-meter-needle-value{
+  color:transparent;text-shadow:none;
+}
+.sgv-phone[data-swing-teach] .sgv-marker-gsap .sgv-meter-needle-value::after{
+  content:attr(data-live);color:#fff8e6;
+  text-shadow:0 1px 0 #7a2e06,0 2px 0 #5a2204,0 0 5px #ffb84a88;
+}
+
 /* Progressive onboarding: reserve geometry, reveal functionality only when taught. */
 .sgv-onboarding .sgv-tutorial-hud{
  min-height:42px;height:42px;justify-content:space-between;padding:0 5px;

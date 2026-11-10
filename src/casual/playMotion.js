@@ -5,6 +5,8 @@ import {
 import {motionKind} from './actionPresentation.js';
 import {FACTORS} from './factors.js';
 import {potAddFlyerPhases,saveResetsVisibleFactors} from './presentation.js';
+import {reducedMotion} from './motion/stage.js';
+import {swingSpotlightPlan} from './swingTeach.js';
 
 export function playOutcome(change, action){
   if(change.snap)return 'snap';
@@ -38,7 +40,11 @@ export function cardMotionView(change, {firstTap, level}){
     potTarget:level.rules.potCap||level.target,
     levelId:level.id,
     visibleFactors:level.visibleFactors,
-    pourFly:potAddFlyerPhases({levelId:level.id,visibleFactors:level.visibleFactors,...change})
+    pourFly:potAddFlyerPhases({levelId:level.id,visibleFactors:level.visibleFactors,...change}),
+    spotlight:swingSpotlightPlan({
+      levelId:level.id, type:change.type, snap:!!change.snap, rewards:change.rewards,
+      from:change.from, to:change.to, reduced:reducedMotion()
+    })
   };
 }
 

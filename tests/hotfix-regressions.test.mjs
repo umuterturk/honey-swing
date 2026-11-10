@@ -237,8 +237,8 @@ test('a settled win shows a filled jar and the secured score', async() => {
 
 test('win praise reads Nectar, Amber, or Hiveful', () => {
   const cases = [
-    [4, 11, 'Nectar!'],
-    [4, 18, 'Amber!'],
+    [4, 12, 'Nectar!'],
+    [4, 13, 'Amber!'],
     [1, 5, 'Hiveful!']
   ];
   for(const [level, score, word] of cases){

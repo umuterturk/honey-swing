@@ -14,14 +14,14 @@ export const GARDEN=Object.freeze([
   }),
   Object.freeze({
     id:3,name:'The Crossing',deck:Object.freeze([2,24]),hand:2,
-    target:8,star2:11,star3:13,factors:Object.freeze(['swing']),
-    potCap:8,showChances:false,garden:1,auto3:false,
+    target:10,star2:13,star3:13,factors:Object.freeze(['swing']),
+    potCap:13,showChances:false,garden:1,auto3:true,
     flipOnly:false,zeroGate:false,pulse:'card',dock:'swing',telegraph:false
   }),
   Object.freeze({
     id:4,name:'Either Side',deck:Object.freeze([1,3,24]),hand:3,
-    target:11,star2:18,star3:24,factors:Object.freeze(['swing']),
-    potCap:11,showChances:false,garden:1,auto3:false,
+    target:12,star2:13,star3:14,factors:Object.freeze(['swing']),
+    potCap:14,showChances:false,garden:1,auto3:false,
     flipOnly:false,zeroGate:false,pulse:'card',dock:null,telegraph:false
   }),
   Object.freeze({

@@ -8,6 +8,7 @@ import {wouldSnap} from './onboardingRound.js';
 import {screens} from './screens/index.js';
 import {publicUrl} from './publicUrl.js';
 import {nextHandSlots} from './handSlots.js';
+import {swingTeachConcealed, visibleHandIds} from './swingTeach.js';
 
 // Painted honey bar has four sockets. Wider hands keep one socket per dealt slot.
 const HAND_PANEL_SLOTS=4;
@@ -23,8 +24,9 @@ export function OnboardingPhone({
     potDisplay, remaining, hearts, bankMessage, bankPulse, flipPulse, pulseIndex
   }=readout;
   const deal=screen.round.game.deal;
-  const slots=level.visibleHandSlots;
-  const sourceHand=screen.committedHand||deal.hand;
+  const concealed=swingTeachConcealed(screen.round);
+  const sourceHand=visibleHandIds(screen.round, screen.committedHand||deal.hand);
+  const slots=concealed?Math.max(1, sourceHand.length):level.visibleHandSlots;
   const handView=sourceHand.slice(0, slots).map((id, order)=>({id, value:signed(id), order}));
   const layoutRef=useRef(null);
   const layout=nextHandSlots(layoutRef.current, handView, Math.max(HAND_PANEL_SLOTS, slots), level.id);
@@ -32,6 +34,7 @@ export function OnboardingPhone({
   const bothColours=handView.some(card=>card.value<0)&&handView.some(card=>card.value>0);
   const firstRedId=bothColours?handView.find(card=>card.value>0).id:null;
   const {view, shownGold, animating, introGate, docking, help, devMenuOpen, factorInfo, ack, beat}=screen;
+  const teachSpotlight=rootRef.current?.getAttribute?.('data-swing-teach')==='1';
   return <main className="sgv-page">
     <div ref={rootRef}
       data-honey-win={finished&&victory?'true':undefined}
@@ -149,7 +152,7 @@ export function OnboardingPhone({
         screen, readout, ending, reduced, fx, rootRef, introStartRef, levelReadyRef,
         onDismissFactor, onDismissIntro, onDismissStart, onEndPrimary, onEndBackdrop, onReset
       }))}
-      {animating&&<button type="button" className="sgv-skip-surface" aria-label="Skip animation"
+      {animating&&!teachSpotlight&&<button type="button" className="sgv-skip-surface" aria-label="Skip animation"
         onPointerDown={event=>{event.preventDefault(); event.stopPropagation(); onFinishPresentation();}}
         onClick={event=>{event.preventDefault(); event.stopPropagation(); onFinishPresentation();}}/>}
     </div>
