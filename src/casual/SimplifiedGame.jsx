@@ -252,9 +252,12 @@ export default function SimplifiedGame(){
         });
         const cardPlay=action.type==='steer'||action.type==='flip';
         const noted=openingPlayRef.current;
-        const landingDim=!!(
-          noted?.advanced&&noted.playNumber<=BEAT.dimPlays&&cardPlay&&!spotlight
-        );
+        const playNumber=noted?.playNumber||0;
+        // Dim moves 1–3 while coaching is still open, and move 3 of the deal
+        // that just finished coaching. A later retry does not continue that count.
+        const openingDim=!!noted&&playNumber>=1&&playNumber<=BEAT.dimPlays&&
+          (!noted.coachingDoneBefore||noted.advanced);
+        const landingDim=!!(cardPlay&&!spotlight&&openingDim);
         const handle=startPlayMotion({
           root, source, action, change, level,
           firstTap:current.round.levelId===1&&current.round.turn===0,

@@ -490,6 +490,105 @@ test('the landing shade shows for a new player and not after the first session o
   }
 });
 
+function handTop(host){
+  const hand=host.querySelector('[aria-label="Your cards"]');
+  assert.ok(hand, 'the hand is on screen');
+  return hand.getBoundingClientRect().top;
+}
+
+function tapStatus(host){
+  return [...host.querySelectorAll('[role="status"]')].find(node=>
+    (node.textContent||'').replace(/\s+/g, ' ').includes('Tap a card.')
+  )||null;
+}
+
+async function shadeOnNextCard(host, clock){
+  const phone=phoneOf(host);
+  const before=shades(phone);
+  await click(handButtons(host)[0]);
+  let grew=false;
+  let steps=0;
+  while(phone.getAttribute('aria-busy')==='true'&&steps<80){
+    if(shades(phone)>before)grew=true;
+    await clock.advance(40);
+    steps+=1;
+  }
+  return grew;
+}
+
+test('a Level 1 restart after move 1 still shades the first card, and one after move 2 does not', async()=>{
+  const clock=await holdClock();
+  const view=await mountFresh();
+  try{
+    await click(handButtons(view.host)[0]);
+    await untilSettled(view.host, clock);
+  }finally{
+    await view.unmount();
+    clock.restore();
+  }
+  page().localStorage.removeItem(ONBOARDING_SESSION_KEY);
+  const retry=await mountGame();
+  const retryClock=await holdClock();
+  try{
+    await dismissOpening(retry.host);
+    assert.ok(suggestion(retry.host), 'coaching is still open after a move-1 restart');
+    assert.equal(
+      await shadeOnNextCard(retry.host, retryClock),
+      true,
+      'the retry\'s first card still shades the landing'
+    );
+    await click(handButtons(retry.host)[0]);
+    await untilSettled(retry.host, retryClock);
+  }finally{
+    await retry.unmount();
+    retryClock.restore();
+  }
+  page().localStorage.removeItem(ONBOARDING_SESSION_KEY);
+  const later=await mountGame();
+  const laterClock=await holdClock();
+  try{
+    await dismissOpening(later.host);
+    assert.equal(suggestion(later.host), null, 'move 2 already finished coaching');
+    assert.equal(
+      await shadeOnNextCard(later.host, laterClock),
+      false,
+      'a Level 1 retry after move 2 does not shade the landing'
+    );
+  }finally{
+    await later.unmount();
+    laterClock.restore();
+  }
+});
+
+test('the tap hint is a status and does not move the cards', async()=>{
+  const clock=await holdClock();
+  const view=await mountFresh();
+  try{
+    const cue=tapStatus(view.host);
+    assert.ok(cue, 'Tap a card. is a status');
+    assert.equal(
+      cue.ownerDocument.defaultView.getComputedStyle(cue).position,
+      'absolute',
+      'the hint sits out of the hand\'s flow'
+    );
+    const before=handTop(view.host);
+    let sawHand=false;
+    for(let step=0;step<80&&!sawHand;step++){
+      await clock.advance(100);
+      if(handIcon(view.host))sawHand=true;
+    }
+    assert.equal(sawHand, true, 'the hand icon still arrives');
+    assert.equal(handTop(view.host), before, 'the icon does not move the cards');
+    assert.ok(tapStatus(view.host), 'the status stays while the icon is up');
+    await click(handButtons(view.host)[0]);
+    assert.equal(tapStatus(view.host), null, 'the status leaves on the tap');
+    assert.equal(handTop(view.host), before, 'removing the hint does not move the cards');
+  }finally{
+    await view.unmount();
+    clock.restore();
+  }
+});
+
 test('reduced motion keeps the hint without moving the cards', async()=>{
   setReduced(true);
   const clock=await holdClock();

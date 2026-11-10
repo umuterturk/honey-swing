@@ -86,18 +86,24 @@ function writeFirstSession(storage,session){
   }
 }
 
-// Count a committed play toward the opening only when it continues that opening.
-// A retry or a later launch does not add another play, and does not clear a done note.
+// The opening count advances only along one deal. A retry starts at turn 0, so it
+// does not add to that count and does not finish coaching.
+// Coaching is done only when move 2 of a deal commits (the play whose turn was 1).
 export function noteCommittedPlay(storage,turnBefore){
   const session=readFirstSession(storage);
-  if(session.coachingDone&&session.plays>=3)return {session,advanced:false,playNumber:session.plays};
-  if(!Number.isInteger(turnBefore)||turnBefore!==session.plays){
-    return {session,advanced:false,playNumber:session.plays};
+  const coachingDoneBefore=session.coachingDone;
+  const playNumber=Number.isInteger(turnBefore)&&turnBefore>=0?turnBefore+1:0;
+  const continues=playNumber>0&&turnBefore===session.plays;
+  const room=!(session.coachingDone&&session.plays>=3);
+  if(!continues||!room){
+    return {session,advanced:false,playNumber,coachingDoneBefore};
   }
-  const plays=session.plays+1;
-  const next={plays,coachingDone:session.coachingDone||plays>=2};
+  const next={
+    plays:session.plays+1,
+    coachingDone:session.coachingDone||turnBefore===1
+  };
   writeFirstSession(storage,next);
-  return {session:next,advanced:true,playNumber:plays};
+  return {session:next,advanced:true,playNumber,coachingDoneBefore};
 }
 
 export function readUnlockedOnboardingLevel(storage,levelCount=1){

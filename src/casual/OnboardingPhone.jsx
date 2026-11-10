@@ -107,8 +107,13 @@ export function OnboardingPhone({
         </div>
       </div>
       <section className="sgv-controls sgv-tutorial-controls" aria-label="Card actions">
-        {coach==='move1'&&<p className="sgv-beat-cue">Tap a card.{showHand&&<TapHand/>}</p>}
         <div className="sgv-hand-frame" data-rows={slots>HAND_PANEL_SLOTS?'2':undefined}>
+          {coach==='move1'&&<p className="sgv-beat-cue" role="status">
+            Tap a card.
+            <span className="sgv-beat-hand-slot" aria-hidden={showHand?undefined:'true'}>
+              {showHand&&<TapHand/>}
+            </span>
+          </p>}
           <img className="sgv-hand-panel" src={publicUrl(slots>HAND_PANEL_SLOTS?'handpanel-2-row.webp':'handpanel.webp')} alt="" draggable="false"/>
           <div className="sgv-hand" aria-label="Your cards"
             style={{
