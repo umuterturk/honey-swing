@@ -7,9 +7,9 @@ import {
 } from '../src/casual/onboardingLevels.js';
 import {solveSwingGate} from '../scripts/solve-level.mjs';
 import {
-  SWING_TEACH_FOLLOW, SWING_TEACH_OPENING, TEACH_ARROW_FILL, TEACH_ARROW_STROKE, TEACH_DIM,
-  TEACH_ENTER, filterTeachActions, playReleaseTime, swingSpotlightPlan, swingTeachConcealed,
-  teachDismissesCrossAck, visibleHandIds
+  SWING_TEACH_FOLLOW, SWING_TEACH_OPENING, TEACH_ARROW_FILL, TEACH_ARROW_STROKE, TEACH_CAPTION,
+  TEACH_DIM, TEACH_ENTER, createTeachClock, filterTeachActions, playReleaseTime,
+  swingSpotlightPlan, swingTeachConcealed, teachDismissesCrossAck, visibleHandIds
 } from '../src/casual/swingTeach.js';
 import {cardMotionMarks} from '../src/casual/motionSchedule.js';
 import {
@@ -24,6 +24,13 @@ function steer(round, value){
   const next=stepOnboarding(round, {type:'steer', index});
   assert.notStrictEqual(next, round, 'rejected '+value);
   return next;
+}
+
+async function seekTeach(seconds){
+  const {gsap}=await import('gsap');
+  const {act}=await import('react');
+  const start=gsap.globalTimeline.time();
+  await act(async()=>{gsap.globalTimeline.time(start+seconds);});
 }
 
 function handIds(host){
@@ -120,39 +127,43 @@ test('at the L3 opening only +3 is playable, and −5 becomes playable after tha
   assert.equal(onboardingActions(l4).filter(action=>action.type==='steer').length, 3);
 });
 
-test('the spotlight schedule matches the −5 crossing and never arms on L4', ()=>{
+test('the spotlight schedule is the idle Matrix clock and never arms on L4', ()=>{
   const marks=cardMotionMarks({type:'steer', snap:false, rewards:[{kind:'swing'}], from:3, to:-2});
   const plan=swingSpotlightPlan({
     levelId:3, type:'steer', snap:false, rewards:[{kind:'swing'}], from:3, to:-2, reduced:false
   });
   assert.ok(plan);
-  assert.equal(plan.cross, 0.473);
-  assert.equal(plan.cross, marks.swingFlyer);
+  assert.equal(plan.cross, 8);
   assert.ok(plan.dim.at>marks.cardArrive, 'no dim during the card flight');
-  assert.equal(plan.dim.at, 0.473);
+  assert.equal(plan.dim.at, 8);
   assert.notEqual(plan.dim.at, 0.15);
   assert.equal(plan.dim.duration, 0.15);
-  assert.equal(Math.round((plan.dim.at+plan.dim.duration)*1000)/1000, 0.623);
   assert.equal(plan.dim.color, TEACH_DIM);
   assert.equal(plan.needle.start, 0.42);
-  assert.equal(plan.needle.end, 0.62);
-  assert.equal(plan.arrow.from, 0.473);
-  assert.equal(plan.arrow.to, 0.62);
+  assert.equal(plan.needle.cross, 8);
+  assert.equal(plan.needle.end, 9.5);
+  assert.equal(plan.needle.toZero, 'power4.out');
+  assert.equal(plan.needle.past, 'power2.out');
+  assert.equal(plan.window, 1.5);
+  assert.equal(plan.arrow.from, 8);
+  assert.equal(plan.arrow.to, 9.5);
   assert.equal(plan.arrow.fill, TEACH_ARROW_FILL);
   assert.equal(plan.arrow.stroke, TEACH_ARROW_STROKE);
   assert.equal(plan.arrow.button, false);
   assert.equal(plan.arrow.coversNumeral, false);
-  assert.equal(plan.flyer.at, 0.473);
+  assert.equal(plan.flyer.at, 8);
   assert.equal(plan.flyer.duration, 0.95);
-  assert.equal(plan.pill.at, 1.423);
-  assert.equal(plan.pill.at, marks.factors);
+  assert.equal(plan.pill.at, 8.95);
   assert.equal(plan.pill.blinks, 2);
   assert.equal(plan.pill.blink, 0.4);
   assert.equal(plan.pill.scale, 1.12);
-  assert.equal(plan.fade.at, 2.223);
+  assert.equal(plan.caption.text, 'Cross 0 for more flowers.');
+  assert.equal(plan.caption.text, TEACH_CAPTION);
+  assert.equal(plan.caption.at, 8);
+  assert.equal(plan.fade.at, 11.8);
   assert.equal(plan.fade.duration, 0.2);
-  assert.equal(plan.lock, 2.423);
-  assert.equal(playReleaseTime(marks.end, plan), 2.423);
+  assert.equal(plan.lock, 12);
+  assert.equal(playReleaseTime(marks.end, plan), 12);
   const again=swingSpotlightPlan({
     levelId:3, type:'steer', snap:false, rewards:[{kind:'swing'}], from:3, to:-2, reduced:false
   });
@@ -177,7 +188,102 @@ test('the spotlight schedule matches the −5 crossing and never arms on L4', ()
   assert.equal(reduced.pill.blinks, 0);
   assert.equal(reduced.flyer, true);
   assert.equal(reduced.lock, 0);
+  assert.equal(reduced.caption.text, 'Cross 0 for more flowers.');
+  assert.equal(reduced.caption.immediate, true);
   assert.equal(playReleaseTime(marks.end, reduced), marks.end);
+});
+
+function tappedClock(taps){
+  const clock=createTeachClock({from:3, to:-2});
+  for(let i=0;i<taps;i++)clock.tap();
+  return clock;
+}
+
+test('taps from the commit halve unlock time down to the shipped floor', ()=>{
+  const idle=tappedClock(0);
+  assert.equal(idle.cross, 8);
+  assert.equal(idle.window, 1.5);
+  assert.equal(idle.park, 9.5);
+  assert.equal(idle.flyerEnd, 8.95);
+  assert.equal(idle.blinksEnd, 9.75);
+  assert.equal(idle.fadeAt, 11.8);
+  assert.equal(idle.unlock, 12);
+  const once=tappedClock(1);
+  assert.equal(once.cross, 4.05);
+  assert.equal(once.unlock, 6);
+  assert.ok(Math.abs(once.window-0.790)<0.001, once.window);
+  assert.ok(Math.abs(once.park-4.84)<0.002, once.park);
+  assert.equal(once.flyerEnd, 5);
+  assert.equal(once.blinksEnd, 5.8);
+  assert.equal(once.fadeAt, 5.8);
+  const twice=tappedClock(2);
+  assert.equal(twice.cross, 1.05);
+  assert.equal(twice.unlock, 3);
+  assert.ok(Math.abs(twice.window-0.251)<0.001, twice.window);
+  assert.ok(Math.abs(twice.park-1.301)<0.002, twice.park);
+  assert.equal(twice.flyerEnd, 2);
+  assert.equal(twice.blinksEnd, 2.8);
+  assert.equal(twice.fadeAt, 2.8);
+  const floor=tappedClock(3);
+  assert.equal(floor.cross, 0.473);
+  assert.equal(floor.window, 0.147);
+  assert.equal(floor.park, 0.62);
+  assert.equal(floor.flyerEnd, 1.423);
+  assert.equal(floor.blinksEnd, 2.223);
+  assert.equal(floor.fadeAt, 2.223);
+  assert.equal(floor.unlock, 2.423);
+  assert.equal(tappedClock(6).unlock, 2.423);
+  for(const taps of [0, 1, 2, 3]){
+    const clock=tappedClock(taps);
+    assert.ok(Math.abs((clock.flyerEnd-clock.cross)-0.95)<1e-9);
+    assert.ok(Math.abs((clock.blinksEnd-clock.flyerEnd)-0.8)<1e-9);
+    assert.ok(Math.abs((clock.unlock-clock.fadeAt)-0.2)<1e-9);
+    assert.ok(clock.fadeAt+1e-9>=clock.blinksEnd);
+    assert.ok(clock.unlock+1e-9>=2.423);
+  }
+});
+
+test('the needle eases +3 to 0 with power4.out, then 0 to −2 with power2.out', async()=>{
+  const {gsap}=await import('gsap');
+  const power4=gsap.parseEase('power4.out');
+  const power2=gsap.parseEase('power2.out');
+  const idle=createTeachClock({from:3, to:-2});
+  idle.step(0.42);
+  assert.equal(idle.needle, 3);
+  idle.step(3.79);
+  assert.ok(Math.abs(idle.needle-(3+(0-3)*power4(0.5)))<1e-4, idle.needle);
+  idle.step(3.79);
+  assert.ok(Math.abs(idle.needle)<1e-6, idle.needle);
+  assert.ok(Math.abs(idle.t-8)<1e-6);
+  idle.step(0.75);
+  assert.ok(Math.abs(idle.needle-(0+(-2-0)*power2(0.5)))<1e-4, idle.needle);
+  idle.step(0.75);
+  assert.ok(Math.abs(idle.needle-(-2))<1e-6);
+  assert.ok(Math.abs(idle.park-9.5)<1e-9);
+  const sped=tappedClock(1);
+  sped.step(0.42);
+  assert.equal(sped.needle, 3, 'card flight stays at today\'s speed');
+  sped.step(3.63);
+  assert.ok(Math.abs(sped.t-4.05)<1e-6);
+  assert.ok(Math.abs(sped.needle)<1e-6);
+});
+
+test('a mid-lesson tap waits for the flyer and blinks before the fade', ()=>{
+  const mid=createTeachClock({from:3, to:-2});
+  mid.step(9);
+  mid.tap();
+  assert.ok(mid.fadeAt+1e-9>=9.75, mid.fadeAt);
+  assert.ok(mid.unlock+1e-9>=9.95, mid.unlock);
+  assert.ok(mid.unlock<12);
+  assert.ok(Math.abs(mid.park-9.25)<0.002, mid.park);
+  assert.ok(Math.abs((mid.blinksEnd-mid.cross)-1.75)<1e-9);
+  const fading=createTeachClock({from:3, to:-2});
+  fading.step(11.9);
+  const unlock=fading.unlock;
+  const fadeAt=fading.fadeAt;
+  fading.tap();
+  assert.equal(fading.unlock, unlock);
+  assert.equal(fading.fadeAt, fadeAt);
 });
 
 test('the L3 crossing dismisses CROSS and does not open factor info', ()=>{
@@ -255,6 +361,7 @@ describe('L3 teach hand on the board', {concurrency:false}, ()=>{
       assert.equal(phone.getAttribute('data-swing-teach'), '1');
       assert.equal(dim.isConnected, true);
       assert.equal(phone.getAttribute('aria-busy'), 'true');
+      assert.equal(phone.getAttribute('data-swing-teach-unlock'), '2.423');
       assert.equal(buttonNamed(view.host, 'Skip animation'), null);
       const probe=phone.ownerDocument.createElement('button');
       probe.className='sgv-skip-surface';
@@ -290,11 +397,18 @@ describe('L3 teach hand on the board', {concurrency:false}, ()=>{
       assert.equal(arrow.closest('.sgv-meter-tick-zero'), null);
       assert.equal(view.host.querySelector('.sgv-meter-beat'), null);
       assert.equal(view.host.querySelector('.sgv-factor-info'), null);
-      const dimTween=gsap.getTweensOf(dim).find(tween=>tween.vars.opacity===1);
-      assert.ok(dimTween);
-      assert.equal(dimTween.duration(), 0.15);
-      assert.equal(dimTween.delay(), 0.473);
-      assert.deepEqual(Object.keys(dimTween.vars).filter(key=>!['ease','delay','duration','overwrite','callbackScope'].includes(key)&&typeof dimTween.vars[key]!=='function'), ['opacity']);
+      const caption=view.host.querySelector('.sgv-swing-teach-caption');
+      assert.ok(caption);
+      assert.equal(caption.tagName, 'P');
+      assert.equal(caption.getAttribute('role'), 'status');
+      assert.equal(caption.closest('button'), null);
+      assert.equal(caption.textContent, 'Cross 0 for more flowers.');
+      assert.equal(caption.closest('.sgv-meter-section')!=null, true);
+      assert.equal(Number(gsap.getProperty(caption, 'opacity')), 0);
+      const phone=view.host.querySelector('.sgv-phone');
+      assert.equal(phone.getAttribute('data-swing-teach-cross'), '8.000');
+      assert.equal(phone.getAttribute('data-swing-teach-unlock'), '12.000');
+      assert.equal(gsap.getTweensOf(dim).some(tween=>tween.vars.opacity===1), false);
     }finally{
       await view.unmount();
     }
@@ -323,11 +437,76 @@ describe('L3 teach hand on the board', {concurrency:false}, ()=>{
       assert.equal(gsap.getTweensOf(parked).some(tween=>tween.duration()>0&&tween.vars.x!=null), false);
       assert.match(reduced.host.textContent, /More Flower/);
       assert.match(reduced.host.querySelector('[data-factor="swing"]').textContent, /×2/);
+      const caption=reduced.host.querySelector('.sgv-swing-teach-caption');
+      assert.equal(caption.textContent, 'Cross 0 for more flowers.');
+      assert.equal(Number(gsap.getProperty(caption, 'opacity')), 1);
       assert.equal(buttonNamed(reduced.host, 'Skip animation'), null);
       assert.equal(reduced.host.querySelector('.sgv-factor-info'), null);
     }finally{
       setReduced(false);
       await reduced.unmount();
+    }
+
+    const paced=await mountLevel(3);
+    try{
+      const phone=paced.host.querySelector('.sgv-phone');
+      await click(phone.querySelector('[data-card-id="2"]'));
+      await click(buttonNamed(paced.host, 'Skip animation'));
+      await click(phone.querySelector('[data-card-id="24"]'));
+      assert.equal(phone.getAttribute('data-swing-teach-unlock'), '12.000');
+      await seekTeach(8);
+      assert.equal(phone.querySelector('.sgv-meter-needle-value')?.getAttribute('data-live'), '0');
+      const caption=phone.querySelector('.sgv-swing-teach-caption');
+      const fadeIn=gsap.getTweensOf(caption).find(tween=>tween.vars.opacity===1);
+      assert.ok(fadeIn, 'caption fades in at the cross');
+      assert.equal(fadeIn.duration(), 0.15);
+      const dimFade=gsap.getTweensOf(phone.querySelector('[data-swing-teach="dim"]')).find(tween=>tween.vars.opacity===1);
+      assert.equal(dimFade.duration(), 0.15);
+      assert.equal(phone.getAttribute('aria-busy'), 'true');
+      assert.equal(phone.querySelector('.sgv-factor-info'), null);
+      await seekTeach(0.95);
+      assert.match(phone.querySelector('[data-factor="swing"]').textContent, /×2/);
+      await seekTeach(3.05);
+      assert.equal(phone.getAttribute('aria-busy'), 'false');
+      assert.equal(phone.getAttribute('data-swing-teach'), null);
+    }finally{
+      await paced.unmount();
+    }
+
+    const tapped=await mountLevel(3);
+    try{
+      const phone=tapped.host.querySelector('.sgv-phone');
+      await click(phone.querySelector('[data-card-id="2"]'));
+      await click(buttonNamed(tapped.host, 'Skip animation'));
+      gsap.ticker.lagSmoothing(0);
+      gsap.ticker.tick();
+      gsap.ticker.sleep();
+      await click(phone.querySelector('[data-card-id="24"]'));
+      gsap.ticker.sleep();
+      await click(phone);
+      const unlock1=Number(phone.getAttribute('data-swing-teach-unlock'));
+      const cross1=Number(phone.getAttribute('data-swing-teach-cross'));
+      assert.ok(Math.abs(unlock1-6)<0.03, 'one tap unlocks near 6, got '+unlock1);
+      assert.ok(Math.abs(cross1-4.05)<0.03, cross1);
+      assert.equal(phone.getAttribute('aria-busy'), 'true');
+      gsap.ticker.sleep();
+      await pressKey(phone, 'Escape');
+      const unlock2=Number(phone.getAttribute('data-swing-teach-unlock'));
+      assert.ok(unlock2<unlock1 && Math.abs(unlock2-3)<0.05, unlock2);
+      assert.equal(phone.getAttribute('aria-busy'), 'true');
+      gsap.ticker.sleep();
+      await pressKey(phone, 'Enter');
+      assert.equal(phone.getAttribute('data-swing-teach-cross'), '0.473');
+      assert.equal(phone.getAttribute('data-swing-teach-unlock'), '2.423');
+      assert.equal(phone.getAttribute('aria-busy'), 'true');
+      assert.equal(buttonNamed(tapped.host, 'Skip animation'), null);
+      gsap.ticker.sleep();
+      await pressKey(phone, ' ');
+      assert.equal(phone.getAttribute('data-swing-teach-unlock'), '2.423');
+      await seekTeach(2.423);
+      assert.equal(phone.getAttribute('aria-busy'), 'false');
+    }finally{
+      await tapped.unmount();
     }
 
     const later=await mountLevel(4);
