@@ -225,7 +225,7 @@ export function animateCardAction({
     clone.className='sgv-card sgv-flying-card sgv-card-'+cardDirection(view.signedCard);
     clone.setAttribute('data-shade',String(cardShade(view.signedCard)));
     clone.style.removeProperty('--sgv-card-mix');
-    const art=publicUrl(cardDirection(view.signedCard)==='left'?'cell-left.png':'cell-right.png');
+    const art=publicUrl(cardDirection(view.signedCard)==='left'?'cell-left.webp':'cell-right.webp');
     clone.innerHTML='<img class="sgv-card-art" src="'+art+'" alt="" draggable="false">'+
       '<strong>'+Math.abs(view.signedCard)+'</strong>';
   },[],marks.faceEnd);

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerate mobile-sized PNGs in public/ from assets/originals/.
+# Regenerate mobile-sized WebP files in public/ from assets/originals/.
 # Originals are repo reference only — outside public/, so Vite never packages them.
 # See docs/superpowers/specs/2026-11-07-mobile-image-optimization-design.md
 set -euo pipefail
@@ -64,7 +64,7 @@ SHIPPED=(
 optimize_one() {
   local rel="$1"
   local src="$SRC/$rel"
-  local dst="$DST/$rel"
+  local dst="$DST/${rel%.png}.webp"
   local cap
   cap="$(cap_for "$rel")"
 
@@ -74,12 +74,23 @@ optimize_one() {
   fi
 
   mkdir -p "$(dirname "$dst")"
-  magick "$src" \
-    -strip \
-    -resize "${cap}x${cap}>" \
-    -define png:compression-level=9 \
-    -define png:compression-filter=5 \
-    "$dst"
+  if [[ "$(basename "$rel")" == "honey-fill-mask.png" ]]; then
+    magick "$src" \
+      -strip \
+      -resize "${cap}x${cap}>" \
+      -define webp:lossless=true \
+      -define webp:method=6 \
+      "$dst"
+  else
+    magick "$src" \
+      -strip \
+      -resize "${cap}x${cap}>" \
+      -quality 90 \
+      -define webp:method=6 \
+      -define webp:alpha-quality=100 \
+      "$dst"
+  fi
+  rm -f "$DST/$rel"
 
   local before after
   before="$(wc -c < "$src" | tr -d ' ')"
@@ -87,10 +98,10 @@ optimize_one() {
   printf '%s  %s -> %s  (cap %spx)\n' "$rel" "$before" "$after" "$cap"
 }
 
-echo "Optimizing ${#SHIPPED[@]} shipped PNGs from assets/originals -> public"
+echo "Optimizing ${#SHIPPED[@]} shipped images from assets/originals -> public WebP"
 for rel in "${SHIPPED[@]}"; do
   optimize_one "$rel"
 done
 
-echo "Done. public PNG total:"
-find "$DST" -type f -name '*.png' -print0 | xargs -0 du -ch | tail -1
+echo "Done. public WebP total:"
+find "$DST" -type f -name '*.webp' -print0 | xargs -0 du -ch | tail -1

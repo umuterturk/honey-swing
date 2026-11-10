@@ -57,7 +57,7 @@ function praiseMark(text,tier){
     ),
     createElement('img',{
       className:'sgv-honey-slogan-underline',
-      src:publicUrl('victory-slogan-underline.png'),alt:'',draggable:'false','aria-hidden':'true'
+      src:publicUrl('victory-slogan-underline.webp'),alt:'',draggable:'false','aria-hidden':'true'
     }),
     // Mirror lives on the right wrapper only — GSAP animates the inner art, never the flip.
     createElement('span',{
@@ -65,7 +65,7 @@ function praiseMark(text,tier){
     },
       createElement('img',{
         className:'sgv-honey-slogan-drops-art',
-        src:publicUrl('victory-slogan-side-drops-left.png'),alt:'',draggable:'false'
+        src:publicUrl('victory-slogan-side-drops-left.webp'),alt:'',draggable:'false'
       })
     ),
     createElement('span',{
@@ -73,7 +73,7 @@ function praiseMark(text,tier){
     },
       createElement('img',{
         className:'sgv-honey-slogan-drops-art',
-        src:publicUrl('victory-slogan-side-drops-left.png'),alt:'',draggable:'false'
+        src:publicUrl('victory-slogan-side-drops-left.webp'),alt:'',draggable:'false'
       })
     )
   );
@@ -87,20 +87,20 @@ function celeImg(name,file){
 
 function rearFoliage(){
   return [
-    celeImg('sgv-cele-bush-long','bush-long-1.png'),
-    celeImg('sgv-cele-leaf-biggest','leaf-biggest.png'),
-    celeImg('sgv-cele-leaf-medium','leaf-medium.png')
+    celeImg('sgv-cele-bush-long','bush-long-1.webp'),
+    celeImg('sgv-cele-leaf-biggest','leaf-biggest.webp'),
+    celeImg('sgv-cele-leaf-medium','leaf-medium.webp')
   ];
 }
 
 function frontFoliage(){
   return [
-    celeImg('sgv-cele-bush-big','bush-big.png'),
-    celeImg('sgv-cele-plant','green-plant-1.png'),
-    celeImg('sgv-cele-leaf-big','leaf-big.png'),
-    celeImg('sgv-cele-daisy-1','daisy-1.png'),
-    celeImg('sgv-cele-daisy-2','daisy-2.png'),
-    celeImg('sgv-cele-daisy-small','daisy-small.png')
+    celeImg('sgv-cele-bush-big','bush-big.webp'),
+    celeImg('sgv-cele-plant','green-plant-1.webp'),
+    celeImg('sgv-cele-leaf-big','leaf-big.webp'),
+    celeImg('sgv-cele-daisy-1','daisy-1.webp'),
+    celeImg('sgv-cele-daisy-2','daisy-2.webp'),
+    celeImg('sgv-cele-daisy-small','daisy-small.webp')
   ];
 }
 
@@ -117,7 +117,7 @@ function scoreboard(score,target,staticCard){
   const met=Number(score)>=Number(target);
   return createElement('div',{className:'sgv-honey-scoreboard','aria-hidden':'true'},
     createElement('img',{
-      className:'sgv-honey-scoreboard-art',src:publicUrl('score-board.png'),alt:'',draggable:'false'
+      className:'sgv-honey-scoreboard-art',src:publicUrl('score-board.webp'),alt:'',draggable:'false'
     }),
     createElement('p',{className:'sgv-honey-scoreboard-label'},'Honey Collected'),
     createElement('p',{className:'sgv-win-tally'},staticCard?String(score):'0'),

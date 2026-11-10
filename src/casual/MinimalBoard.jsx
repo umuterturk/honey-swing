@@ -28,7 +28,7 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
  return <section className="sgv-meter-section" aria-label="Swing meter and multipliers">
    <div className="sgv-meter" role="group" data-value={position}
      aria-label={'Swing at '+directionalValue(position)+(showDanger?'; Snap beyond '+limit+' left or '+limit+' right':'')}>
-     <img className="sgv-honeycomb" src={publicUrl('honeycomb.png')} alt="" aria-hidden="true" draggable="false"/>
+     <img className="sgv-honeycomb" src={publicUrl('honeycomb.webp')} alt="" aria-hidden="true" draggable="false"/>
      <div className="sgv-meter-track" role="img" data-edge-danger={showDanger&&Math.abs(position)>=limit-2}
        aria-label={'Swing position '+directionalValue(position)}>
        <div className="sgv-meter-scale" aria-hidden="true">
@@ -39,19 +39,19 @@ export function HorizontalMeter({position,limit=8,multipliers=[],visibleFactors=
          </div>
        </div>
      </div>
-     <img className="sgv-meter-wasp sgv-meter-wasp-left" src={publicUrl('wasp-looking-right.png')}
+     <img className="sgv-meter-wasp sgv-meter-wasp-left" src={publicUrl('wasp-looking-right.webp')}
        alt="" aria-hidden="true" draggable="false"/>
-     <img className="sgv-meter-wasp sgv-meter-wasp-right" src={publicUrl('wasp-looking-right.png')}
+     <img className="sgv-meter-wasp sgv-meter-wasp-right" src={publicUrl('wasp-looking-right.webp')}
        alt="" aria-hidden="true" draggable="false"/>
      <div className="sgv-meter-marker-rail" aria-hidden="true">
        <span className="sgv-meter-marker" style={{left:percentage+'%'}}>
          <span className="sgv-meter-needle">
-           <img className="sgv-meter-needle-art" src={publicUrl('needle-honeycomb-cell.png')} alt="" draggable="false"/>
+           <img className="sgv-meter-needle-art" src={publicUrl('needle-honeycomb-cell.webp')} alt="" draggable="false"/>
            <strong className="sgv-meter-needle-value">{Math.abs(position)}</strong>
          </span>
        </span>
      </div>
-     <img className="sgv-honey-tap" src={publicUrl('honey-tap.png')} alt="" aria-hidden="true" draggable="false"/>
+     <img className="sgv-honey-tap" src={publicUrl('honey-tap.webp')} alt="" aria-hidden="true" draggable="false"/>
      <div className="sgv-multipliers" role="group" aria-label="Multipliers">
        {multipliers
          .filter(({kind})=>!visibleFactors||visibleFactors.includes(kind))
@@ -115,7 +115,7 @@ export function PendingPot({value,cap=null,target=24,bankable=false,onBank,class
    <span className="sgv-pot-pour-lip" aria-hidden="true"/>
    {hasCap&&<span className="sgv-pot-limit" aria-hidden="true"><BentText text={'MAX '+cap} arc={-2.2}/></span>}
    <span className="sgv-pot-amount" aria-hidden="true">
-     <img className="sgv-fill-drop" src={publicUrl('drop1.png')} alt="" draggable="false"/>
+     <img className="sgv-fill-drop" src={publicUrl('drop1.webp')} alt="" draggable="false"/>
      <BentText text={String(value)} arc={1.6}/>
    </span>
  </Tag>;
@@ -124,7 +124,7 @@ export function PendingPot({value,cap=null,target=24,bankable=false,onBank,class
 export function GoalProgress({banked,target}){
  return <div className="sgv-goal-progress" role="status" aria-label={'Secured '+banked+' of '+target+' drops'}>
    <strong className="sgv-savings-amount">
-     <img className="sgv-fill-drop" src={publicUrl('drop1.png')} alt="" draggable="false"/>
+     <img className="sgv-fill-drop" src={publicUrl('drop1.webp')} alt="" draggable="false"/>
      <BentText text={String(banked)} arc={1.4}/>
    </strong>
  </div>;
@@ -167,7 +167,7 @@ export function SimpleCard({id,index,value,disabled,onPlay,showDirection=true,ri
    aria-label={'Play '+directionalValue(value)}
    disabled={disabled}
    onClick={event=>onPlay(index,event.currentTarget)}>
-   <img className="sgv-card-art" src={publicUrl(direction==='left'?'cell-left.png':'cell-right.png')} alt="" draggable="false"/>
+   <img className="sgv-card-art" src={publicUrl(direction==='left'?'cell-left.webp':'cell-right.webp')} alt="" draggable="false"/>
    <strong>{Math.abs(value)}</strong>
  </button>;
 }

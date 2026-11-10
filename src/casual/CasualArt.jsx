@@ -3,7 +3,7 @@ import {gsap} from 'gsap';
 import {publicUrl} from './publicUrl.js';
 
 export function GardenScene(){
- return <img className="sg-garden" src={publicUrl('bg2.png')} alt="" draggable="false"/>;
+ return <img className="sg-garden" src={publicUrl('bg2.webp')} alt="" draggable="false"/>;
 }
 
 export function Corgi(){

@@ -86,7 +86,7 @@ export function OnboardingPhone({
           onFactorInfo={onFactorInfo}/>
         <span className="sgv-flight-center" aria-hidden="true"/>
         <div className="sgv-bottle-pair" aria-label="Pending Pot and secured glass">
-          <img className="sgv-desk" src={publicUrl('desk2.png')} alt="" draggable="false"/>
+          <img className="sgv-desk" src={publicUrl('desk2.webp')} alt="" draggable="false"/>
           <PendingPot value={potDisplay} cap={level.rules.potCap} target={level.target}
             bankable={canBank} interactive={false}/>
           <GlassChest banked={shownGold} target={level.target}/>
@@ -94,7 +94,7 @@ export function OnboardingPhone({
       </div>
       <section className="sgv-controls sgv-tutorial-controls" aria-label="Card actions">
         <div className="sgv-hand-frame" data-rows={slots>HAND_PANEL_SLOTS?'2':undefined}>
-          <img className="sgv-hand-panel" src={publicUrl(slots>HAND_PANEL_SLOTS?'handpanel-2-row.png':'handpanel.png')} alt="" draggable="false"/>
+          <img className="sgv-hand-panel" src={publicUrl(slots>HAND_PANEL_SLOTS?'handpanel-2-row.webp':'handpanel.webp')} alt="" draggable="false"/>
           <div className="sgv-hand" aria-label="Your cards"
             style={{
               '--hs-hand-slots':String(Math.max(HAND_PANEL_SLOTS, slots)),
