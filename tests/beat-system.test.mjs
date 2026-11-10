@@ -589,6 +589,70 @@ test('the tap hint is a status and does not move the cards', async()=>{
   }
 });
 
+function trackIdleHints(){
+  const seen=[];
+  const onEvent=event=>{
+    if(event.detail?.name==='hint_shown')seen.push(event.detail);
+  };
+  page().addEventListener('swing-casual-event', onEvent);
+  return {
+    seen,
+    stop(){page().removeEventListener('swing-casual-event', onEvent);}
+  };
+}
+
+function realPause(ms){
+  return new Promise(resolve=>setTimeout(resolve, ms));
+}
+
+// The idle hint is a real pause, not the heartbeat clock. Poll until it is
+// offered, or until a player would have given up waiting.
+async function waitForIdleHint(seen){
+  const {act}=await import('react');
+  for(let step=0;step<24;step++){
+    if(seen.length)return true;
+    await act(async()=>{await realPause(250);});
+  }
+  return seen.length>0;
+}
+
+test('Level 1 keeps the ordinary idle hint after coaching, and not before', async()=>{
+  const view=await mountFresh();
+  const hints=trackIdleHints();
+  try{
+    const offered=await waitForIdleHint(hints.seen);
+    assert.equal(offered, false, 'first-session coaching does not use the old idle hint');
+    assert.ok(suggestion(view.host), 'the heartbeat hint is the help instead');
+    await click(handButtons(view.host)[0]);
+    const skip=buttonNamed(view.host, 'Skip animation');
+    if(skip)await click(skip);
+    await click(handButtons(view.host)[0]);
+    const skipAgain=buttonNamed(view.host, 'Skip animation');
+    if(skipAgain)await click(skipAgain);
+    assert.equal(suggestion(view.host), null, 'move 2 has finished the first-session copy');
+    hints.seen.length=0;
+    const sameDeal=await waitForIdleHint(hints.seen);
+    assert.equal(sameDeal, true, 'later turns of that Level 1 deal get the idle hint');
+    assert.equal(hints.seen[0].level, 1);
+  }finally{
+    hints.stop();
+    await view.unmount();
+  }
+  page().localStorage.removeItem(ONBOARDING_SESSION_KEY);
+  const returning=await mountGame();
+  const hintsAgain=trackIdleHints();
+  try{
+    await dismissOpening(returning.host);
+    assert.equal(suggestion(returning.host), null, 'a later Level 1 launch is past coaching');
+    const offered=await waitForIdleHint(hintsAgain.seen);
+    assert.equal(offered, true, 'a returning Level 1 player still gets the idle hint');
+    assert.equal(hintsAgain.seen[0].level, 1);
+  }finally{
+    hintsAgain.stop();
+    await returning.unmount();
+  }
+});
+
 test('reduced motion keeps the hint without moving the cards', async()=>{
   setReduced(true);
   const clock=await holdClock();

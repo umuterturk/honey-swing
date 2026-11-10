@@ -3,7 +3,7 @@ import {levelStartPlan} from './presentationSequence.js';
 import {nextBankAnnouncement} from './bankStatus.js';
 import {focusTargetAfterSkip, rememberFocus, skipFocusSelector} from './skipFocus.js';
 import {takeFirstOutcome} from './presentationSequence.js';
-import {prepareOnboardingJump} from './onboardingProgress.js';
+import {prepareOnboardingJump, readFirstSession} from './onboardingProgress.js';
 import {derivedFeatureUnlocks} from './featureIntroRegistry.js';
 import {ONBOARDING_COUNT} from './onboardingLevels.js';
 import {browserStorage, dispatchCasualEvent, prefersReducedMotion} from './platform.js';
@@ -72,6 +72,9 @@ export function useBoardChrome({
   const [bankLive, setBankLive]=useState('');
   const {round, animating, introGate, introCard, startOpen, arriving, ack, factorInfo}=screen;
   const levelId=round.levelId;
+  // Level 1's first session uses the heartbeat. After move 2 commits, the
+  // ordinary idle hint returns, including later turns of that same deal.
+  const firstSessionCoaching=levelId===1&&!readFirstSession(browserStorage()).coachingDone;
   const fresh=round.turn===0&&!round.game.deal.plays;
   const writeRef=useRef(setScreen);
   writeRef.current=setScreen;
@@ -92,15 +95,15 @@ export function useBoardChrome({
   }, [introGate, introCard, levelId]);
   useEffect(()=>{
     write(current=>current.pulse?{...current, pulse:false}:current);
-    // Level 1's help is the first-session heartbeat, not this idle pulse.
-    if(animating||readout.finished||introGate||startOpen||levelId===1)return;
+    if(animating||readout.finished||introGate||startOpen||firstSessionCoaching)return;
     const timer=setTimeout(()=>{
       write(shownPulse);
       dispatchCasualEvent('hint_shown', {level:levelId, turn:round.turn});
     }, 3000);
     return ()=>clearTimeout(timer);
+    // write reads the shell ref, so it stays out of the dependency list.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animating, round.turn, levelId, readout.finished, introGate, startOpen]);
+  }, [animating, round.turn, levelId, readout.finished, introGate, startOpen, firstSessionCoaching]);
   useEffect(()=>{
     if(!ack)return;
     const token=ack;
