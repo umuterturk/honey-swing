@@ -12,7 +12,7 @@
   position:absolute;z-index:10;width:36px;overflow:visible;pointer-events:none;
 }
 .sgv-swing-teach-caption{
-  position:absolute;z-index:6;left:8%;right:8%;top:64px;margin:0;
+  position:absolute;z-index:6;left:8%;right:8%;top:112px;margin:0;
   color:#3A1A00;font-size:15px;font-weight:700;line-height:1.15;text-align:center;
   pointer-events:none;text-shadow:0 0 2px #FFF0CF,0 0 6px #FFF0CF,0 1px 0 #FFF0CF;
 }

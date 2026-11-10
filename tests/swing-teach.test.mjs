@@ -403,7 +403,9 @@ describe('L3 teach hand on the board', {concurrency:false}, ()=>{
       assert.equal(caption.getAttribute('role'), 'status');
       assert.equal(caption.closest('button'), null);
       assert.equal(caption.textContent, 'Cross 0 for more flowers.');
+      assert.equal(caption.closest('.sgv-meter')!=null, true);
       assert.equal(caption.closest('.sgv-meter-section')!=null, true);
+      assert.equal(caption.ownerDocument.defaultView.getComputedStyle(caption).top, '112px');
       assert.equal(Number(gsap.getProperty(caption, 'opacity')), 0);
       const phone=view.host.querySelector('.sgv-phone');
       assert.equal(phone.getAttribute('data-swing-teach-cross'), '8.000');
