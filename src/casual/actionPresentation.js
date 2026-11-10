@@ -9,8 +9,13 @@ export function createActionPresentation(options={}){
   const fx=options?.fx??null;
   let current=null;
   let swallowClick=false;
+  let needleOpen=false;
   function isPresenting(){return current!=null;}
+  function isNeedleOpen(){return !!current&&needleOpen;}
+  function markNeedleSettled(){needleOpen=false;}
+  function holdClick(){swallowClick=true;}
   function finishPresentation(){
+    needleOpen=false;
     const job=current;
     if(!job){
       fx?.settle();
@@ -24,6 +29,7 @@ export function createActionPresentation(options={}){
     return true;
   }
   function abandon(){
+    needleOpen=false;
     const job=current;
     fx?.settle();
     if(!job)return false;
@@ -32,13 +38,15 @@ export function createActionPresentation(options={}){
     job.cancelMotion?.();
     return true;
   }
-  function begin({cancelMotion,applyFinal}){
+  function begin({cancelMotion,applyFinal,trackNeedle=false}){
+    needleOpen=!!trackNeedle;
     const job={settled:false,cancelMotion,applyFinal};
     current=job;
     return {
       complete(){
         if(job.settled)return false;
         job.settled=true;
+        needleOpen=false;
         if(current===job)current=null;
         applyFinal?.();
         return true;
@@ -65,7 +73,10 @@ export function createActionPresentation(options={}){
     }
     return 'action';
   }
-  return {isPresenting,finishPresentation,abandon,begin,acceptPointerDown,acceptClick};
+  return {
+    isPresenting,isNeedleOpen,markNeedleSettled,holdClick,
+    finishPresentation,abandon,begin,acceptPointerDown,acceptClick
+  };
 }
 
 export function commitOnboardingAction(round,action){
@@ -89,7 +100,8 @@ export function runPresentedAction(round,action,presentation,hooks){
   let cancelMotion=()=>{};
   const session=presentation.begin({
     cancelMotion:()=>cancelMotion(),
-    applyFinal:()=>hooks.onSettle(committed)
+    applyFinal:()=>hooks.onSettle(committed),
+    trackNeedle:action.type==='steer'||action.type==='flip'
   });
   const started=hooks.startMotion(committed,()=>session.complete());
   cancelMotion=typeof started==='function'?started:()=>{};

@@ -32,9 +32,9 @@ export function playBeat(change, {reset=false}={}){
   return '';
 }
 
-export function cardMotionView(change, {firstTap, level}){
+export function cardMotionView(change, {firstTap, level, landingDim=false}){
   return {
-    ...change,firstTap,
+    ...change,firstTap,landingDim:!!landingDim,
     meterLimit:level.rules.snapLimit,
     showChances:!!level.showChances,
     potTarget:level.rules.potCap||level.target,
@@ -57,7 +57,8 @@ export function factorsFell(change){
 export function startPlayMotion({
   root,source,action,change,level,firstTap,seenFactors,handBefore,
   cancelRef,resetMotionRef,lossMotionRef,breakMotionRef,
-  setView,setFeedback,setBeat,setShownGold,setAnimating,setPulse,setHelp
+  setView,setFeedback,setBeat,setShownGold,setAnimating,setPulse,setHelp,
+  landingDim=false,onNeedleSettled,onDim
 }, complete){
   setAnimating(true);
   setFeedback(playFeedback(change, action));
@@ -96,7 +97,8 @@ export function startPlayMotion({
   }
   change.rewards.forEach(({kind})=>seenFactors.add(kind));
   cancelRef.current=animateCardAction({
-    root,source,action,view:cardMotionView(change,{firstTap,level}),
+    root,source,action,view:cardMotionView(change,{firstTap,level,landingDim}),
+    onNeedleSettled,onDim,
     onMeter:position=>{
       setView(view=>({...view,position}));
       if(change.snap)setFeedback('snap');

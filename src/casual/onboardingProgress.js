@@ -3,6 +3,8 @@
 export const ONBOARDING_SESSION_KEY='swing-casual-onboarding-session-v3';
 export const ONBOARDING_PROGRESS_KEY='swing-casual-onboarding-unlocked-v2';
 export const SEEN_FEATURE_INTROS_KEY='swing-casual-seen-feature-intros-v1';
+// Set when Level 1 move 2 commits. Heartbeat and the first-move hint stay gone.
+export const FIRST_SESSION_KEY='swing-casual-first-session-v1';
 const LEGACY_KEYS=Object.freeze([
   'swing-casual-onboarding-session-v1',
   'swing-casual-onboarding-session-v2',
@@ -15,6 +17,7 @@ export function clearOnboardingProgress(storage){
     storage.removeItem(ONBOARDING_SESSION_KEY);
     storage.removeItem(ONBOARDING_PROGRESS_KEY);
     storage.removeItem(SEEN_FEATURE_INTROS_KEY);
+    storage.removeItem(FIRST_SESSION_KEY);
     for(const key of LEGACY_KEYS)storage.removeItem(key);
     return true;
   }catch{
@@ -46,6 +49,61 @@ export function prepareOnboardingJump(storage,levelId,{
   }catch{
     return null;
   }
+}
+
+const FRESH_SESSION=Object.freeze({plays:0,coachingDone:false});
+
+function readStorage(storage,key){
+  if(!storage)return null;
+  try{return storage.getItem(key);}catch{return null;}
+}
+
+// Missing or unreadable notes mean the first session has not finished.
+// A note that says coaching is done is trusted even if the play count is odd.
+export function readFirstSession(storage){
+  const raw=readStorage(storage,FIRST_SESSION_KEY);
+  if(raw==null)return FRESH_SESSION;
+  let data;
+  try{data=JSON.parse(raw);}catch{return FRESH_SESSION;}
+  if(!data||typeof data!=='object')return FRESH_SESSION;
+  if(data.coachingDone===true){
+    const plays=Number.isInteger(data.plays)&&data.plays>=2?data.plays:3;
+    return {plays,coachingDone:true};
+  }
+  if(!Number.isInteger(data.plays)||data.plays<0)return FRESH_SESSION;
+  return {plays:data.plays,coachingDone:false};
+}
+
+function writeFirstSession(storage,session){
+  if(!storage)return false;
+  try{
+    storage.setItem(FIRST_SESSION_KEY,JSON.stringify({
+      v:1,plays:session.plays,coachingDone:!!session.coachingDone
+    }));
+    return true;
+  }catch{
+    return false;
+  }
+}
+
+// The opening count advances only along one deal. A retry starts at turn 0, so it
+// does not add to that count and does not finish coaching.
+// Coaching is done only when move 2 of a deal commits (the play whose turn was 1).
+export function noteCommittedPlay(storage,turnBefore){
+  const session=readFirstSession(storage);
+  const coachingDoneBefore=session.coachingDone;
+  const playNumber=Number.isInteger(turnBefore)&&turnBefore>=0?turnBefore+1:0;
+  const continues=playNumber>0&&turnBefore===session.plays;
+  const room=!(session.coachingDone&&session.plays>=3);
+  if(!continues||!room){
+    return {session,advanced:false,playNumber,coachingDoneBefore};
+  }
+  const next={
+    plays:session.plays+1,
+    coachingDone:session.coachingDone||turnBefore===1
+  };
+  writeFirstSession(storage,next);
+  return {session:next,advanced:true,playNumber,coachingDoneBefore};
 }
 
 export function readUnlockedOnboardingLevel(storage,levelCount=1){
