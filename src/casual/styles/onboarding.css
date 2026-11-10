@@ -12,12 +12,16 @@
   position:absolute;z-index:10;width:36px;overflow:visible;pointer-events:none;
 }
 .sgv-swing-teach-caption{
-  position:absolute;z-index:6;left:8%;right:8%;top:112px;margin:0;
-  color:#3A1A00;font-size:15px;font-weight:700;line-height:1.15;text-align:center;
-  pointer-events:none;text-shadow:0 0 2px #FFF0CF,0 0 6px #FFF0CF,0 1px 0 #FFF0CF;
+  position:absolute;z-index:12;left:7%;right:7%;top:104px;margin:0;
+  padding:7px 12px 8px;border-radius:18px;border:3px solid #fff8cd;
+  background:linear-gradient(#fff8d4,#ffd35f);
+  box-shadow:0 3px 0 #c9842e,0 6px 12px #6a3a1270;
+  color:#6a3412;font-size:clamp(18px,5vw,24px);font-weight:1000;
+  line-height:1.15;letter-spacing:0.01em;text-align:center;
+  pointer-events:none;
 }
 @media(max-width:320px){
-  .sgv-swing-teach-caption{font-size:13px}
+  .sgv-swing-teach-caption{font-size:16px;padding:6px 8px 7px}
 }
 .sgv-phone[data-swing-teach] .sgv-marker-gsap .sgv-meter-needle-value{
   color:transparent;text-shadow:none;

@@ -3,7 +3,6 @@
 // play's presentation to settle, then brings −5 in. The spotlight is the
 // −5 crossing only, including a retry, and never a later level.
 import {gsap} from 'gsap';
-import {FACTORS} from './factors.js';
 import {cardMotionMarks, FACTOR_FLYER_FLIGHT} from './motionSchedule.js';
 import {meterPercent} from './meterScale.js';
 import {reducedMotion} from './motion/stage.js';
@@ -20,7 +19,7 @@ export const TEACH_ARROW_STROKE='#3A1A00';
 // numeral, centered in the track, stays uncovered.
 export const TEACH_ARROW_TOP='-22px';
 export const TEACH_ARROW_HEIGHT='22px';
-export const TEACH_CAPTION=FACTORS.find(factor=>factor.kind==='swing').copy;
+export const TEACH_CAPTION='Cross Center for more flowers.';
 const ARROW_D='M18 20 L4 8 H12 L18 2 L24 8 H32 Z';
 const BLINK_EASE='power1.inOut';
 const FADE_EASE='power1.out';
@@ -57,33 +56,71 @@ export function teachDismissesCrossAck(levelId, outcome){
   return levelId===SWING_TEACH_LEVEL&&outcome==='cross';
 }
 
-// Matrix clock. Overlays stay wall-clock. A tap halves the remaining time to
-// unlock, dropping the post-blink hold before it slides the 0-cross earlier.
+// Matrix clock. The needle keeps the fast floor glide. The stretch sits on
+// the More Flower pill pulse, starting when that pill appears. A tap halves
+// the remaining time to unlock, dropping the post-blink hold before it
+// shortens that pulse.
 // GSAP power4.out / power2.out are the needle eases (quint / cubic).
 const CARD_MS=420;
 const CROSS_MS=8000;
-const WINDOW_MS=1500;
 const FLYER_MS=950;
 const BLINKS_MS=800;
 const FADE_MS=200;
 const TAIL_MS=FLYER_MS+BLINKS_MS+FADE_MS;
-const AFTER_CROSS_MS=FLYER_MS+BLINKS_MS;
 const HOLD_MS=12000-CROSS_MS-TAIL_MS;
 const FLOOR_CROSS_MS=473;
 const FLOOR_WINDOW_MS=147;
 const FLOOR_UNLOCK_MS=2423;
+const MIN_BLINK_MS=FLYER_MS+BLINKS_MS;
+const SLOW_BLINK_MS=MIN_BLINK_MS+(CROSS_MS-FLOOR_CROSS_MS)-2000;
+const PILL_BLINKS=2;
+const PILL_SCALE=1.12;
 const EASE_TO_ZERO=gsap.parseEase('power4.out');
 const EASE_PAST_ZERO=gsap.parseEase('power2.out');
-
-function windowMs(crossMs){
-  const p=Math.max(0, Math.min(1, (CROSS_MS-crossMs)/(CROSS_MS-FLOOR_CROSS_MS)));
-  return WINDOW_MS+(FLOOR_WINDOW_MS-WINDOW_MS)*p;
-}
+const EASE_BLINK=gsap.parseEase(BLINK_EASE);
 
 function syncTeach(state){
   state.park=state.cross+state.window;
-  state.fadeAt=state.cross+AFTER_CROSS_MS+state.hold;
+  state.fadeAt=state.cross+state.blink+state.hold;
   state.unlock=state.fadeAt+FADE_MS;
+}
+
+function freshTeachState(from, to){
+  const state={
+    t:0, from, to, phase:'flight', u:0, v:0, needle:from,
+    cross:FLOOR_CROSS_MS, window:FLOOR_WINDOW_MS,
+    blink:SLOW_BLINK_MS, hold:HOLD_MS, park:0, fadeAt:0, unlock:0
+  };
+  syncTeach(state);
+  return state;
+}
+
+// Playback through the More Flower flight. Speed starts high, is slowest
+// at the middle, then recovers. The integral is normalized so 0 and 1 map.
+const PILL_DRAG=0.82;
+function slowedProgress(u){
+  const k=PILL_DRAG;
+  const norm=1-(2*k)/Math.PI;
+  return (u+(k/Math.PI)*Math.cos(Math.PI*u)-k/Math.PI)/norm;
+}
+
+function pillMotion(state){
+  const start=state.cross;
+  if(state.t<start||state.blink<=0)return null;
+  const u=Math.max(0, Math.min(1, (state.t-start)/state.blink));
+  return slowedProgress(u);
+}
+
+// Two pulses across the stretched blink, in the same slowed time. Ends at rest.
+function pillScaleFor(progress){
+  if(progress==null)return null;
+  const halves=PILL_BLINKS*2;
+  const x=progress*halves;
+  const i=Math.min(halves-1, Math.floor(x>=halves?halves-1:x));
+  const local=Math.min(1, x-i);
+  const eased=EASE_BLINK(local);
+  const up=i%2===0;
+  return 1+(PILL_SCALE-1)*(up?eased:1-eased);
 }
 
 function placeNeedle(state){
@@ -132,41 +169,19 @@ function tapTeach(state){
   if(state.t>=state.fadeAt)return;
   let target=state.t+(state.unlock-state.t)/2;
   if(target<FLOOR_UNLOCK_MS)target=FLOOR_UNLOCK_MS;
-  if(state.phase==='flight'||state.phase==='crawl'){
-    const minCross=Math.max(FLOOR_CROSS_MS, state.phase==='crawl'?state.t:FLOOR_CROSS_MS);
-    if(target>=state.cross+TAIL_MS){
-      state.hold=target-(state.cross+TAIL_MS);
-      syncTeach(state);
-    }else{
-      state.hold=0;
-      let cross=target-TAIL_MS;
-      if(cross<minCross)cross=minCross;
-      if(cross>state.cross)cross=state.cross;
-      state.cross=cross;
-      state.window=windowMs(cross);
-      syncTeach(state);
-      if(state.phase==='crawl'&&state.cross<=state.t){
-        state.cross=state.t;
-        state.u=1;
-        state.phase='window';
-        state.v=0;
-        state.needle=0;
-        state.window=windowMs(state.cross);
-        syncTeach(state);
-      }
-    }
-    return;
+  const blinkStart=state.cross;
+  const minBlinkEnd=blinkStart+MIN_BLINK_MS;
+  let fadeAt=target-FADE_MS;
+  if(fadeAt<minBlinkEnd)fadeAt=minBlinkEnd;
+  const blinkEnd=blinkStart+state.blink;
+  if(fadeAt>=blinkEnd){
+    state.hold=fadeAt-blinkEnd;
+  }else{
+    state.hold=0;
+    const end=Math.max(minBlinkEnd, fadeAt, state.t);
+    state.blink=Math.max(MIN_BLINK_MS, end-blinkStart);
   }
-  const blinksEnd=state.cross+AFTER_CROSS_MS;
-  const earliest=Math.max(blinksEnd, state.t)+FADE_MS;
-  if(target<earliest)target=earliest;
-  state.hold=Math.max(0, (target-FADE_MS)-blinksEnd);
   syncTeach(state);
-  if(state.phase==='window'&&state.t<state.park){
-    const remain=state.park-state.t;
-    state.park=state.t+remain/2;
-    state.window=state.park-state.cross;
-  }
 }
 
 function teachSeconds(ms){
@@ -174,11 +189,7 @@ function teachSeconds(ms){
 }
 
 export function createTeachClock({from=3, to=-2}={}){
-  const state={
-    t:0, from, to, phase:'flight', u:0, v:0, needle:from,
-    cross:CROSS_MS, window:WINDOW_MS, hold:HOLD_MS, park:0, fadeAt:0, unlock:0
-  };
-  syncTeach(state);
+  const state=freshTeachState(from, to);
   return {
     get t(){return teachSeconds(state.t);},
     get needle(){return state.needle;},
@@ -188,7 +199,7 @@ export function createTeachClock({from=3, to=-2}={}){
     get unlock(){return teachSeconds(state.unlock);},
     get fadeAt(){return teachSeconds(state.fadeAt);},
     get flyerEnd(){return teachSeconds(state.cross+FLYER_MS);},
-    get blinksEnd(){return teachSeconds(state.cross+AFTER_CROSS_MS);},
+    get blinksEnd(){return teachSeconds(state.cross+state.blink);},
     step(seconds){stepTeach(state, seconds);return this;},
     tap(){tapTeach(state);return this;}
   };
@@ -231,7 +242,7 @@ export function swingSpotlightPlan({
     },
     arrow:{...arrow, from:idle.cross, to:idle.park, parked:true, travel:true},
     flyer:{at:idle.cross, duration:FACTOR_FLYER_FLIGHT},
-    pill:{at:idle.flyerEnd, blinks:2, blink:0.4, scale:1.12},
+    pill:{at:idle.cross, blinks:2, blink:0.4, scale:1.12},
     caption:{text:TEACH_CAPTION, at:idle.cross, duration:0.15},
     fade:{at:idle.fadeAt, duration:FADE_MS/1000},
     lock:idle.unlock
@@ -318,12 +329,10 @@ export function mountSwingSpotlight({
     tweens.push(gsap.to(dim, {opacity:1, duration:plan.dim.duration, ease:FADE_EASE}));
     return cancel;
   }
-  const state={
-    t:0, from, to, phase:'flight', u:0, v:0, needle:from,
-    cross:CROSS_MS, window:WINDOW_MS, hold:HOLD_MS, park:0, fadeAt:0, unlock:0
-  };
-  syncTeach(state);
+  const state=freshTeachState(from, to);
   let crossed=false, pilled=false, parked=false, fading=false, unlocked=false;
+  let flower=null;
+  let landed=false;
   const publish=()=>{
     root.setAttribute('data-swing-teach-cross', (state.cross/1000).toFixed(3));
     root.setAttribute('data-swing-teach-unlock', (state.unlock/1000).toFixed(3));
@@ -339,6 +348,11 @@ export function mountSwingSpotlight({
       if(value)value.setAttribute('data-live', String(Math.abs(Math.round(state.needle))));
     }
     gsap.set(arrow, {xPercent:-50, x:0});
+    const progress=pillMotion(state);
+    if(flower?.seek&&progress!=null)landed=!!flower.seek(progress);
+    const pulse=pillScaleFor(progress);
+    const pill=root.querySelector('[data-factor="swing"]');
+    if(pill&&pulse!=null)gsap.set(pill, {scale:pulse});
   };
   const thresholds=()=>{
     if(gone)return;
@@ -347,17 +361,11 @@ export function mountSwingSpotlight({
       caption.removeAttribute('aria-hidden');
       tweens.push(gsap.to([dim, caption], {opacity:1, duration:0.15, ease:FADE_EASE}));
       tweens.push(gsap.to(arrow, {opacity:1, duration:0.01, ease:'none'}));
-      onCross?.();
+      flower=onCross?.()||null;
     }
-    if(!pilled&&state.t>=state.cross+FLYER_MS){
+    if(!pilled&&(landed||(!flower?.seek&&state.t>=state.cross+FLYER_MS))){
       pilled=true;
       onPill?.();
-      const pill=root.querySelector('[data-factor="swing"]');
-      if(pill){
-        tweens.push(gsap.fromTo(pill, {scale:1}, {
-          scale:1.12, duration:0.2, yoyo:true, repeat:3, ease:BLINK_EASE
-        }));
-      }
     }
     if(!parked&&state.t>=state.park-1e-6){
       parked=true;
@@ -395,7 +403,7 @@ export function mountSwingSpotlight({
   doc.addEventListener('keydown', onKey, true);
   let last=0;
   const driver=gsap.to({p:0}, {
-    p:1, duration:12, ease:'none',
+    p:1, duration:state.unlock/1000, ease:'none',
     onUpdate(){
       if(gone)return;
       const now=driver.time();

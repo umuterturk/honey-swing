@@ -313,12 +313,15 @@ export function animateCardAction({
         origin=flipBtn?point(flipBtn,root):
           {x:root.clientWidth*.5,y:root.clientHeight*.82};
       }
-      if(!origin)return;
-      animations.push(flyFactorLabels({
+      if(!origin)return null;
+      const cancel=flyFactorLabels({
         root,
         plan:[{kind:flyer.kind,start:0,origin}],
-        bounce:!view.spotlight
-      }));
+        bounce:!view.spotlight,
+        hold:!!(view.spotlight&&flyer.kind==='swing')
+      });
+      animations.push(cancel);
+      return cancel;
     };
     for(const flyer of marks.flyers||[]){
       if(teach&&flyer.kind==='swing')continue;
@@ -342,10 +345,12 @@ export function animateCardAction({
     const cancelSpot=mountSwingSpotlight({
       root, plan:view.spotlight, from:view.from, to:view.to, limit,
       onCross(){
-        if(!alive)return;
+        if(!alive)return null;
+        let held=null;
         for(const flyer of marks.flyers||[]){
-          if(flyer.kind==='swing')launchFlyer(flyer);
+          if(flyer.kind==='swing')held=launchFlyer(flyer);
         }
+        return held;
       },
       onPill(){if(alive)onFactors(view.factorsAfter);},
       onPark(){if(alive)startTapPour();},
