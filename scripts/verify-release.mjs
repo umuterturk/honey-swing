@@ -29,7 +29,7 @@ for(const file of bundles){
     'Root-absolute CSS url() in '+file);
 }
 for(const asset of [
-  'honey-tap.webp','honeycomb.png','honey-fill-mask.png',
-  'empty-complete-jar.png','empty-front-jar.png','celebration/daisy-2.png'
+  'honey-tap.webp','honeycomb.webp','honey-fill-mask.webp',
+  'empty-complete-jar.webp','empty-front-jar.webp','celebration/daisy-2.webp'
 ])assert.ok(existsSync(join(out,asset)),'Missing public asset '+asset);
 console.log('Swing Casual release artifact ok');
