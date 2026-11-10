@@ -209,7 +209,7 @@ export function swingSpotlightPlan({
   levelId, type='steer', snap=false, rewards=[], from, to, reduced=false
 }={}){
   if(levelId!==SWING_TEACH_LEVEL||snap||!swingReward(rewards))return null;
-  const marks=cardMotionMarks({type, snap:false, rewards, from, to});
+  const marks=cardMotionMarks({type, snap:false, rewards, from, to, levelId, teach:true});
   if(marks.swingFlyer==null)return null;
   const dim={color:TEACH_DIM};
   const arrow={

@@ -2,6 +2,7 @@ import {gsap} from 'gsap';
 import {cardDirection,cardShade} from '../cardDirection.js';
 import {publicUrl} from '../publicUrl.js';
 import {meterPercent} from '../meterScale.js';
+import {BEAT} from '../beatTune.js';
 import {NEEDLE_GLIDE_EASE,cardMotionMarks,flyerOrigin,reducedCardSummary} from '../motionSchedule.js';
 import {mountSwingSpotlight,playReleaseTime} from '../swingTeach.js';
 import {FACTORS} from '../factors.js';
@@ -45,6 +46,65 @@ function waspMarkerPercent(root,side){
   if(railBox.width<=0)return side==='right'?100:0;
   const center=waspBox.left+waspBox.width/2;
   return Math.max(-6,Math.min(106,((center-railBox.left)/railBox.width)*100));
+}
+
+function clearPop(root){
+  const meter=root?.querySelector?.('.sgv-meter');
+  if(meter)gsap.set(meter,{clearProps:'scale'});
+}
+
+// One hit on arrival: the meter and the needle cell, then back before the glide ends.
+function playLandingPop(root){
+  const meter=root.querySelector('.sgv-meter');
+  const needle=root.querySelector('.sgv-meter-needle');
+  const tweens=[];
+  const out={duration:BEAT.popOut,ease:'power2.out'};
+  const back={duration:BEAT.popBack,ease:'power2.inOut'};
+  if(meter){
+    const pop=gsap.timeline();
+    pop.to(meter,{scale:BEAT.meterPop,...out});
+    pop.to(meter,{duration:BEAT.popHold});
+    pop.to(meter,{scale:1,...back});
+    tweens.push(pop);
+  }
+  if(needle){
+    // CSS centers this cell with translate(-50%, -50%). Keep that in the same transform.
+    const state={scale:1};
+    const paint=()=>{needle.style.transform='translate(-50%, -50%) scale('+state.scale+')';};
+    const pop=gsap.timeline({onComplete:()=>{needle.style.transform='';}});
+    pop.to(state,{scale:BEAT.needlePop,...out,onUpdate:paint});
+    pop.to(state,{duration:BEAT.popHold});
+    pop.to(state,{scale:1,...back,onUpdate:paint});
+    tweens.push(pop);
+  }
+  return ()=>{
+    for(const pop of tweens)pop.kill();
+    if(needle)needle.style.transform='';
+    clearPop(root);
+  };
+}
+
+// Soft wash for the first session. Opacity only; the color is painted once.
+function playLandingDim(root,onDim){
+  const dim=root.ownerDocument.createElement('div');
+  dim.className='sgv-landing-dim';
+  dim.setAttribute('aria-hidden','true');
+  dim.style.background=BEAT.dim;
+  dim.style.opacity='0';
+  root.appendChild(dim);
+  let closed=false;
+  const close=()=>{
+    if(closed)return;
+    closed=true;
+    dim.remove();
+    onDim?.(false);
+  };
+  onDim?.(true);
+  const fade=gsap.timeline({onComplete:close});
+  fade.to(dim,{opacity:1,duration:BEAT.dimIn,ease:'power1.out'});
+  fade.to(dim,{duration:BEAT.dimHold});
+  fade.to(dim,{opacity:0,duration:BEAT.dimOut,ease:'power1.in'});
+  return ()=>{fade.kill();close();};
 }
 
 function pulseWasp(root,side,{scale=1.22,repeat=3,duration=0.14}={}){
@@ -120,7 +180,8 @@ export function animateSnapHeartLoss(root,side,onPop){
 }
 
 export function animateCardAction({
-  root,source,action,view,onMeter,onPot,onFactors,onSnap,onChanceLost,onComplete
+  root,source,action,view,onMeter,onPot,onFactors,onSnap,onChanceLost,onComplete,
+  onNeedleSettled,onDim
 }){
   if(!root||!source||reducedMotion()){
     const summary=reducedCardSummary(view);
@@ -173,7 +234,7 @@ export function animateCardAction({
   clearStatic();
   const marks=cardMotionMarks({
     type:action.type,snap:!!view.snap,rewards:view.rewards||[],
-    from:view.from,to:view.to
+    from:view.from,to:view.to,levelId:view.levelId,teach:!!view.spotlight
   });
   const limit=view.meterLimit||8;
   const side=snapSide(view);
@@ -236,15 +297,18 @@ export function animateCardAction({
   tl.fromTo(clone,{scale:.94,opacity:1,rotation:0},
     {x:centerX,y:centerY,scale:1.38,rotation:-6,
       duration:centerDur,ease:'power2.out'},0);
+  let arrived=false;
+  const onArrive=()=>{
+    if(!alive||arrived)return;
+    arrived=true;
+    // Snap keeps the wasp pulse as its only hit. The teach keeps its own clock.
+    if(!view.snap&&!teach)animations.push(playLandingPop(root));
+    if(view.landingDim&&!teach)animations.push(playLandingDim(root,onDim));
+  };
   tl.to(clone,{x:aimX,y:aimY,scale:.16,rotation:-2,
-    duration:diveDur,ease:'power2.out'},centerDur);
+    duration:diveDur,ease:'power2.out',onComplete:onArrive},centerDur);
   tl.to(clone,{opacity:0,duration:fadeDur,ease:'power2.out'},centerDur+diveDur-fadeDur);
-  const needleArt=marker?.querySelector('.sgv-meter-needle');
-  tl.call(()=>{
-    if(!alive||!needleArt)return;
-    animations.push(gsap.fromTo(needleArt,{scale:1},
-      {scale:1.22,duration:.10,yoyo:true,repeat:1,ease:'power1.out'}));
-  },[],marks.meterStart);
+  tl.call(()=>{if(alive)onNeedleSettled?.();},[],marks.meterEnd);
   if(action.type==='flip'&&marks.faceEnd!=null)tl.call(()=>{
     if(!alive)return;
     clone.className='sgv-card sgv-flying-card sgv-card-'+cardDirection(view.signedCard);

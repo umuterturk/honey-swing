@@ -92,7 +92,8 @@ export function useBoardChrome({
   }, [introGate, introCard, levelId]);
   useEffect(()=>{
     write(current=>current.pulse?{...current, pulse:false}:current);
-    if(animating||readout.finished||introGate||startOpen)return;
+    // Level 1's help is the first-session heartbeat, not this idle pulse.
+    if(animating||readout.finished||introGate||startOpen||levelId===1)return;
     const timer=setTimeout(()=>{
       write(shownPulse);
       dispatchCasualEvent('hint_shown', {level:levelId, turn:round.turn});

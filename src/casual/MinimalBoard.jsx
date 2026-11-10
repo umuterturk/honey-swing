@@ -167,7 +167,10 @@ export function SimpleCard({id,index,value,disabled,onPlay,showDirection=true,ri
    aria-label={'Play '+directionalValue(value)}
    disabled={disabled}
    onClick={event=>onPlay(index,event.currentTarget)}>
-   <img className="sgv-card-art" src={publicUrl(direction==='left'?'cell-left.webp':'cell-right.webp')} alt="" draggable="false"/>
-   <strong>{Math.abs(value)}</strong>
+   <span className="sgv-card-face">
+     <img className="sgv-card-art" src={publicUrl(direction==='left'?'cell-left.webp':'cell-right.webp')} alt="" draggable="false"/>
+     <span className="sgv-card-glow" aria-hidden="true"/>
+     <strong>{Math.abs(value)}</strong>
+   </span>
  </button>;
 }

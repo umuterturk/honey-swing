@@ -13,11 +13,21 @@ import {swingTeachConcealed, visibleHandIds} from './swingTeach.js';
 // Painted honey bar has four sockets. Wider hands keep one socket per dealt slot.
 const HAND_PANEL_SLOTS=4;
 
+function TapHand(){
+  return <span className="sgv-beat-hand" role="img" aria-label="Hand">
+    <svg viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+      <path fill="#fff6d8" stroke="#5c3b16" strokeWidth="3" strokeLinejoin="round"
+        d="M30 6c-2.4 0-4 1.8-4 4.2V30h-3.2c-2.6 0-4.4 2.2-4 4.8l2.6 16.4C22.2 57.4 26.4 62 32 62h7.2c6.4 0 11.2-4.4 12-10.8l2.2-15.6c.5-3.2-2-5.6-5-5.6H44V22c0-3.4-2.6-6-5.8-6-1.8 0-3.4.8-4.4 2V12.4c0-2.8-1.8-4.6-4-4.6-1.6 0-2.8.7-3.4 1.8V10c0-2.2-1.8-4-3.4-4z"/>
+    </svg>
+  </span>;
+}
+
 export function OnboardingPhone({
   screen, readout, ending, bankLive, reduced, fx, rootRef, introStartRef, levelReadyRef, phoneClass,
   onPointerDownCapture, onClickCapture, onKeyDownCapture, onPlay, onFactorInfo, onReset, onToggleDev,
   onGotoLevel, onToggleHelp, onSkipGarden, onDismissFactor, onDismissIntro, onDismissStart,
-  onEndPrimary, onEndBackdrop, onFinishPresentation
+  onEndPrimary, onEndBackdrop, onFinishPresentation,
+  coach='off', showHand=false, needleOpen=false
 }){
   const {
     level, victory, finished, factorInfoEnabled, available, canBank, canFlip,
@@ -35,6 +45,7 @@ export function OnboardingPhone({
   const firstRedId=bothColours?handView.find(card=>card.value>0).id:null;
   const {view, shownGold, animating, introGate, docking, help, devMenuOpen, factorInfo, ack, beat}=screen;
   const teachSpotlight=rootRef.current?.getAttribute?.('data-swing-teach')==='1';
+  const cardsOpen=needleOpen&&!teachSpotlight;
   return <main className="sgv-page">
     <div ref={rootRef}
       data-honey-win={finished&&victory?'true':undefined}
@@ -96,6 +107,7 @@ export function OnboardingPhone({
         </div>
       </div>
       <section className="sgv-controls sgv-tutorial-controls" aria-label="Card actions">
+        {coach==='move1'&&<p className="sgv-beat-cue">Tap a card.{showHand&&<TapHand/>}</p>}
         <div className="sgv-hand-frame" data-rows={slots>HAND_PANEL_SLOTS?'2':undefined}>
           <img className="sgv-hand-panel" src={publicUrl(slots>HAND_PANEL_SLOTS?'handpanel-2-row.webp':'handpanel.webp')} alt="" draggable="false"/>
           <div className="sgv-hand" aria-label="Your cards"
@@ -110,8 +122,8 @@ export function OnboardingPhone({
                 value={slot.value} showDirection={true}
                 groupStart={slot.id===firstRedId}
                 risky={level.showChances&&engineIndex>=0&&wouldSnap(screen.round, {type:'steer', index:engineIndex})}
-                highlighted={pulseIndex===engineIndex}
-                disabled={finished||animating||engineIndex<0||!available.some(action=>action.type==='steer'&&action.index===engineIndex)}
+                highlighted={coach==='off'&&pulseIndex===engineIndex}
+                disabled={finished||(animating&&!cardsOpen)||engineIndex<0||!available.some(action=>action.type==='steer'&&action.index===engineIndex)}
                 onPlay={(_index, element)=>onPlay(
                   {type:'steer', index:screen.round.game.deal.hand.indexOf(slot.id)}, element
                 )}/>;

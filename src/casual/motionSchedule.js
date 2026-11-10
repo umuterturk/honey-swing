@@ -1,3 +1,4 @@
+import {flightBand} from './beatTune.js';
 import {FACTORS} from './factors.js';
 
 // Visual schedule only. finishPresentation does not wait on these times.
@@ -34,19 +35,22 @@ export function zeroCrossMark({from,to,meterStart,meterEnd}){
   return thirds(meterStart+(meterEnd-meterStart)*t);
 }
 
-export function cardMotionMarks({type='steer',snap=false,rewards=[],from,to}={}){
+export function cardMotionMarks({
+  type='steer',snap=false,rewards=[],from,to,levelId=1,teach=false
+}={}){
   const kinds=rewarded(rewards);
   const swingHold=holdFor(kinds);
   const crossFactor=FACTORS.find(factor=>factor.flyerAt==='cross'&&factor.flyer);
   const faceFactor=FACTORS.find(factor=>factor.flyerAt==='face'&&factor.flyer);
-  const flip=type==='flip';
   // Part 1: fly to center and grow. Part 2: dive to the current needle and fade.
   // Needle glides only after that landing. Flip still reveals its face in part 1.
-  const faceEnd=flip?0.140:null;
-  const centerAt=flip?0.280:0.220;
-  const cardArrive=flip?0.480:0.420;
+  // Snap and the L3 −5 teach keep today's flight. Pour and rewards use meterEnd.
+  const band=flightBand({type,snap,teach,levelId});
+  const faceEnd=band.faceEnd;
+  const centerAt=band.centerAt;
+  const cardArrive=band.cardArrive;
   const meterStart=cardArrive;
-  const meterEnd=thirds(cardArrive+(snap?0.180:0.200));
+  const meterEnd=thirds(cardArrive+band.glide);
   const base={faceEnd,centerAt,meterStart,meterEnd,reveal:meterEnd,cardArrive};
   // Card arrives → needle settles → tap pours into Pot (or Snap C-arc path).
   if(snap){

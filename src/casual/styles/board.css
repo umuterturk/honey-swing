@@ -44,6 +44,7 @@
 .sgv-intro-message strong{font-size:clamp(49px,14vw,72px);color:#ea558a;line-height:1;text-shadow:0 4px #ffe1b9}
 @keyframes sgv-target-fly{0%{opacity:0;transform:translate(-50%,-140%) scale(.5)}16%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}25%,70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-185%) scale(.3)}}
 .sgv-skip-surface{position:absolute;inset:0;z-index:28;margin:0;padding:0;border:0;background:transparent;cursor:pointer}
+.sgv-landing-dim{position:absolute;top:0;right:0;bottom:0;left:0;z-index:20;pointer-events:none}
 .sgv-bank-live{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .sgv-success-settled .sgv-pending-pot{animation:none}
 .sgv-end-overlay{position:absolute;z-index:30;inset:0;display:grid;place-items:center;background:#496d728f;backdrop-filter:blur(5px)}
